@@ -1,4 +1,4 @@
-package main
+package ggthx
 
 const BITVECTOR_NIBBLE_SIZE int = 8
 

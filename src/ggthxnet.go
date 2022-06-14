@@ -1,4 +1,4 @@
-package main
+package ggthx
 
 const GGTHX_MAX_PLAYERS int = 4
 const GGTHX_MAX_PREDICTION_FRAMES int = 8

@@ -1,4 +1,4 @@
-package main
+package ggthx
 
 type StaticBuffer[T any] struct {
 	elements []T

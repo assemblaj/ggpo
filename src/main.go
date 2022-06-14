@@ -1,4 +1,4 @@
-package main
+package ggthx
 
 func GGTHXStartSession(
 	session GGTHXSession,

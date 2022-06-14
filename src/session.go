@@ -1,4 +1,4 @@
-package main
+package ggthx
 
 /*
 	Remember to
@@ -16,4 +16,5 @@ type GGTHXSession interface {
 	SetFrameDelay(player GGTHXPlayerHandle, delay int) GGTHXErrorCode
 	SetDisconnectTimeout(timeout int) GGTHXErrorCode
 	SetDisconnectNotifyStart(timeout int) GGTHXErrorCode
+	Close() GGTHXErrorCode
 }

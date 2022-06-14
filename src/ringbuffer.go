@@ -1,4 +1,4 @@
-package main
+package ggthx
 
 type RingBuffer[T any] struct {
 	elements []T

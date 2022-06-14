@@ -1,4 +1,4 @@
-package main
+package ggthx
 
 type Peer1PeerBackend struct {
 	callbacks     GGTHXSessionCallbacks
