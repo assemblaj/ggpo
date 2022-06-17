@@ -108,7 +108,3 @@ func GGTHXSetDisconnectNotifyStart(ggthx GGTHXSession, timeout int) GGTHXErrorCo
 	}
 	return ggthx.SetDisconnectNotifyStart(timeout)
 }
-
-func main() {
-
-}
