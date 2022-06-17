@@ -287,3 +287,11 @@ func (s Sync) GetEvent(e *SyncEvent) bool {
 	}
 	return false
 }
+
+func (s Sync) GetFrameCount() int {
+	return s.frameCount
+}
+
+func (s Sync) InRollback() bool {
+	return s.rollingBack
+}
