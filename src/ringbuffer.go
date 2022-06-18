@@ -22,7 +22,7 @@ func (r RingBuffer[T]) Front() T {
 
 func (r RingBuffer[T]) Item(i int) T {
 	Assert(i < r.size)
-	return r.elements[(r.tail+i)%r.size]
+	return r.elements[(r.tail+i)%r.capacity]
 }
 
 // hmm this fails if its at its max size
