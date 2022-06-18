@@ -162,8 +162,12 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) {
 	Assert(i.lastAddedFrame == NullFrame || frameNumber == i.lastAddedFrame+1)
 	Assert(frameNumber == 0 || i.inputs[previousFrame(i.head)].Frame == frameNumber-1)
 
+	/*
+	 *	Add the frame to the back of the queue
+	 */
 	i.inputs[i.head] = *input
 	i.inputs[i.head].Frame = frameNumber
+	i.head = (i.head + 1) % INPUT_QUEUE_LENGTH
 	i.length++
 	i.firstFrame = false
 
