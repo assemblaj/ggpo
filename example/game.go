@@ -116,7 +116,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for _, p := range g.Players {
 		ebitenutil.DrawRect(screen, p.X, p.Y, 50, 50, p.Color)
 	}
-	ebitenutil.DebugPrint(screen, "Hello,, World!")
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("Player 1: X: %.2f Y:%.2f Player 2 X: %.2f Y: %.2f",
+		g.Players[0].X, g.Players[0].Y, g.Players[1].X, g.Players[1].Y))
 }
 
 func (g *Game) Layout(outsideWidth, insideWidth int) (screenWidth, screenHeight int) {
@@ -170,6 +171,7 @@ func logGameState(fileName string, buffer []byte, len int) bool {
 	if err != nil {
 		log.Fatal("decode error:", err)
 	}
+	log.Printf("%s Game State: %s\n", fileName, game2)
 	return true
 }
 
@@ -245,7 +247,7 @@ func init() {
 	callbacks.OnEvent = onEvent
 	callbacks.SaveGameState = saveGameState
 	var result ggthx.GGTHXErrorCode
-	session, result = ggthx.StartSyncTest(&callbacks, "Test", 2, 4, 8)
+	session, result = ggthx.StartSyncTest(&callbacks, "Test", 2, 4, 1)
 	if result != ggthx.GGTHX_OK {
 		log.Fatalf("There's an issue / \n ")
 	}
