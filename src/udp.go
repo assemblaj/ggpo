@@ -49,13 +49,15 @@ func (u *Udp) Close() {
 // Which is called by backend::AddPlayer
 // which is called by Session:AddPlayer
 // and obtained via the GGPOPlayer object
-func (u *Udp) Init(ipAdress string, port string, p *Poll, callbacks UdpCallbacks) {
+func NewUdp(ipAdress string, port string, p *Poll, callbacks UdpCallbacks) Udp {
+	u := Udp{}
 	u.callbacks = callbacks
 	u.poll = *p
-	u.poll.RegisterLoop(u, nil)
+	u.poll.RegisterLoop(&u, nil)
 
 	log.Printf("binding udp socket to port %s.\n", port)
 	u.socket = u.CreateSocket(ipAdress, port, 0)
+	return u
 }
 
 // dst should be sockaddr

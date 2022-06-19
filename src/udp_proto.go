@@ -535,10 +535,11 @@ func (u *UdpProtocol) Close() {
 	u.ClearSendQueue()
 }
 
+/* don't really need this ?
 func (u *UdpProtocol) HandlesMsg(from string, msg *UdpMsg) bool {
 	return u.peerAddress == from
 }
-
+*/
 func (u *UdpProtocol) SendInput(input *GameInput) {
 	if u.currentState == RunningState {
 		// check to see if this is a good time to adjust for the rift

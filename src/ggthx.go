@@ -108,3 +108,9 @@ func GGTHXSetDisconnectNotifyStart(ggthx GGTHXSession, timeout int) GGTHXErrorCo
 	}
 	return ggthx.SetDisconnectNotifyStart(timeout)
 }
+
+func GGTHXSartSpectating(cb *GGTHXSessionCallbacks,
+	gameName string, lcaolPort int, numPlayers int, inputSize int, hostIp string, hostPort int) (*SpectatorBackend, GGTHXErrorCode) {
+	ggthx := NewSpectatorBackend(cb, gameName, lcaolPort, numPlayers, inputSize, hostIp, hostPort)
+	return &ggthx, GGTHX_OK
+}
