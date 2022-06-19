@@ -73,7 +73,7 @@ const (
 // including the extra specific fields in every event object
 // Hopefully I remember I did this like this
 type GGTHXEvent struct {
-	code              GGTHXEventCode
+	Code              GGTHXEventCode
 	player            GGTHXPlayerHandle
 	count             int // synchronizing
 	total             int // synchronizing
@@ -92,7 +92,7 @@ type GGTHXSessionCallbacks struct {
 }
 
 type beginGame func(game string) bool
-type saveGameState func(buffer []byte, len *int, checksum *int, frame int) bool
+type saveGameState func(len *int, checksum *int, frame int) ([]byte, bool)
 type loadGameState func(buffer []byte, len int) bool
 type logGameState func(fileName string, buffer []byte, len int) bool
 type freeBuffer func(buffer []byte)

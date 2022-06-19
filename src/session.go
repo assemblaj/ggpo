@@ -6,8 +6,8 @@ package ggthx
 type GGTHXSession interface {
 	DoPoll(timeout int) GGTHXErrorCode
 	AddPlayer(player *GGTHXPlayer, handle *GGTHXPlayerHandle) GGTHXErrorCode
-	AddLocalInput(player *GGTHXPlayerHandle, values []byte, size int) GGTHXErrorCode
-	SyncInput(values []byte, size int, disconnect_flags *int) GGTHXErrorCode
+	AddLocalInput(player GGTHXPlayerHandle, values []byte, size int) GGTHXErrorCode
+	SyncInput(disconnect_flags *int) ([]byte, GGTHXErrorCode)
 	IncrementFrame() GGTHXErrorCode
 	Chat(text string) GGTHXErrorCode
 	DisconnectPlayer(handle *GGTHXPlayerHandle) GGTHXErrorCode

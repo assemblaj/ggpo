@@ -1,6 +1,8 @@
 package ggthx
 
-import "log"
+import (
+	"log"
+)
 
 type Sync struct {
 	callbacks  GGTHXSessionCallbacks
@@ -17,6 +19,8 @@ type Sync struct {
 	eventQueue         RingBuffer[SyncEvent]
 	localConnectStatus []UdpConnectStatus
 }
+
+const MAX_PREDICTION_FRAMES int = 8
 
 type SyncConfig struct {
 	callbacks           GGTHXSessionCallbacks
@@ -60,6 +64,9 @@ func NewSync(status []UdpConnectStatus, config *SyncConfig) Sync {
 		frameCount:          0,
 		lastConfirmedFrame:  -1,
 		rollingBack:         false,
+		savedState: savedState{
+			frames: make([]savedFrame, MAX_PREDICTION_FRAMES+2)},
+		eventQueue: NewRingBuffer[SyncEvent](32),
 	}
 	s.CreateQueues(*config)
 	return s
@@ -76,7 +83,7 @@ func (s *Sync) Close() {
 	s.inputQueues = nil
 }
 
-func (s Sync) SetLastConfirmedFrame(frame int) {
+func (s *Sync) SetLastConfirmedFrame(frame int) {
 	s.lastConfirmedFrame = frame
 	if s.lastConfirmedFrame > 0 {
 		for i := 0; i < s.config.numPlayers; i++ {
@@ -86,7 +93,7 @@ func (s Sync) SetLastConfirmedFrame(frame int) {
 }
 
 func (s *Sync) AddLocalInput(queue int, input *GameInput) bool {
-	framesBehind := s.frameCount + s.lastConfirmedFrame
+	framesBehind := s.frameCount - s.lastConfirmedFrame
 	if s.frameCount >= s.maxPredictionFrames && framesBehind >= s.maxPredictionFrames {
 		log.Printf("Rejecting input from emulator: reached prediction barrier.\n")
 		return false
@@ -103,20 +110,19 @@ func (s *Sync) AddLocalInput(queue int, input *GameInput) bool {
 	return true
 }
 
-// both local and remote input get sent into the system the same way
-// hmm
 func (s *Sync) AddRemoteInput(queue int, input *GameInput) {
 	s.inputQueues[queue].AddInput(input)
 }
 
 // originally took in a void ptr buffer and filled it with input
 // maybe i should return that the filled buffer instead idk
-func (s Sync) GetConfirmedInputs(values []byte, size int, frame int) int {
+// used by p2pbackend
+func (s Sync) GetConfirmedInputs(size int, frame int) ([]byte, int) {
 	disconnectFlags := 0
 
 	Assert(size >= s.config.numPlayers*s.config.inputSize)
 
-	values = make([]byte, size)
+	values := make([]byte, size)
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
 		if s.localConnectStatus[i].Disconnected > 0 && frame > s.localConnectStatus[i].LastFrame {
@@ -128,15 +134,16 @@ func (s Sync) GetConfirmedInputs(values []byte, size int, frame int) int {
 		// this was originally a memcpy
 		values = append(values, input.Bits...)
 	}
-	return disconnectFlags
+	return values, disconnectFlags
 }
 
-func (s Sync) SynchronizeInputs(values []byte, size int) int {
+// used by p2pbackend
+func (s Sync) SynchronizeInputs(size int) ([]byte, int) {
 	disconnectFlags := 0
 
 	Assert(size >= s.config.numPlayers*s.config.inputSize)
 
-	values = make([]byte, size)
+	values := make([]byte, size)
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
 		if s.localConnectStatus[i].Disconnected > 0 && s.frameCount > s.localConnectStatus[i].LastFrame {
@@ -147,7 +154,7 @@ func (s Sync) SynchronizeInputs(values []byte, size int) int {
 		}
 		values = append(values, input.Bits...)
 	}
-	return disconnectFlags
+	return values, disconnectFlags
 }
 
 func (s Sync) CheckSimulation(timeout int) {
@@ -191,11 +198,12 @@ func (s *Sync) LoadFrame(frame int) {
 		log.Printf("Skipping NOP.\n")
 		return
 	}
-
 	// Move the head pointer back and load it up
 	s.savedState.head = s.FindSavedFrameIndex(frame)
 	state := s.savedState.frames[s.savedState.head]
 
+	log.Printf("=== Loading frame info %d (size: %d  checksum: %08x).\n",
+		state.frame, state.cbuf, state.checksum)
 	Assert(state.buf != nil && state.cbuf > 0)
 	s.callbacks.LoadGameState(state.buf, state.cbuf)
 
@@ -214,8 +222,11 @@ func (s *Sync) SaveCurrentFrame() {
 		state.buf = nil
 	}
 	state.frame = s.frameCount
-	s.callbacks.SaveGameState(state.buf, &state.cbuf, &state.checksum, state.frame)
-
+	buf, result := s.callbacks.SaveGameState(&state.cbuf, &state.checksum, state.frame)
+	if result {
+		state.buf = buf
+	}
+	s.savedState.frames[s.savedState.head] = state
 	log.Printf("=== Saved frame info %d (size: %d  checksum: %08x).\n", state.frame, state.cbuf, state.checksum)
 	s.savedState.head = (s.savedState.head + 1) % len(s.savedState.frames)
 }

@@ -29,10 +29,32 @@ type savedInfo struct {
 	input    GameInput
 }
 
+func NewSyncTestBackend(cb *GGTHXSessionCallbacks,
+	gameName string,
+	numPlayers int,
+	frames int, inputSize int) SyncTestBackend {
+	s := SyncTestBackend{
+		callbacks:     *cb,
+		numPlayers:    numPlayers,
+		checkDistance: frames,
+		savedFrames:   NewRingBuffer[savedInfo](32)}
+	s.currentInput.Erase()
+	s.currentInput.Bits = make([]byte, GAMEINPUT_MAX_BYTES*GAMEINPUT_MAX_PLAYERS)
+	s.currentInput.Size = inputSize
+	var config SyncConfig
+	config.callbacks = s.callbacks
+	config.numPredictionFrames = MAX_PREDICTION_FRAMES
+	config.inputSize = inputSize
+	s.sync = NewSync(nil, &config)
+
+	s.callbacks.BeginGame(gameName)
+	return s
+}
+
 func (s *SyncTestBackend) DoPoll(timeout int) GGTHXErrorCode {
 	if !s.running {
 		var info GGTHXEvent
-		info.code = GGTHX_EVENTCODE_RUNNING
+		info.Code = GGTHX_EVENTCODE_RUNNING
 		s.callbacks.OnEvent(&info)
 		s.running = true
 	}
@@ -52,14 +74,16 @@ func (s *SyncTestBackend) AddLocalInput(player GGTHXPlayerHandle, values []byte,
 		return GGTHX_ERRORCODE_NOT_SYNCHRONIZED
 	}
 
-	index := int(player)
-	for i := 0; i < size; i++ {
-		s.currentInput.Bits[index*size+i] |= values[i]
-	}
+	//index := int(player)
+	//for i := 0; i < size; i++ {
+	//	s.currentInput.Bits[index*size+i] |= values[i]
+	//}
+	s.currentInput.Bits = make([]byte, len(values))
+	copy(s.currentInput.Bits, values)
 	return GGTHX_OK
 }
 
-func (s *SyncTestBackend) SyncInput(values []byte, size int, discconectFlags *int) GGTHXErrorCode {
+func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([]byte, GGTHXErrorCode) {
 	if s.rollingBack {
 		s.lastInput = s.savedFrames.Front().input
 	} else {
@@ -68,16 +92,20 @@ func (s *SyncTestBackend) SyncInput(values []byte, size int, discconectFlags *in
 		}
 		s.lastInput = s.currentInput
 	}
+	var values = make([]byte, len(s.lastInput.Bits))
 	copy(values, s.lastInput.Bits)
+
 	if *discconectFlags > 0 {
 		*discconectFlags = 0
 	}
-	return GGTHX_OK
+	return values, GGTHX_OK
 }
 
 func (s *SyncTestBackend) IncrementFrame() GGTHXErrorCode {
 	s.sync.IncrementFrame()
-	s.currentInput.Erase()
+	//s.currentInput.Erase()
+
+	log.Printf("End of frame(%d)...\n", s.sync.GetFrameCount())
 
 	if s.rollingBack {
 		return GGTHX_OK
@@ -91,8 +119,10 @@ func (s *SyncTestBackend) IncrementFrame() GGTHXErrorCode {
 	info.frame = frame
 	info.input = s.lastInput
 	info.cbuf = s.sync.GetLastSavedFrame().cbuf
+	info.buf = make([]byte, len(s.sync.GetLastSavedFrame().buf))
 	copy(info.buf, s.sync.GetLastSavedFrame().buf)
 	info.checksum = s.sync.GetLastSavedFrame().checksum
+
 	s.savedFrames.Push(info)
 
 	if frame-s.lastVerified == s.checkDistance {
@@ -115,7 +145,7 @@ func (s *SyncTestBackend) IncrementFrame() GGTHXErrorCode {
 			}
 			checksum := s.sync.GetLastSavedFrame().checksum
 			if info.checksum != checksum {
-				// LogSaveStates(info)
+				s.LogGameStates(info)
 				log.Printf("Checksum for frame %d does not match saved (%d != %d)", frame, checksum, info.checksum)
 				panic("RaiseSyncError")
 			}
@@ -127,24 +157,29 @@ func (s *SyncTestBackend) IncrementFrame() GGTHXErrorCode {
 	return GGTHX_OK
 }
 
+func (s SyncTestBackend) LogGameStates(info savedInfo) {
+	s.callbacks.LogGameState("saved:", info.buf, len(info.buf))
+	s.callbacks.LogGameState("loaded:", s.sync.GetLastSavedFrame().buf, s.sync.GetLastSavedFrame().cbuf)
+}
+
 // We must 'impliment' these for this to be a true Session
-func (s SyncTestBackend) Chat(text string) GGTHXErrorCode { return GGTHX_ERRORCODE_INVALID_REQUEST }
-func (s SyncTestBackend) DisconnectPlayer(handle *GGTHXPlayerHandle) GGTHXErrorCode {
+func (s *SyncTestBackend) Chat(text string) GGTHXErrorCode { return GGTHX_ERRORCODE_INVALID_REQUEST }
+func (s *SyncTestBackend) DisconnectPlayer(handle *GGTHXPlayerHandle) GGTHXErrorCode {
 	return GGTHX_ERRORCODE_INVALID_REQUEST
 }
-func (s SyncTestBackend) GetNetworkStats(stats *GGTHXNetworkStats, handle GGTHXPlayerHandle) GGTHXErrorCode {
+func (s *SyncTestBackend) GetNetworkStats(stats *GGTHXNetworkStats, handle GGTHXPlayerHandle) GGTHXErrorCode {
 	return GGTHX_ERRORCODE_INVALID_REQUEST
 }
-func (s SyncTestBackend) Logv(format string, args ...int) GGTHXErrorCode {
+func (s *SyncTestBackend) Logv(format string, args ...int) GGTHXErrorCode {
 	return GGTHX_ERRORCODE_INVALID_REQUEST
 }
-func (s SyncTestBackend) SetFrameDelay(player GGTHXPlayerHandle, delay int) GGTHXErrorCode {
+func (s *SyncTestBackend) SetFrameDelay(player GGTHXPlayerHandle, delay int) GGTHXErrorCode {
 	return GGTHX_ERRORCODE_INVALID_REQUEST
 }
-func (s SyncTestBackend) SetDisconnectTimeout(timeout int) GGTHXErrorCode {
+func (s *SyncTestBackend) SetDisconnectTimeout(timeout int) GGTHXErrorCode {
 	return GGTHX_ERRORCODE_INVALID_REQUEST
 }
-func (s SyncTestBackend) SetDisconnectNotifyStart(timeout int) GGTHXErrorCode {
+func (s *SyncTestBackend) SetDisconnectNotifyStart(timeout int) GGTHXErrorCode {
 	return GGTHX_ERRORCODE_INVALID_REQUEST
 }
-func (s SyncTestBackend) Close() GGTHXErrorCode { return GGTHX_ERRORCODE_INVALID_REQUEST }
+func (s *SyncTestBackend) Close() GGTHXErrorCode { return GGTHX_ERRORCODE_INVALID_REQUEST }

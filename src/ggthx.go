@@ -19,14 +19,14 @@ func GGTHXAddPlayer(ggthx GGTHXSession,
 	return ggthx.AddPlayer(player, handle)
 }
 
-func GGTHXStartSyncTest(ggthx GGTHXSession,
+func GGTHXStartSyncTest(
 	cb *GGTHXSessionCallbacks,
 	game string,
 	numPlayers int,
 	inputSize int,
-	frames int) GGTHXErrorCode {
-	//*ggthx = (GGTHXSession *)new SyncTestBackend(cb, game, frames, num_players);
-	return GGTHX_OK
+	frames int) (*SyncTestBackend, GGTHXErrorCode) {
+	ggthx := NewSyncTestBackend(cb, game, numPlayers, frames, inputSize)
+	return &ggthx, GGTHX_OK
 }
 
 func GGTHXSetFrameDelay(ggthx GGTHXSession,
@@ -49,14 +49,14 @@ func GGTHXAddLocalInput(ggthx GGTHXSession, player GGTHXPlayerHandle, values []b
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
-	return ggthx.AddLocalInput(&player, values, size)
+	return ggthx.AddLocalInput(player, values, size)
 }
 
-func GGTHXSynchronizeInput(ggthx GGTHXSession, values []byte, size int, disconnectFlags *int) GGTHXErrorCode {
+func GGTHXSynchronizeInput(ggthx GGTHXSession, disconnectFlags *int) ([]byte, GGTHXErrorCode) {
 	if ggthx == nil {
-		return GGTHX_ERRORCODE_INVALID_SESSION
+		return nil, GGTHX_ERRORCODE_INVALID_SESSION
 	}
-	return ggthx.SyncInput(values, size, disconnectFlags)
+	return ggthx.SyncInput(disconnectFlags)
 }
 
 func GGTHXDisconnectPlayer(ggthx GGTHXSession, player GGTHXPlayerHandle) GGTHXErrorCode {

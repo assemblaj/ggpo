@@ -2,6 +2,7 @@ package ggthx
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"strings"
 )
@@ -60,7 +61,7 @@ func (g GameInput) Log(prefix string, showFrame bool) {
 
 func (g GameInput) String() string {
 	Assert(g.Size > 0)
-	retval := "(frame:%d size:%d"
+	retval := fmt.Sprintf("(frame:%d size:%d", g.Frame, g.Size)
 	builder := strings.Builder{}
 	for i := 0; i < len(g.Bits); i++ {
 		builder.WriteByte(g.Bits[i])
@@ -76,11 +77,11 @@ func (g GameInput) Equal(other *GameInput, bitsonly bool) bool {
 	if g.Size != other.Size {
 		log.Printf("sizes don't match: %d, %d\n", g.Size, other.Size)
 	}
-	if bytes.Compare(g.Bits, other.Bits) != 0 {
+	if !bytes.Equal(g.Bits, other.Bits) {
 		log.Printf("bits don't match\n")
 	}
 	Assert(g.Size > 0 && other.Size > 0)
 	return (bitsonly || g.Frame == other.Frame) &&
 		g.Size == other.Size &&
-		bytes.Compare(g.Bits, other.Bits) != 0
+		bytes.Equal(g.Bits, other.Bits)
 }
