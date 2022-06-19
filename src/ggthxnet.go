@@ -104,29 +104,11 @@ type GGTHXNetworkStats struct {
 	timesync GGTHXNetworkTimeSyncStats
 }
 
-func (gns GGTHXNetworkStats) BuildGGTHXNetworkNetworkStats(
-	sendQueueLen int,
-	recvQueueLen int,
-	ping int,
-	kbpsSend int) {
-	gns.network.sendQueueLen = sendQueueLen
-	gns.network.recvQueueLen = recvQueueLen
-	gns.network.ping = ping
-	gns.network.kbpsSend = kbpsSend
-}
-
-func (gns GGTHXNetworkStats) BuildGGTHXNetworkTimeSyncStats(
-	localFramesBehind int,
-	remoteFramesBehind int) {
-	gns.timesync.localFramesBehind = localFramesBehind
-	gns.timesync.remoteFramesBehind = remoteFramesBehind
-}
-
 type GGTHXNetworkNetworkStats struct {
 	sendQueueLen int
 	recvQueueLen int
 	ping         int
-	kbpsSend     int
+	kbpsSent     int
 }
 type GGTHXNetworkTimeSyncStats struct {
 	localFramesBehind  int

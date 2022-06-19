@@ -444,11 +444,9 @@ func (u *UdpProtocol) OnInputAck(msg *UdpMsg, len int) bool {
 	return true
 }
 
-// why the builder
 func (u *UdpProtocol) OnQualityReport(msg *UdpMsg, len int) bool {
 	reply := NewUdpMsg(QualityReplyMsg)
 	reply.QualityReply.Pong = msg.QualityReport.Ping
-	//reply.BuildQualityReply(int(msg.qualityReport.ping))
 	u.SendMsg(&reply)
 
 	u.remoteFrameAdvantage = int(msg.QualityReport.FrameAdvantage)
@@ -464,13 +462,12 @@ func (u UdpProtocol) OnKeepAlive(msg *UdpMsg, len int) bool {
 	return true
 }
 
-// why the builder
-// couldn't set those values for s without a builder
-// inconsistent
 func (u UdpProtocol) GetNetworkStats(s *GGTHXNetworkStats) {
-	s.BuildGGTHXNetworkNetworkStats(u.pendingOutput.Size(), 0,
-		u.roundTripTime, u.kbpsSent)
-	s.BuildGGTHXNetworkTimeSyncStats(u.localFrameAdvantage, u.remoteFrameAdvantage)
+	s.network.ping = u.roundTripTime
+	s.network.sendQueueLen = u.pendingOutput.Size()
+	s.network.kbpsSent = u.kbpsSent
+	s.timesync.remoteFramesBehind = u.remoteFrameAdvantage
+	s.timesync.localFramesBehind = u.localFrameAdvantage
 }
 
 func (u *UdpProtocol) SetLocalFrameNumber(localFrame int) {
