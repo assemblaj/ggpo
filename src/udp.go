@@ -61,8 +61,16 @@ func NewUdp(ipAdress string, port string, p *Poll, callbacks UdpCallbacks) Udp {
 }
 
 // dst should be sockaddr
-func (u *Udp) SendTo(buffer []byte) {
-	u.socket.Write(buffer)
+// maybe create Gob encoder and decoder members
+// instead of creating them on each message send
+func (u *Udp) SendTo(msg *UdpMsg) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(msg)
+	if err != nil {
+		log.Fatal("encode error ", err)
+	}
+	u.socket.Write(buf.Bytes())
 }
 
 func (u *Udp) OnLoopPoll(cookie []byte) bool {

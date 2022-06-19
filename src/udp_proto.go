@@ -510,7 +510,7 @@ func (u *UdpProtocol) PumpSendQueue() {
 		} else {
 			Assert(entry.destIp != "")
 
-			u.udp.SendTo(entry.msg.Input.Bits)
+			u.udp.SendTo(entry.msg)
 
 			// would delete the udpmsg here
 		}
@@ -518,7 +518,7 @@ func (u *UdpProtocol) PumpSendQueue() {
 	}
 	if u.ooPacket.msg != nil && u.ooPacket.sendTime < int(time.Now().UnixMilli()) {
 		log.Printf("sending rogue oop!")
-		u.udp.SendTo(u.ooPacket.msg.Input.Bits)
+		u.udp.SendTo(u.ooPacket.msg)
 		// u.ooPacket = nil
 	}
 }
