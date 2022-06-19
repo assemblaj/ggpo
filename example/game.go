@@ -38,7 +38,7 @@ type Player struct {
 
 func (g *Game) Update() error {
 	now = int(time.Now().UnixMilli())
-	ggthx.GGTHXIdle(session, int(math.Max(0, float64(next-now-1))))
+	ggthx.Idle(session, int(math.Max(0, float64(next-now-1))))
 	if now >= next {
 		g.RunFrame()
 		next = now + 1000/60
@@ -50,12 +50,12 @@ func (g *Game) RunFrame() {
 	input := g.ReadInputs()
 	buffer := encodeInputs(input)
 
-	result := ggthx.GGTHXAddLocalInput(session, ggthx.GGTHXPlayerHandle(currentPlayer), buffer, len(buffer))
+	result := ggthx.AddLocalInput(session, ggthx.GGTHXPlayerHandle(currentPlayer), buffer, len(buffer))
 	if ggthx.GGTHX_SUCESS(result) {
 		var values []byte
 		disconnectFlags := 0
 
-		values, result = ggthx.GGTHXSynchronizeInput(session, &disconnectFlags)
+		values, result = ggthx.SynchronizeInput(session, &disconnectFlags)
 		if ggthx.GGTHX_SUCESS(result) {
 			var buf bytes.Buffer = *bytes.NewBuffer(values)
 			dec := gob.NewDecoder(&buf)
@@ -70,7 +70,7 @@ func (g *Game) RunFrame() {
 
 func (g *Game) AdvanceFrame(inputs Input, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
-	ggthx.GGTHXAdvanceFrame(session)
+	ggthx.AdvanceFrame(session)
 }
 
 func (g *Game) UpdateByInputs(inputs Input) {
@@ -190,7 +190,7 @@ func advanceFrame(flags int) bool {
 
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
-	inputs, result := ggthx.GGTHXSynchronizeInput(session, &discconectFlags)
+	inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
 	if result != ggthx.GGTHX_OK {
 		log.Fatal("Error from GGTHXSynchronizeInput")
 	}
@@ -245,15 +245,15 @@ func init() {
 	callbacks.OnEvent = onEvent
 	callbacks.SaveGameState = saveGameState
 	var result ggthx.GGTHXErrorCode
-	session, result = ggthx.GGTHXStartSyncTest(&callbacks, "Test", 2, 4, 8)
+	session, result = ggthx.StartSyncTest(&callbacks, "Test", 2, 4, 8)
 	if result != ggthx.GGTHX_OK {
 		log.Fatalf("There's an issue / \n ")
 	}
 
-	ggthx.GGTHXSetDisconnectTimeout(session, 3000)
-	ggthx.GGTHXSetDisconnectNotifyStart(session, 1000)
+	ggthx.SetDisconnectTimeout(session, 3000)
+	ggthx.SetDisconnectNotifyStart(session, 1000)
 	var handle ggthx.GGTHXPlayerHandle
 	var player ggthx.GGTHXPlayer
-	ggthx.GGTHXAddPlayer(session, &player, &handle)
-	ggthx.GGTHXSetFrameDelay(session, handle, 2)
+	ggthx.AddPlayer(session, &player, &handle)
+	ggthx.SetFrameDelay(session, handle, 2)
 }

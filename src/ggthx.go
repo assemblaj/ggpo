@@ -1,6 +1,6 @@
 package ggthx
 
-func GGTHXStartSession(
+func StartSession(
 	session GGTHXSession,
 	cb GGTHXSessionCallbacks,
 	game string,
@@ -10,7 +10,7 @@ func GGTHXStartSession(
 	return GGTHX_OK
 }
 
-func GGTHXAddPlayer(ggthx GGTHXSession,
+func AddPlayer(ggthx GGTHXSession,
 	player *GGTHXPlayer,
 	handle *GGTHXPlayerHandle) GGTHXErrorCode {
 	if ggthx == nil {
@@ -19,7 +19,7 @@ func GGTHXAddPlayer(ggthx GGTHXSession,
 	return ggthx.AddPlayer(player, handle)
 }
 
-func GGTHXStartSyncTest(
+func StartSyncTest(
 	cb *GGTHXSessionCallbacks,
 	game string,
 	numPlayers int,
@@ -29,7 +29,7 @@ func GGTHXStartSyncTest(
 	return &ggthx, GGTHX_OK
 }
 
-func GGTHXSetFrameDelay(ggthx GGTHXSession,
+func SetFrameDelay(ggthx GGTHXSession,
 	player GGTHXPlayerHandle,
 	frameDelay int) GGTHXErrorCode {
 	if ggthx == nil {
@@ -38,56 +38,56 @@ func GGTHXSetFrameDelay(ggthx GGTHXSession,
 	return ggthx.SetFrameDelay(player, frameDelay)
 }
 
-func GGTHXIdle(ggthx GGTHXSession, timeout int) GGTHXErrorCode {
+func Idle(ggthx GGTHXSession, timeout int) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.DoPoll(timeout)
 }
 
-func GGTHXAddLocalInput(ggthx GGTHXSession, player GGTHXPlayerHandle, values []byte, size int) GGTHXErrorCode {
+func AddLocalInput(ggthx GGTHXSession, player GGTHXPlayerHandle, values []byte, size int) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.AddLocalInput(player, values, size)
 }
 
-func GGTHXSynchronizeInput(ggthx GGTHXSession, disconnectFlags *int) ([]byte, GGTHXErrorCode) {
+func SynchronizeInput(ggthx GGTHXSession, disconnectFlags *int) ([]byte, GGTHXErrorCode) {
 	if ggthx == nil {
 		return nil, GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.SyncInput(disconnectFlags)
 }
 
-func GGTHXDisconnectPlayer(ggthx GGTHXSession, player GGTHXPlayerHandle) GGTHXErrorCode {
+func DisconnectPlayer(ggthx GGTHXSession, player GGTHXPlayerHandle) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.DisconnectPlayer(&player)
 }
 
-func GGTHXAdvanceFrame(ggthx GGTHXSession) GGTHXErrorCode {
+func AdvanceFrame(ggthx GGTHXSession) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.IncrementFrame()
 }
 
-func GGTHXClientChat(ggthx GGTHXSession, text string) GGTHXErrorCode {
+func ClientChat(ggthx GGTHXSession, text string) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.Chat(text)
 }
 
-func GGTHXGetNetworkStats(ggthx GGTHXSession, player GGTHXPlayerHandle, stats *GGTHXNetworkStats) GGTHXErrorCode {
+func GetNetworkStats(ggthx GGTHXSession, player GGTHXPlayerHandle, stats *GGTHXNetworkStats) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.GetNetworkStats(stats, player)
 }
 
-func GGTHXCloseSession(ggthx GGTHXSession) GGTHXErrorCode {
+func CloseSession(ggthx GGTHXSession) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
@@ -95,21 +95,21 @@ func GGTHXCloseSession(ggthx GGTHXSession) GGTHXErrorCode {
 	return GGTHX_OK
 }
 
-func GGTHXSetDisconnectTimeout(ggthx GGTHXSession, timeout int) GGTHXErrorCode {
+func SetDisconnectTimeout(ggthx GGTHXSession, timeout int) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.SetDisconnectTimeout(timeout)
 }
 
-func GGTHXSetDisconnectNotifyStart(ggthx GGTHXSession, timeout int) GGTHXErrorCode {
+func SetDisconnectNotifyStart(ggthx GGTHXSession, timeout int) GGTHXErrorCode {
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
 	return ggthx.SetDisconnectNotifyStart(timeout)
 }
 
-func GGTHXSartSpectating(cb *GGTHXSessionCallbacks,
+func SartSpectating(cb *GGTHXSessionCallbacks,
 	gameName string, lcaolPort int, numPlayers int, inputSize int, hostIp string, hostPort int) (*SpectatorBackend, GGTHXErrorCode) {
 	ggthx := NewSpectatorBackend(cb, gameName, lcaolPort, numPlayers, inputSize, hostIp, hostPort)
 	return &ggthx, GGTHX_OK
