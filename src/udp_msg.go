@@ -118,6 +118,7 @@ func NewUdpMsg(t UdpMsgType) UdpMsg {
 			MessageType: messageType,
 			Input:       UdpInputPacket{}}
 	case KeepAliveMsg:
+		fallthrough
 	default:
 		msg = UdpMsg{
 			Header:      header,
@@ -160,7 +161,8 @@ func (u *UdpMsg) PaylaodSize() int {
 		size += int(unsafe.Sizeof(u.Input.AckFrame))
 		size += int(unsafe.Sizeof(u.Input.NumBits))
 		size += int(unsafe.Sizeof(u.Input.InputSize))
-		size += int(u.Input.NumBits) + 7/8
+		size += int(u.Input.NumBits+7) / 8
+		return size
 	}
 	Assert(false)
 	return 0

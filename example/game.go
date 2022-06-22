@@ -15,13 +15,18 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-var session *ggthx.SyncTestBackend
+//var session *ggthx.SyncTestBackend
+var session *ggthx.Peer2PeerBackend
 var callbacks ggthx.GGTHXSessionCallbacks
 var player1 Player
 var player2 Player
 var game *Game
 var start, next, now int
 var playerInputs []Input
+
+var localPort, numPlayers int
+
+const FRAME_DELAY int = 2
 
 var currentPlayer int = 1
 
@@ -52,44 +57,40 @@ func (g *Game) RunFrame() {
 
 	result := ggthx.AddLocalInput(session, ggthx.GGTHXPlayerHandle(currentPlayer), buffer, len(buffer))
 	if ggthx.GGTHX_SUCESS(result) {
-		var values []byte
+		var values [][]byte
 		disconnectFlags := 0
 
 		values, result = ggthx.SynchronizeInput(session, &disconnectFlags)
 		if ggthx.GGTHX_SUCESS(result) {
-			var buf bytes.Buffer = *bytes.NewBuffer(values)
-			dec := gob.NewDecoder(&buf)
-			err := dec.Decode(&input)
-			if err != nil {
-				log.Fatal("decode error:", err)
-			}
-			g.AdvanceFrame(input, disconnectFlags)
+			inputs := decodeInputs(values)
+			g.AdvanceFrame(inputs, disconnectFlags)
 		}
 	}
 }
 
-func (g *Game) AdvanceFrame(inputs Input, disconnectFlags int) {
+func (g *Game) AdvanceFrame(inputs []Input, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
 	ggthx.AdvanceFrame(session)
 }
 
-func (g *Game) UpdateByInputs(inputs Input) {
-	for _, v := range inputs.Key {
-		if ebiten.Key(v) == ebiten.KeyArrowUp {
-			g.Players[inputs.PlayerNum-1].Y--
-		}
-		if ebiten.Key(v) == ebiten.KeyArrowDown {
-			g.Players[inputs.PlayerNum-1].Y++
-		}
-		if ebiten.Key(v) == ebiten.KeyArrowLeft {
-			g.Players[inputs.PlayerNum-1].X--
-		}
-		if ebiten.Key(v) == ebiten.KeyArrowRight {
-			g.Players[inputs.PlayerNum-1].X++
-		}
+func (g *Game) UpdateByInputs(inputs []Input) {
+	for _, input := range inputs {
+		for _, v := range input.Key {
+			if ebiten.Key(v) == ebiten.KeyArrowUp {
+				g.Players[input.PlayerNum-1].Y--
+			}
+			if ebiten.Key(v) == ebiten.KeyArrowDown {
+				g.Players[input.PlayerNum-1].Y++
+			}
+			if ebiten.Key(v) == ebiten.KeyArrowLeft {
+				g.Players[input.PlayerNum-1].X--
+			}
+			if ebiten.Key(v) == ebiten.KeyArrowRight {
+				g.Players[input.PlayerNum-1].X++
+			}
 
+		}
 	}
-
 }
 
 func (g *Game) ReadInputs() Input {
@@ -233,12 +234,10 @@ func onEvent(info *ggthx.GGTHXEvent) bool {
 	return true
 }
 
-func init() {
+func Game_Init(localPort int, numPlayers int, players []ggthx.GGTHXPlayer, numSpectators int) {
+	var result ggthx.GGTHXErrorCode
+	var inputSize int = len(encodeInputs(Input{}))
 
-	// have to register everything with gob, maybe automate this?
-	// have to inititalize all arrays
-	gob.Register(color.RGBA{})
-	gob.Register(Input{})
 	callbacks.AdvanceFrame = advanceFrame
 	callbacks.BeginGame = beginGame
 	callbacks.FreeBuffer = freeBuffer
@@ -246,16 +245,33 @@ func init() {
 	callbacks.LogGameState = logGameState
 	callbacks.OnEvent = onEvent
 	callbacks.SaveGameState = saveGameState
-	var result ggthx.GGTHXErrorCode
-	session, result = ggthx.StartSyncTest(&callbacks, "Test", 2, 4, 1)
+
+	session, result = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
 	if result != ggthx.GGTHX_OK {
 		log.Fatalf("There's an issue / \n ")
 	}
 
 	ggthx.SetDisconnectTimeout(session, 3000)
 	ggthx.SetDisconnectNotifyStart(session, 1000)
-	var handle ggthx.GGTHXPlayerHandle
-	var player ggthx.GGTHXPlayer
-	ggthx.AddPlayer(session, &player, &handle)
-	ggthx.SetFrameDelay(session, handle, 2)
+
+	for i := 0; i < numPlayers+numSpectators; i++ {
+		var handle ggthx.GGTHXPlayerHandle
+		result = ggthx.AddPlayer(session, &players[i], &handle)
+		if result != ggthx.GGTHX_OK {
+			log.Fatalf("There's an issue from AddPlayer")
+		}
+		if players[i].PlayerType == ggthx.GGTHX_PLAYERTYPE_LOCAL {
+			ggthx.SetFrameDelay(session, handle, FRAME_DELAY)
+
+		}
+	}
+}
+
+func init() {
+
+	// have to register everything with gob, maybe automate this?
+	// have to inititalize all arrays
+	gob.Register(color.RGBA{})
+	gob.Register(Input{})
+
 }

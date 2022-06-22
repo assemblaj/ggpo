@@ -2,7 +2,6 @@ package ggthx
 
 import (
 	"log"
-	"strconv"
 )
 
 const SPECTATOR_FRAME_BUFFER_SIZE int = 64
@@ -34,10 +33,10 @@ func NewSpectatorBackend(cb *GGTHXSessionCallbacks,
 		i.Frame = -1
 	}
 	s.inputs = inputs
-	port := strconv.Itoa(hostPort)
-	s.udp = NewUdp(hostIp, port, &s.poll, &s)
+	//port := strconv.Itoa(hostPort)
+	s.udp = NewUdp(hostIp, hostPort, &s.poll, &s)
 	s.host = NewUdpProtocol(&s.udp, &s.poll, 0, hostIp, nil)
-
+	s.poll = NewPoll()
 	s.callbacks.BeginGame(gameName)
 	return s
 }

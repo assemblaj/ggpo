@@ -22,20 +22,22 @@ func NewInput() Input {
 	return Input{}
 }
 
-func decodeInputs(buffer []byte) Input {
-	var input Input
-	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
-	dec := gob.NewDecoder(&buf)
-	err := dec.Decode(&input)
-	if err != nil {
-		log.Printf("decode error: %s. Returning empty input\n", err)
-		// hack
-		input = NewInput()
-		panic("eof")
-	} else {
-		log.Printf("inputs properly encoded: %s\n", input)
+func decodeInputs(buffer [][]byte) []Input {
+	var inputs = make([]Input, len(buffer))
+	for i, b := range buffer {
+		var buf bytes.Buffer = *bytes.NewBuffer(b)
+		dec := gob.NewDecoder(&buf)
+		err := dec.Decode(&inputs[i])
+		if err != nil {
+			log.Printf("decode error: %s. Returning empty input\n", err)
+			// hack
+			inputs[i] = NewInput()
+			//panic("eof")
+		} else {
+			log.Printf("inputs properly encoded: %s\n", inputs[i])
+		}
 	}
-	return input
+	return inputs
 }
 
 func encodeInputs(inputs Input) []byte {

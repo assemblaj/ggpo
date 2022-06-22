@@ -117,12 +117,13 @@ func (s *Sync) AddRemoteInput(queue int, input *GameInput) {
 // originally took in a void ptr buffer and filled it with input
 // maybe i should return that the filled buffer instead idk
 // used by p2pbackend
-func (s Sync) GetConfirmedInputs(size int, frame int) ([]byte, int) {
+func (s Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 	disconnectFlags := 0
 
-	Assert(size >= s.config.numPlayers*s.config.inputSize)
+	//Assert(size >= s.config.numPlayers*s.config.inputSize)
 
-	values := make([]byte, size)
+	//values := make([]byte, size)
+	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
 		if s.localConnectStatus[i].Disconnected > 0 && frame > s.localConnectStatus[i].LastFrame {
@@ -132,18 +133,19 @@ func (s Sync) GetConfirmedInputs(size int, frame int) ([]byte, int) {
 			s.inputQueues[i].GetConfirmedInput(frame, &input)
 		}
 		// this was originally a memcpy
-		values = append(values, input.Bits...)
+		values = append(values, input.Bits)
 	}
 	return values, disconnectFlags
 }
 
 // used by p2pbackend
-func (s Sync) SynchronizeInputs(size int) ([]byte, int) {
+func (s Sync) SynchronizeInputs() ([][]byte, int) {
 	disconnectFlags := 0
 
-	Assert(size >= s.config.numPlayers*s.config.inputSize)
+	//Assert(size >= s.config.numPlayers*s.config.inputSize)
 
-	values := make([]byte, size)
+	//values := make([]byte, size)
+	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
 		if s.localConnectStatus[i].Disconnected > 0 && s.frameCount > s.localConnectStatus[i].LastFrame {
@@ -152,7 +154,7 @@ func (s Sync) SynchronizeInputs(size int) ([]byte, int) {
 		} else {
 			s.inputQueues[i].GetInput(s.frameCount, &input)
 		}
-		values = append(values, input.Bits...)
+		values = append(values, input.Bits)
 	}
 	return values, disconnectFlags
 }

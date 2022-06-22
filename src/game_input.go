@@ -12,19 +12,22 @@ const GAMEINPUT_MAX_PLAYERS int = 2
 const NullFrame int = -1
 
 type GameInput struct {
-	Frame int
-	Size  int
-	Bits  []byte
+	Frame  int
+	Size   int
+	Bits   []byte
+	Inputs [][]byte
 }
 
 // Will come back to this if the needing the offset becomes a thing
 func NewGameInput(frame int, bits []byte, size int, offset ...int) GameInput {
+
 	Assert(size > 0)
+	/* Not useful for our purposes
 	if len(offset) == 0 {
 		Assert(size <= GAMEINPUT_MAX_BYTES*GAMEINPUT_MAX_PLAYERS)
 	} else {
 		Assert(size <= GAMEINPUT_MAX_BYTES)
-	}
+	}*/
 	return GameInput{
 		Frame: frame,
 		Size:  size,

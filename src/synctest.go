@@ -62,10 +62,10 @@ func (s *SyncTestBackend) DoPoll(timeout int) GGTHXErrorCode {
 }
 
 func (s *SyncTestBackend) AddPlayer(player *GGTHXPlayer, handle *GGTHXPlayerHandle) GGTHXErrorCode {
-	if player.playerNum < 1 || player.playerNum > s.numPlayers {
+	if player.PlayerNum < 1 || player.PlayerNum > s.numPlayers {
 		return GGTHX_ERRORCODE_PLAYER_OUT_OF_RANGE
 	}
-	*handle = (GGTHXPlayerHandle(player.playerNum - 1))
+	*handle = (GGTHXPlayerHandle(player.PlayerNum - 1))
 	return GGTHX_OK
 }
 
@@ -83,7 +83,7 @@ func (s *SyncTestBackend) AddLocalInput(player GGTHXPlayerHandle, values []byte,
 	return GGTHX_OK
 }
 
-func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([]byte, GGTHXErrorCode) {
+func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, GGTHXErrorCode) {
 	if s.rollingBack {
 		s.lastInput = s.savedFrames.Front().input
 	} else {
@@ -98,7 +98,7 @@ func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([]byte, GGTHXErrorCod
 	if *discconectFlags > 0 {
 		*discconectFlags = 0
 	}
-	return values, GGTHX_OK
+	return [][]byte{values}, GGTHX_OK
 }
 
 func (s *SyncTestBackend) IncrementFrame() GGTHXErrorCode {

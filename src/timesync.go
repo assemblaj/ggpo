@@ -1,6 +1,8 @@
 package ggthx
 
-import "log"
+import (
+	"log"
+)
 
 const FRAME_WINDOW_SIZE int = 40
 const MIN_UNIQUE_FRAMES int = 10
@@ -18,6 +20,7 @@ func NewTimeSync() TimeSync {
 	return TimeSync{
 		local:          make([]int, FRAME_WINDOW_SIZE),
 		remote:         make([]int, FRAME_WINDOW_SIZE),
+		lastInputs:     make([]GameInput, MIN_UNIQUE_FRAMES),
 		nextPrediction: FRAME_WINDOW_SIZE * 3,
 	}
 }

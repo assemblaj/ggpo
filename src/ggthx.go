@@ -1,13 +1,13 @@
 package ggthx
 
 func StartSession(
-	session GGTHXSession,
-	cb GGTHXSessionCallbacks,
+	cb *GGTHXSessionCallbacks,
 	game string,
 	numPlayers int,
 	inputSize int,
-	localPort uint16) GGTHXErrorCode {
-	return GGTHX_OK
+	localPort int) (*Peer2PeerBackend, GGTHXErrorCode) {
+	ggthx := NewPeer2PeerBackend(cb, game, localPort, numPlayers, inputSize)
+	return &ggthx, GGTHX_OK
 }
 
 func AddPlayer(ggthx GGTHXSession,
@@ -52,7 +52,7 @@ func AddLocalInput(ggthx GGTHXSession, player GGTHXPlayerHandle, values []byte, 
 	return ggthx.AddLocalInput(player, values, size)
 }
 
-func SynchronizeInput(ggthx GGTHXSession, disconnectFlags *int) ([]byte, GGTHXErrorCode) {
+func SynchronizeInput(ggthx GGTHXSession, disconnectFlags *int) ([][]byte, GGTHXErrorCode) {
 	if ggthx == nil {
 		return nil, GGTHX_ERRORCODE_INVALID_SESSION
 	}
@@ -63,7 +63,7 @@ func DisconnectPlayer(ggthx GGTHXSession, player GGTHXPlayerHandle) GGTHXErrorCo
 	if ggthx == nil {
 		return GGTHX_ERRORCODE_INVALID_SESSION
 	}
-	return ggthx.DisconnectPlayer(&player)
+	return ggthx.DisconnectPlayer(player)
 }
 
 func AdvanceFrame(ggthx GGTHXSession) GGTHXErrorCode {

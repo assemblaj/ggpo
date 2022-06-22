@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"log"
 	"net"
+	"strconv"
 )
 
 const MAX_UDP_ENDPOINTS int = 16
@@ -16,6 +17,7 @@ type Udp struct {
 	socket    net.Conn
 	callbacks UdpCallbacks
 	poll      Poll
+	listener  net.PacketConn
 }
 
 type UdpStats struct {
@@ -49,14 +51,18 @@ func (u *Udp) Close() {
 // Which is called by backend::AddPlayer
 // which is called by Session:AddPlayer
 // and obtained via the GGPOPlayer object
-func NewUdp(ipAdress string, port string, p *Poll, callbacks UdpCallbacks) Udp {
+func NewUdp(ipAdress string, port int, p *Poll, callbacks UdpCallbacks) Udp {
 	u := Udp{}
 	u.callbacks = callbacks
 	u.poll = *p
 	u.poll.RegisterLoop(&u, nil)
 
-	log.Printf("binding udp socket to port %s.\n", port)
-	u.socket = u.CreateSocket(ipAdress, port, 0)
+	portStr := strconv.Itoa(port)
+
+	log.Printf("binding udp socket to port %d.\n", port)
+	u.socket = u.CreateSocket(ipAdress, portStr, 0)
+	u.listener, _ = net.ListenPacket("udp", ipAdress+":"+portStr)
+
 	return u
 }
 
@@ -73,14 +79,16 @@ func (u *Udp) SendTo(msg *UdpMsg) {
 	u.socket.Write(buf.Bytes())
 }
 
-func (u *Udp) OnLoopPoll(cookie []byte) bool {
+func (u *Udp) Read() {
 	recvBuf := make([]byte, MAX_UDP_PACKET_SIZE)
+	for {
+		len, _, err := u.listener.ReadFrom(recvBuf)
 
-	for true {
-		len, err := u.socket.Read(recvBuf)
 		if err != nil {
 			log.Printf("conn.Read error returned: %s\n", err)
 			break
+		} else if len <= 0 {
+			log.Printf("no data recieved\n")
 		} else if len > 0 {
 			log.Printf("recvfrom returned (len:%d  from:%s).\n", len, u.socket.RemoteAddr())
 			buf := bytes.NewBuffer(recvBuf)
@@ -93,5 +101,12 @@ func (u *Udp) OnLoopPoll(cookie []byte) bool {
 		}
 
 	}
+}
+
+func (u *Udp) OnLoopPoll(cookie []byte) bool {
 	return true
+}
+
+func (u *Udp) IsInitialized() bool {
+	return u.socket != nil
 }

@@ -27,8 +27,9 @@ type InputQueue struct {
 
 func NewInputQueue(id int, inputSize int) InputQueue {
 	inputs := make([]GameInput, INPUT_QUEUE_LENGTH)
-	for _, v := range inputs {
-		v.Size = inputSize
+	for i, _ := range inputs {
+		inputs[i] = NewGameInput(-1, nil, inputSize)
+
 	}
 
 	return InputQueue{
@@ -141,7 +142,6 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) bool {
 
 func (i *InputQueue) AddInput(input *GameInput) {
 	var newFrame int
-
 	log.Printf("adding input frame number %d to queue.\n", input.Frame)
 
 	Assert(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1)
@@ -158,7 +158,7 @@ func (i *InputQueue) AddInput(input *GameInput) {
 func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) {
 	log.Printf("adding delayed input frame number %d to queue.\n", frameNumber)
 
-	Assert(input.Size == i.prediction.Size)
+	// Assert(input.Size == i.prediction.Size) No
 	Assert(i.lastAddedFrame == NullFrame || frameNumber == i.lastAddedFrame+1)
 	Assert(frameNumber == 0 || i.inputs[previousFrame(i.head)].Frame == frameNumber-1)
 

@@ -16,14 +16,33 @@ const (
 )
 
 type GGTHXPlayer struct {
-	size       int
-	playerType GGTHXPlayerType
-	playerNum  int
-	remote     GGTHXRemotePlayer
+	Size       int
+	PlayerType GGTHXPlayerType
+	PlayerNum  int
+	Remote     GGTHXRemotePlayer
 }
+
+func NewLocalPlayer(size int, playerNum int) GGTHXPlayer {
+	return GGTHXPlayer{
+		Size:       size,
+		PlayerNum:  playerNum,
+		PlayerType: GGTHX_PLAYERTYPE_LOCAL}
+}
+
+func NewRemotePlayer(size int, playerNum int, ipAdress string, port int) GGTHXPlayer {
+	return GGTHXPlayer{
+		Size:       size,
+		PlayerNum:  playerNum,
+		PlayerType: GGTHX_PLAYERTYPE_REMOTE,
+		Remote: GGTHXRemotePlayer{
+			IpAdress: ipAdress,
+			Port:     port},
+	}
+}
+
 type GGTHXRemotePlayer struct {
-	ipAdress []byte
-	port     uint16
+	IpAdress string
+	Port     int
 }
 
 type GGTHXLocalEndpoint struct {
