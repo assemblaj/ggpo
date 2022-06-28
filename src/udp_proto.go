@@ -2,6 +2,7 @@ package ggthx
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -25,6 +26,7 @@ type UdpProtocol struct {
 	// Network transmission information
 	udp               Udp
 	peerAddress       string
+	peerPort          int
 	magicNumber       uint16
 	queue             int
 	remoteMagicNumber uint16
@@ -158,12 +160,18 @@ type QueueEntry struct {
 	queueTime int
 	destIp    string
 	msg       *UdpMsg
+	destPort  int
 }
 
-func NewQueEntry(time int, destIp string, m *UdpMsg) QueueEntry {
+func (q QueueEntry) String() string {
+	return fmt.Sprintf("Entry : queueTime %d destIp %s msg %s", q.queueTime, q.destIp, *q.msg)
+}
+
+func NewQueEntry(time int, destIp string, destPort int, m *UdpMsg) QueueEntry {
 	return QueueEntry{
 		queueTime: time,
 		destIp:    destIp,
+		destPort:  destPort,
 		msg:       m,
 	}
 }
@@ -174,7 +182,7 @@ type OoPacket struct {
 	msg      *UdpMsg
 }
 
-func NewUdpProtocol(udp *Udp, poll *Poll, queue int, ip string, status []UdpConnectStatus) UdpProtocol {
+func NewUdpProtocol(udp *Udp, poll *Poll, queue int, ip string, port int, status []UdpConnectStatus) UdpProtocol {
 	var magicNumber uint16
 	for {
 		magicNumber = uint16(rand.Int())
@@ -192,6 +200,7 @@ func NewUdpProtocol(udp *Udp, poll *Poll, queue int, ip string, status []UdpConn
 		localConnectStatus: status,
 		peerConnectStatus:  peerConnectStatus,
 		peerAddress:        ip,
+		peerPort:           port,
 		magicNumber:        magicNumber,
 		pendingOutput:      NewRingBuffer[GameInput](64),
 		sendQueue:          NewRingBuffer[QueueEntry](64),
@@ -381,7 +390,7 @@ func (u *UdpProtocol) SendMsg(msg *UdpMsg) {
 		panic("peerAdress empty, why?")
 	}
 	u.sendQueue.Push(NewQueEntry(
-		int(time.Now().UnixMilli()), u.peerAddress, msg))
+		int(time.Now().UnixMilli()), u.peerAddress, u.peerPort, msg))
 	u.PumpSendQueue()
 }
 
@@ -519,7 +528,7 @@ func (u *UdpProtocol) PumpSendQueue() {
 		} else {
 			Assert(entry.destIp != "")
 
-			u.udp.SendTo(entry.msg)
+			u.udp.SendTo(entry.msg, entry.destIp, entry.destPort)
 
 			// would delete the udpmsg here
 		}
@@ -527,8 +536,8 @@ func (u *UdpProtocol) PumpSendQueue() {
 	}
 	if u.ooPacket.msg != nil && u.ooPacket.sendTime < int(time.Now().UnixMilli()) {
 		log.Printf("sending rogue oop!")
-		u.udp.SendTo(u.ooPacket.msg)
-		// u.ooPacket = nil
+		u.udp.SendTo(u.ooPacket.msg, u.peerAddress, u.peerPort)
+		u.ooPacket.msg = nil
 	}
 }
 

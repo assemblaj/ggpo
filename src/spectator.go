@@ -19,7 +19,7 @@ type SpectatorBackend struct {
 }
 
 func NewSpectatorBackend(cb *GGTHXSessionCallbacks,
-	gameName string, lcaolPort int, numPlayers int, inputSize int, hostIp string, hostPort int) SpectatorBackend {
+	gameName string, localPort int, numPlayers int, inputSize int, hostIp string, hostPort int) SpectatorBackend {
 	s := SpectatorBackend{}
 	s.numPlayers = numPlayers
 	s.inputSize = inputSize
@@ -34,8 +34,8 @@ func NewSpectatorBackend(cb *GGTHXSessionCallbacks,
 	}
 	s.inputs = inputs
 	//port := strconv.Itoa(hostPort)
-	s.udp = NewUdp(hostIp, hostPort, &s.poll, &s)
-	s.host = NewUdpProtocol(&s.udp, &s.poll, 0, hostIp, nil)
+	s.udp = NewUdp("127.2.1.1", localPort, &s.poll, &s)
+	s.host = NewUdpProtocol(&s.udp, &s.poll, 0, hostIp, hostPort, nil)
 	s.poll = NewPoll()
 	s.callbacks.BeginGame(gameName)
 	return s

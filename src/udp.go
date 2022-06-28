@@ -51,16 +51,16 @@ func (u *Udp) Close() {
 // Which is called by backend::AddPlayer
 // which is called by Session:AddPlayer
 // and obtained via the GGPOPlayer object
-func NewUdp(ipAdress string, port int, p *Poll, callbacks UdpCallbacks) Udp {
+func NewUdp(ipAdress string, localPort int, p *Poll, callbacks UdpCallbacks) Udp {
 	u := Udp{}
 	u.callbacks = callbacks
 	u.poll = *p
 	u.poll.RegisterLoop(&u, nil)
 
-	portStr := strconv.Itoa(port)
+	portStr := strconv.Itoa(localPort)
 
-	log.Printf("binding udp socket to port %d.\n", port)
-	u.socket = u.CreateSocket(ipAdress, portStr, 0)
+	log.Printf("binding udp socket to port %d.\n", localPort)
+	//u.socket = u.CreateSocket(ipAdress, portStr, 0)
 	u.listener, _ = net.ListenPacket("udp", ipAdress+":"+portStr)
 
 	return u
@@ -69,20 +69,33 @@ func NewUdp(ipAdress string, port int, p *Poll, callbacks UdpCallbacks) Udp {
 // dst should be sockaddr
 // maybe create Gob encoder and decoder members
 // instead of creating them on each message send
-func (u *Udp) SendTo(msg *UdpMsg) {
+func (u *Udp) SendTo(msg *UdpMsg, remoteIp string, remotePort int) {
+	//
+	if msg == nil || remoteIp == "" {
+		return
+	}
+
+	remotePortStr := strconv.Itoa(remotePort)
+	conn, conErr := net.Dial("udp", remoteIp+":"+remotePortStr)
+	if conErr != nil {
+		log.Fatal("Udp dial error ", conErr)
+	}
+	defer conn.Close()
+
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(msg)
-	if err != nil {
-		log.Fatal("encode error ", err)
+	encErr := enc.Encode(msg)
+	if encErr != nil {
+		log.Fatal("encode error ", encErr)
 	}
-	u.socket.Write(buf.Bytes())
+	conn.Write(buf.Bytes())
 }
 
 func (u *Udp) Read() {
+	defer u.listener.Close()
 	recvBuf := make([]byte, MAX_UDP_PACKET_SIZE)
 	for {
-		len, _, err := u.listener.ReadFrom(recvBuf)
+		len, addr, err := u.listener.ReadFrom(recvBuf)
 
 		if err != nil {
 			log.Printf("conn.Read error returned: %s\n", err)
@@ -90,7 +103,7 @@ func (u *Udp) Read() {
 		} else if len <= 0 {
 			log.Printf("no data recieved\n")
 		} else if len > 0 {
-			log.Printf("recvfrom returned (len:%d  from:%s).\n", len, u.socket.RemoteAddr())
+			log.Printf("recvfrom returned (len:%d  from:%s).\n", len, addr.String())
 			buf := bytes.NewBuffer(recvBuf)
 			dec := gob.NewDecoder(buf)
 			msg := UdpMsg{}
@@ -108,5 +121,5 @@ func (u *Udp) OnLoopPoll(cookie []byte) bool {
 }
 
 func (u *Udp) IsInitialized() bool {
-	return u.socket != nil
+	return u.listener != nil
 }

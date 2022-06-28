@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	ggthx "github.com/assemblaj/ggthx/src"
@@ -18,9 +19,9 @@ func main() {
 	if len(argsWithoutProg) < 5 {
 		panic("Must enter <port> <num players> ('local' |IP adress) ('local' |IP adress) currentPlayer")
 	}
-	var port, numPlayers int
+	var localPort, numPlayers, remotePort int
 	var err error
-	port, err = strconv.Atoi(argsWithoutProg[0])
+	localPort, err = strconv.Atoi(argsWithoutProg[0])
 	if err != nil {
 		panic("Plase enter integer port")
 	}
@@ -42,7 +43,16 @@ func main() {
 		if ipAddress[i] == "local" {
 			players[i] = ggthx.NewLocalPlayer(20, i+1)
 		} else {
-			players[i] = ggthx.NewRemotePlayer(20, i+1, ipAddress[i], port)
+			ipSlice := strings.Split(ipAddress[i], ":")
+			if len(ipSlice) < 2 {
+				panic("Please enter IP either as Local or ip:port")
+			}
+			remotePort, err = strconv.Atoi(ipSlice[1])
+			if err != nil {
+				panic("Plase enter integer port")
+			}
+
+			players[i] = ggthx.NewRemotePlayer(20, i+1, ipSlice[0], remotePort)
 		}
 	}
 
@@ -65,7 +75,7 @@ func main() {
 	now = start
 	next = start
 
-	Game_Init(port, numPlayers, players, 0)
+	Game_Init(localPort, numPlayers, players, 0)
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}

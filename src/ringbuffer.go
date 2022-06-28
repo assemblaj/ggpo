@@ -15,14 +15,16 @@ func NewRingBuffer[T any](capacity int) RingBuffer[T] {
 	}
 }
 
-func (r RingBuffer[T]) Front() T {
+func (r *RingBuffer[T]) Front() T {
 	Assert(r.size != r.capacity)
-	return r.elements[r.tail]
+	element := r.elements[r.tail]
+	return element
 }
 
-func (r RingBuffer[T]) Item(i int) T {
+func (r *RingBuffer[T]) Item(i int) T {
 	Assert(i < r.size)
-	return r.elements[(r.tail+i)%r.capacity]
+	element := r.elements[(r.tail+i)%r.capacity]
+	return element
 }
 
 // hmm this fails if its at its max size
@@ -40,10 +42,10 @@ func (r *RingBuffer[T]) Push(element T) {
 	r.size++
 }
 
-func (r RingBuffer[T]) Size() int {
+func (r *RingBuffer[T]) Size() int {
 	return r.size
 }
 
-func (r RingBuffer[T]) Empty() bool {
+func (r *RingBuffer[T]) Empty() bool {
 	return r.size == 0
 }

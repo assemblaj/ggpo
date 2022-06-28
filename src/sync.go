@@ -94,6 +94,7 @@ func (s *Sync) SetLastConfirmedFrame(frame int) {
 
 func (s *Sync) AddLocalInput(queue int, input *GameInput) bool {
 	framesBehind := s.frameCount - s.lastConfirmedFrame
+
 	if s.frameCount >= s.maxPredictionFrames && framesBehind >= s.maxPredictionFrames {
 		log.Printf("Rejecting input from emulator: reached prediction barrier.\n")
 		return false

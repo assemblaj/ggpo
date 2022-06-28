@@ -60,7 +60,7 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) int {
 	// Both clients agree that we're the one ahead.  Split
 	// the difference between the two to figure out how long to
 	// sleep for.
-	sleepFrames := (int)(((radvantage - advantage) / 2) + 0.5)
+	sleepFrames := int(((radvantage - advantage) / 2) + 0.5)
 
 	log.Printf("iteration %d:  sleep frames is %d\n", count, sleepFrames)
 

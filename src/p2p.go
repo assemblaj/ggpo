@@ -32,7 +32,7 @@ type Peer2PeerBackend struct {
 }
 
 func NewPeer2PeerBackend(cb *GGTHXSessionCallbacks, gameName string,
-	lcaolPort int, numPlayers int, inputSize int) Peer2PeerBackend {
+	localPort int, numPlayers int, inputSize int) Peer2PeerBackend {
 	p := Peer2PeerBackend{}
 	p.numPlayers = numPlayers
 	p.inputSize = inputSize
@@ -41,6 +41,7 @@ func NewPeer2PeerBackend(cb *GGTHXSessionCallbacks, gameName string,
 	p.disconnectTimeout = DEFAULT_DISCONNECT_TIMEOUT
 	p.disconnectNotifyStart = DEFAULT_DISCONNECT_NOTIFY_START
 	p.poll = NewPoll()
+	p.udp = NewUdp("127.0.0.1", localPort, &p.poll, &p)
 
 	p.localConnectStatus = make([]UdpConnectStatus, UDP_MSG_MAX_PLAYERS)
 	for i := 0; i < len(p.localConnectStatus); i++ {
@@ -54,6 +55,8 @@ func NewPeer2PeerBackend(cb *GGTHXSessionCallbacks, gameName string,
 	p.sync = NewSync(p.localConnectStatus, &config)
 	p.endpoints = make([]UdpProtocol, numPlayers)
 	p.callbacks.BeginGame(gameName)
+	go p.udp.Read()
+
 	return p
 }
 
@@ -219,18 +222,16 @@ func (p *Peer2PeerBackend) PollNPlayers(currentFrame int) int {
 func (p *Peer2PeerBackend) AddRemotePlayer(ip string, port int, queue int) {
 	p.synchronizing = true
 
-	udp := NewUdp(ip, port, &p.poll, p)
-	p.endpoints[queue] = NewUdpProtocol(&udp, &p.poll, queue, ip, p.localConnectStatus)
+	p.endpoints[queue] = NewUdpProtocol(&p.udp, &p.poll, queue, ip, port, p.localConnectStatus)
 	// have to reqgister the loop from here or else the Poll won't see changed state
 	// that we've initiated.
 	p.poll.RegisterLoop(&(p.endpoints[queue]), nil)
 
 	// actually this DoPoll wouldn't run at all if it wasn't called from here.
-	p.poll.RegisterLoop(&udp, nil)
+	//p.poll.RegisterLoop(&udp, nil)
 	p.endpoints[queue].SetDisconnectTimeout(p.disconnectTimeout)
 	p.endpoints[queue].SetDisconnectNotifyStart(p.disconnectNotifyStart)
 	p.endpoints[queue].Synchronize()
-	go udp.Read()
 }
 
 func (p *Peer2PeerBackend) AddSpectator(ip string, port int) GGTHXErrorCode {
@@ -244,7 +245,7 @@ func (p *Peer2PeerBackend) AddSpectator(ip string, port int) GGTHXErrorCode {
 	queue := p.numSpectators
 	p.numSpectators++
 	udp := NewUdp(ip, port, &p.poll, p)
-	p.spectators[queue] = NewUdpProtocol(&udp, &p.poll, queue+1000, ip, p.localConnectStatus)
+	p.spectators[queue] = NewUdpProtocol(&udp, &p.poll, queue+1000, ip, port, p.localConnectStatus)
 	p.poll.RegisterLoop(&(p.spectators[queue]), nil)
 	p.spectators[queue].SetDisconnectTimeout(p.disconnectTimeout)
 	p.spectators[queue].SetDisconnectNotifyStart(p.disconnectNotifyStart)
