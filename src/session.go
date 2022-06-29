@@ -4,17 +4,17 @@ package ggthx
 	Remember to
 */
 type Session interface {
-	DoPoll(timeout int) (ErrorCode, error)
-	AddPlayer(player *Player, handle *PlayerHandle) ErrorCode
-	AddLocalInput(player PlayerHandle, values []byte, size int) ErrorCode
-	SyncInput(disconnect_flags *int) ([][]byte, ErrorCode)
-	IncrementFrame() ErrorCode
-	Chat(text string) ErrorCode
-	DisconnectPlayer(handle PlayerHandle) ErrorCode
-	GetNetworkStats(stats *NetworkStats, handle PlayerHandle) ErrorCode
-	Logv(format string, args ...int) ErrorCode
-	SetFrameDelay(player PlayerHandle, delay int) ErrorCode
-	SetDisconnectTimeout(timeout int) ErrorCode
-	SetDisconnectNotifyStart(timeout int) ErrorCode
-	Close() ErrorCode
+	DoPoll(timeout int) error
+	AddPlayer(player *Player, handle *PlayerHandle) error
+	AddLocalInput(player PlayerHandle, values []byte, size int) error
+	SyncInput(disconnect_flags *int) ([][]byte, error)
+	IncrementFrame() error
+	Chat(text string) error
+	DisconnectPlayer(handle PlayerHandle) error
+	GetNetworkStats(stats *NetworkStats, handle PlayerHandle) error
+	Logv(format string, args ...int) error
+	SetFrameDelay(player PlayerHandle, delay int) error
+	SetDisconnectTimeout(timeout int) error
+	SetDisconnectNotifyStart(timeout int) error
+	Close() error
 }

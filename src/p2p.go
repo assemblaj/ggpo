@@ -63,16 +63,16 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	return p
 }
 
-func (p *Peer2PeerBackend) Close() ErrorCode {
+func (p *Peer2PeerBackend) Close() error {
 	for _, e := range p.endpoints {
 		e.Close()
 	}
 	for _, s := range p.spectators {
 		s.Close()
 	}
-	return Ok
+	return nil
 }
-func (p *Peer2PeerBackend) DoPoll(timeout int) (ErrorCode, error) {
+func (p *Peer2PeerBackend) DoPoll(timeout int) error {
 	if !p.sync.InRollback() {
 		p.poll.Pump(0)
 
@@ -97,7 +97,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) (ErrorCode, error) {
 			log.Printf("last confirmed frame in p2p backend is %d.\n", totalMinConfirmed)
 			if totalMinConfirmed >= 0 {
 				if totalMinConfirmed == math.MaxInt {
-					return ErrorCodeGeneralFailure, errors.New("totalMinConfirmed == math.MaxInt")
+					return Error{Code: ErrorCodeGeneralFailure, Name: "ErrorCodeGeneralFailure"}
 				}
 				if p.numSpectators > 0 {
 					for p.nextSpectatorFrame <= totalMinConfirmed {
@@ -138,7 +138,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) (ErrorCode, error) {
 			}
 		}
 	}
-	return Ok, nil
+	return nil
 }
 
 // Checks each endpoint to see if it's running (i.e we haven't called Synchronize or Disconnect
@@ -239,13 +239,13 @@ func (p *Peer2PeerBackend) AddRemotePlayer(ip string, port int, queue int) {
 	p.endpoints[queue].Synchronize()
 }
 
-func (p *Peer2PeerBackend) AddSpectator(ip string, port int) ErrorCode {
+func (p *Peer2PeerBackend) AddSpectator(ip string, port int) error {
 	if p.numSpectators == MaxSpectators {
-		return ErrorCodeTooManySpectators
+		return Error{Code: ErrorCodeTooManySpectators, Name: "ErrorCodeTooManySpectators"}
 	}
 	// Currently, we can only add spectators before the game starts.
 	if !p.synchronizing {
-		return ErrorCodeInvalidRequest
+		return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 	}
 	queue := p.numSpectators
 	p.numSpectators++
@@ -256,19 +256,19 @@ func (p *Peer2PeerBackend) AddSpectator(ip string, port int) ErrorCode {
 	p.spectators[queue].SetDisconnectNotifyStart(p.disconnectNotifyStart)
 	p.spectators[queue].Synchronize()
 
-	return Ok
+	return nil
 }
 
 // Adds player or spectator
 // Maps to top level API function
-func (p *Peer2PeerBackend) AddPlayer(player *Player, handle *PlayerHandle) ErrorCode {
+func (p *Peer2PeerBackend) AddPlayer(player *Player, handle *PlayerHandle) error {
 	if player.PlayerType == PlayerTypeSpectator {
 		return p.AddSpectator(player.Remote.IpAdress, player.Remote.Port)
 	}
 
 	queue := player.PlayerNum - 1
 	if player.PlayerNum < 1 || player.PlayerNum > p.numPlayers {
-		return ErrorCodePlayerOutOfRange
+		return Error{Code: ErrorCodePlayerOutOfRange, Name: "ErrorCodePlayerOutOfRange"}
 	}
 	*handle = p.QueueToPlayerHandle(queue)
 
@@ -276,23 +276,23 @@ func (p *Peer2PeerBackend) AddPlayer(player *Player, handle *PlayerHandle) Error
 		p.AddRemotePlayer(player.Remote.IpAdress, player.Remote.Port, queue)
 	}
 
-	return Ok
+	return nil
 }
 
 // Sends input to the synchronization layer and to all the endpoints.
 // Which adds it to those respective queues (inputQueue for synchronization layer, pendingOutput
 // for endpoint)
 // Maps to top level API function.
-func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, size int) ErrorCode {
+func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, size int) error {
 	var queue int
 	var input GameInput
 	var err error
 
 	if p.sync.InRollback() {
-		return ErrorCodeInRollback
+		return Error{Code: ErrorCodeInRollback, Name: "ErrorCodeInRollback"}
 	}
 	if p.synchronizing {
-		return ErrorCodeNotSynchronized
+		return Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
 
 	input, err = NewGameInput(-1, values, size)
@@ -302,7 +302,7 @@ func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, siz
 
 	// Feed the input for the current frame into the synchronization layer.
 	if !p.sync.AddLocalInput(queue, &input) {
-		return ErrorCodePredictionThreshod
+		return Error{Code: ErrorCodePredictionThreshod, Name: "ErrorCodePredictionThreshod"}
 	}
 
 	if input.Frame != NullFrame {
@@ -322,7 +322,7 @@ func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, siz
 		}
 	}
 
-	return Ok
+	return nil
 }
 
 // Maps to top level API function
@@ -330,16 +330,16 @@ func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, siz
 // Which can be a prediction (i.e the last frame) or the latest input recieved
 // Also used to fetch inputs from GGPO  to update the game states during the advance
 // frame callback
-func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, ErrorCode) {
+func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	// Wait until we've started to return inputs.
 	if p.synchronizing {
-		return nil, ErrorCodeNotSynchronized
+		return nil, Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
 	values, flags := p.sync.SynchronizeInputs()
 	if disconnectFlags != nil {
 		*disconnectFlags = flags
 	}
-	return values, Ok
+	return values, nil
 }
 
 // Maps to top level API AdvanceFrame function
@@ -347,13 +347,13 @@ func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, ErrorCode)
 // current state via user provided callback
 // Do Poll Not only runs everything in the system that's registered to poll
 // it... well does everything. I'll get ti it when I get to it.
-func (p *Peer2PeerBackend) IncrementFrame() ErrorCode {
+func (p *Peer2PeerBackend) IncrementFrame() error {
 	log.Printf("End of frame (%d)...\n", p.sync.GetFrameCount())
 	p.sync.IncrementFrame()
 	p.DoPoll(0)
 	p.PollSyncEvents()
 
-	return Ok
+	return nil
 }
 
 // We don't do anything with these events in the P2PBackend for sure,
@@ -487,16 +487,16 @@ func (p *Peer2PeerBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent, handle Play
 	up to the backend.
     Also maps to API function
 */
-func (p *Peer2PeerBackend) DisconnectPlayer(player PlayerHandle) ErrorCode {
+func (p *Peer2PeerBackend) DisconnectPlayer(player PlayerHandle) error {
 	var queue int
 
 	result := p.PlayerHandleToQueue(player, &queue)
-	if !Success(result) {
+	if result != nil {
 		return result
 	}
 
 	if p.localConnectStatus[queue].Disconnected > 0 {
-		return ErrorCodePlayerDisconnected
+		return Error{Code: ErrorCodePlayerDisconnected, Name: "ErrorCodePlayerDisconnected"}
 	}
 
 	if !p.endpoints[queue].IsInitialized() {
@@ -519,7 +519,7 @@ func (p *Peer2PeerBackend) DisconnectPlayer(player PlayerHandle) ErrorCode {
 			queue, p.localConnectStatus[queue].LastFrame)
 		p.DisconnectPlayerQueue(queue, p.localConnectStatus[queue].LastFrame)
 	}
-	return Ok
+	return nil
 }
 
 /*
@@ -560,17 +560,17 @@ func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
 	All coming from the UdpProtocol Endpoint
 	Maps to top level API function.
 */
-func (p *Peer2PeerBackend) GetNetworkStats(stats *NetworkStats, player PlayerHandle) ErrorCode {
+func (p *Peer2PeerBackend) GetNetworkStats(stats *NetworkStats, player PlayerHandle) error {
 	var queue int
 
 	result := p.PlayerHandleToQueue(player, &queue)
-	if !Success(result) {
+	if result != nil {
 		return result
 	}
 
 	p.endpoints[queue].GetNetworkStats(stats)
 
-	return Ok
+	return nil
 }
 
 /*
@@ -581,15 +581,15 @@ func (p *Peer2PeerBackend) GetNetworkStats(stats *NetworkStats, player PlayerHan
 	should be on by increasing it frameDelay amount
 	Maps to top level API function
 */
-func (p *Peer2PeerBackend) SetFrameDelay(player PlayerHandle, delay int) ErrorCode {
+func (p *Peer2PeerBackend) SetFrameDelay(player PlayerHandle, delay int) error {
 	var queue int
 
 	result := p.PlayerHandleToQueue(player, &queue)
-	if !Success(result) {
+	if result != nil {
 		return result
 	}
 	p.sync.SetFrameDelay(queue, delay)
-	return Ok
+	return nil
 }
 
 /*
@@ -601,14 +601,14 @@ func (p *Peer2PeerBackend) SetFrameDelay(player PlayerHandle, delay int) ErrorCo
 	then sends the event upward.
 	Mapped to top level API function
 */
-func (p *Peer2PeerBackend) SetDisconnectTimeout(timeout int) ErrorCode {
+func (p *Peer2PeerBackend) SetDisconnectTimeout(timeout int) error {
 	p.disconnectTimeout = timeout
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].IsInitialized() {
 			p.endpoints[i].SetDisconnectTimeout(p.disconnectTimeout)
 		}
 	}
-	return Ok
+	return nil
 }
 
 /*
@@ -618,27 +618,27 @@ func (p *Peer2PeerBackend) SetDisconnectTimeout(timeout int) ErrorCode {
 	up to the backend, check sends it up to the user via the API's callbacks.
 	Mapped to top level Api function
 */
-func (p *Peer2PeerBackend) SetDisconnectNotifyStart(timeout int) ErrorCode {
+func (p *Peer2PeerBackend) SetDisconnectNotifyStart(timeout int) error {
 	p.disconnectNotifyStart = timeout
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].IsInitialized() {
 			p.endpoints[i].SetDisconnectNotifyStart(p.disconnectNotifyStart)
 		}
 	}
-	return Ok
+	return nil
 }
 
 /*
 	Used for getting the index for PlayerHandle mapped arrays such as
 	endpoints, localConnectStatus, andinputQueues in Sync
 */
-func (p *Peer2PeerBackend) PlayerHandleToQueue(player PlayerHandle, queue *int) ErrorCode {
+func (p *Peer2PeerBackend) PlayerHandleToQueue(player PlayerHandle, queue *int) error {
 	offset := int(player) - 1
 	if offset < 0 || offset >= p.numPlayers {
-		return ErrorCodeInvalidPlayerHandle
+		return Error{Code: ErrorCodeInvalidPlayerHandle, Name: "ErrorCodeInvalidPlayerHandle"}
 	}
 	*queue = offset
-	return Ok
+	return nil
 }
 
 /*
@@ -706,10 +706,10 @@ func (p *Peer2PeerBackend) OnSyncEvent(e *SyncEvent) {
 	// stub function as it was in GGPO
 }
 
-func (p *Peer2PeerBackend) Chat(text string) ErrorCode {
-	return Ok
+func (p *Peer2PeerBackend) Chat(text string) error {
+	return nil
 }
 
-func (p *Peer2PeerBackend) Logv(format string, args ...int) ErrorCode {
-	return Ok
+func (p *Peer2PeerBackend) Logv(format string, args ...int) error {
+	return nil
 }

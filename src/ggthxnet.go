@@ -1,5 +1,7 @@
 package ggthx
 
+import "fmt"
+
 const (
 	MaxPlayers             = 4
 	MaxPredictionFrames    = 8
@@ -49,6 +51,15 @@ type RemotePlayer struct {
 
 type LocalEndpoint struct {
 	playerNum int
+}
+
+type Error struct {
+	Code ErrorCode
+	Name string
+}
+
+func (e Error) Error() string {
+	return fmt.Sprintf("%s:%d", e.Name, e.Code)
 }
 
 type ErrorCode int

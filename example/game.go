@@ -55,12 +55,12 @@ func (g *Game) RunFrame() {
 	buffer := encodeInputs(input)
 
 	result := ggthx.AddLocalInput(session, ggthx.PlayerHandle(currentPlayer), buffer, len(buffer))
-	if ggthx.Success(result) {
+	if result != nil {
 		var values [][]byte
 		disconnectFlags := 0
 
 		values, result = ggthx.SynchronizeInput(session, &disconnectFlags)
-		if ggthx.Success(result) {
+		if result != nil {
 			inputs := decodeInputs(values)
 			g.AdvanceFrame(inputs, disconnectFlags)
 		}
@@ -69,7 +69,10 @@ func (g *Game) RunFrame() {
 
 func (g *Game) AdvanceFrame(inputs []Input, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
-	ggthx.AdvanceFrame(session)
+	err := ggthx.AdvanceFrame(session)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (g *Game) UpdateByInputs(inputs []Input) {
@@ -193,7 +196,7 @@ func advanceFrame(flags int) bool {
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
 	inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
-	if result != ggthx.Ok {
+	if result != nil {
 		log.Fatal("Error from GGTHXSynchronizeInput")
 	}
 
@@ -234,7 +237,7 @@ func onEvent(info *ggthx.Event) bool {
 }
 
 func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectators int) {
-	var result ggthx.ErrorCode
+	var result error
 	var callbacks ggthx.SessionCallbacks
 
 	var inputSize int = len(encodeInputs(Input{}))
@@ -247,10 +250,7 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 	callbacks.OnEvent = onEvent
 	callbacks.SaveGameState = saveGameState
 
-	session, result = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
-	if result != ggthx.Ok {
-		log.Fatalf("There's an issue / \n ")
-	}
+	session = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
 
 	ggthx.SetDisconnectTimeout(session, 3000)
 	ggthx.SetDisconnectNotifyStart(session, 1000)
@@ -258,7 +258,7 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 	for i := 0; i < numPlayers+numSpectators; i++ {
 		var handle ggthx.PlayerHandle
 		result = ggthx.AddPlayer(session, &players[i], &handle)
-		if result != ggthx.Ok {
+		if result != nil {
 			log.Fatalf("There's an issue from AddPlayer")
 		}
 		if players[i].PlayerType == ggthx.PlayerTypeLocal {

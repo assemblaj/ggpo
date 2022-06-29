@@ -164,7 +164,10 @@ func (s Sync) SynchronizeInputs() ([][]byte, int) {
 func (s Sync) CheckSimulation(timeout int) {
 	var seekTo int
 	if !s.CheckSimulationConsistency(&seekTo) {
-		s.AdjustSimulation(seekTo)
+		err := s.AdjustSimulation(seekTo)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -181,7 +184,10 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	s.rollingBack = true
 
 	// flush our input queue and load the last frame
-	s.LoadFrame(seekTo)
+	err := s.LoadFrame(seekTo)
+	if err != nil {
+		panic(err)
+	}
 
 	if s.frameCount != seekTo {
 		return errors.New("s.frameCount != seekTo")
