@@ -55,12 +55,12 @@ func (g *Game) RunFrame() {
 	buffer := encodeInputs(input)
 
 	result := ggthx.AddLocalInput(session, ggthx.PlayerHandle(currentPlayer), buffer, len(buffer))
-	if result != nil {
+	if result == nil {
 		var values [][]byte
 		disconnectFlags := 0
 
 		values, result = ggthx.SynchronizeInput(session, &disconnectFlags)
-		if result != nil {
+		if result == nil {
 			inputs := decodeInputs(values)
 			g.AdvanceFrame(inputs, disconnectFlags)
 		}
