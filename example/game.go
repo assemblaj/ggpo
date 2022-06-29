@@ -17,7 +17,6 @@ import (
 
 //var session *ggthx.SyncTestBackend
 var session *ggthx.Peer2PeerBackend
-var callbacks ggthx.SessionCallbacks
 var player1 Player
 var player2 Player
 var game *Game
@@ -236,6 +235,8 @@ func onEvent(info *ggthx.Event) bool {
 
 func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectators int) {
 	var result ggthx.ErrorCode
+	var callbacks ggthx.SessionCallbacks
+
 	var inputSize int = len(encodeInputs(Input{}))
 
 	callbacks.AdvanceFrame = advanceFrame
