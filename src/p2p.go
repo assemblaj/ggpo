@@ -83,7 +83,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) error {
 
 			// notify all of our endpoints of their local frame number for their
 			// next connection quality report
-			currentFrame := p.sync.GetFrameCount()
+			currentFrame := p.sync.FrameCount()
 			for i := 0; i < p.numPlayers; i++ {
 				p.endpoints[i].SetLocalFrameNumber(currentFrame)
 			}
@@ -348,7 +348,7 @@ func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 // Do Poll Not only runs everything in the system that's registered to poll
 // it... well does everything. I'll get ti it when I get to it.
 func (p *Peer2PeerBackend) IncrementFrame() error {
-	log.Printf("End of frame (%d)...\n", p.sync.GetFrameCount())
+	log.Printf("End of frame (%d)...\n", p.sync.FrameCount())
 	p.sync.IncrementFrame()
 	p.DoPoll(0)
 	p.PollSyncEvents()
@@ -500,7 +500,7 @@ func (p *Peer2PeerBackend) DisconnectPlayer(player PlayerHandle) error {
 	}
 
 	if !p.endpoints[queue].IsInitialized() {
-		currentFrame := p.sync.GetFrameCount()
+		currentFrame := p.sync.FrameCount()
 		// xxx: we should be tracking who the local player is, but for now assume
 		// that if the endpoint is not initalized, this must be the local player. - pond3r
 
@@ -531,7 +531,7 @@ func (p *Peer2PeerBackend) DisconnectPlayer(player PlayerHandle) error {
 */
 func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
 	var info Event
-	frameCount := p.sync.GetFrameCount()
+	frameCount := p.sync.FrameCount()
 
 	p.endpoints[queue].Disconnect()
 

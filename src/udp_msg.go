@@ -180,26 +180,19 @@ func (u UdpMsg) String() string {
 	switch UdpMsgType(u.Header.HeaderType) {
 	case SyncRequestMsg:
 		str = fmt.Sprintf("sync-request (%d).\n", u.SyncRequest.RandomRequest)
-		break
 	case SyncReplyMsg:
 		str = fmt.Sprintf("sync-reply (%d).\n", u.SyncReply.RandomReply)
-		break
 	case QualityReportMsg:
-		str = fmt.Sprintf("quality report.\n")
-		break
+		str = "quality report.\n"
 	case QualityReplyMsg:
-		str = fmt.Sprintf("quality reply.\n")
-		break
+		str = "quality reply.\n"
 	case InputAckMsg:
-		str = fmt.Sprintf("input ack.\n")
-		break
+		str = "input ack.\n"
 	case KeepAliveMsg:
-		str = fmt.Sprintf("keep alive.\n")
-		break
+		str = "keep alive.\n"
 	case InputMsg:
 		str = fmt.Sprintf("game-compressed-input %d (+ %d bits).\n",
 			u.Input.StartFrame, u.Input.NumBits)
-		break
 	}
 	return str
 }

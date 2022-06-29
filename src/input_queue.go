@@ -54,12 +54,12 @@ func NewInputQueue(id int, inputSize int) InputQueue {
 
 }
 
-func (i InputQueue) GetLastConfirmedFrame() int {
+func (i InputQueue) LastConfirmedFrame() int {
 	log.Printf("returning last confirmed frame %d.\n", i.lastUserAddedFrame)
 	return i.lastAddedFrame
 }
 
-func (i InputQueue) GetFirstIncorrectFrame() int {
+func (i InputQueue) FirstIncorrectFrame() int {
 	return i.firstIncorrectFrame
 }
 

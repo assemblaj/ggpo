@@ -93,7 +93,7 @@ func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, ErrorCode) 
 		}
 		s.lastInput = info.input
 	} else {
-		if s.sync.GetFrameCount() == 0 {
+		if s.sync.FrameCount() == 0 {
 			s.sync.SaveCurrentFrame()
 		}
 		s.lastInput = s.currentInput
@@ -111,13 +111,13 @@ func (s *SyncTestBackend) IncrementFrame() ErrorCode {
 	s.sync.IncrementFrame()
 	//s.currentInput.Erase()
 
-	log.Printf("End of frame(%d)...\n", s.sync.GetFrameCount())
+	log.Printf("End of frame(%d)...\n", s.sync.FrameCount())
 
 	if s.rollingBack {
 		return Ok
 	}
 
-	frame := s.sync.GetFrameCount()
+	frame := s.sync.FrameCount()
 	// Hold onto the current frame in our queue of saved states. We'll need
 	// the checksum later to verify that our replay of the same frame got the
 	// same results
@@ -149,7 +149,7 @@ func (s *SyncTestBackend) IncrementFrame() ErrorCode {
 			}
 			s.savedFrames.Pop()
 
-			if info.frame != s.sync.GetFrameCount() {
+			if info.frame != s.sync.FrameCount() {
 				log.Printf("Frame number %d does not match saved frame number %d", info.frame, frame)
 				panic("RaiseSyncError")
 			}

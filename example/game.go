@@ -210,28 +210,20 @@ func onEvent(info *ggthx.Event) bool {
 	switch info.Code {
 	case ggthx.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
-		break
 	case ggthx.EventCodeSynchronizingWithPeer:
 		log.Println("EventCodeSynchronizingWithPeer")
-		break
 	case ggthx.EventCodeSynchronizedWithPeer:
 		log.Println("EventCodeSynchronizedWithPeer")
-		break
 	case ggthx.EventCodeRunning:
 		log.Println("EventCodeRunning")
-		break
 	case ggthx.EventCodeDisconnectedFromPeer:
 		log.Println("EventCodeDisconnectedFromPeer")
-		break
 	case ggthx.EventCodeTimeSync:
 		log.Println("EventCodeTimeSync")
-		break
 	case ggthx.EventCodeConnectionInterrupted:
 		log.Println("EventCodeconnectionInterrupted")
-		break
 	case ggthx.EventCodeConnectionResumed:
 		log.Println("EventCodeconnectionInterrupted")
-		break
 	}
 	return true
 }

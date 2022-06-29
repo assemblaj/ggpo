@@ -296,7 +296,7 @@ func (s *Sync) CreateQueues(config SyncConfig) bool {
 func (s Sync) CheckSimulationConsistency(seekTo *int) bool {
 	firstInorrect := NullFrame
 	for i := 0; i < s.config.numPlayers; i++ {
-		incorrect := s.inputQueues[i].GetFirstIncorrectFrame()
+		incorrect := s.inputQueues[i].FirstIncorrectFrame()
 		log.Printf("considering incorrect frame %d reported by queue %d.\n", incorrect, i)
 
 		if incorrect != NullFrame && (firstInorrect == NullFrame || incorrect < firstInorrect) {
@@ -335,7 +335,7 @@ func (s Sync) GetEvent(e *SyncEvent) bool {
 	return false
 }
 
-func (s Sync) GetFrameCount() int {
+func (s Sync) FrameCount() int {
 	return s.frameCount
 }
 
