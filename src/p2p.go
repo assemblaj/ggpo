@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-const RECOMMENDATION_INTERVAL int = 240
-const DEFAULT_DISCONNECT_TIMEOUT int = 5000
-const DEFAULT_DISCONNECT_NOTIFY_START int = 750
+const RecommendationInterval int = 240
+const DefaultDisconnectTimeout int = 5000
+const DefaultDisconnectNotifyStart int = 750
 
 type Peer2PeerBackend struct {
-	callbacks     GGTHXSessionCallbacks
+	callbacks     SessionCallbacks
 	poll          Poll
 	sync          Sync
 	udp           Udp
@@ -31,19 +31,19 @@ type Peer2PeerBackend struct {
 	localConnectStatus []UdpConnectStatus
 }
 
-func NewPeer2PeerBackend(cb *GGTHXSessionCallbacks, gameName string,
+func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	localPort int, numPlayers int, inputSize int) Peer2PeerBackend {
 	p := Peer2PeerBackend{}
 	p.numPlayers = numPlayers
 	p.inputSize = inputSize
 	p.callbacks = *cb
 	p.synchronizing = true
-	p.disconnectTimeout = DEFAULT_DISCONNECT_TIMEOUT
-	p.disconnectNotifyStart = DEFAULT_DISCONNECT_NOTIFY_START
+	p.disconnectTimeout = DefaultDisconnectTimeout
+	p.disconnectNotifyStart = DefaultDisconnectNotifyStart
 	p.poll = NewPoll()
 	p.udp = NewUdp("127.0.0.1", localPort, &p.poll, &p)
 
-	p.localConnectStatus = make([]UdpConnectStatus, UDP_MSG_MAX_PLAYERS)
+	p.localConnectStatus = make([]UdpConnectStatus, UDPMsgMaxPlayers)
 	for i := 0; i < len(p.localConnectStatus); i++ {
 		p.localConnectStatus[i].LastFrame = -1
 	}
@@ -60,16 +60,16 @@ func NewPeer2PeerBackend(cb *GGTHXSessionCallbacks, gameName string,
 	return p
 }
 
-func (p *Peer2PeerBackend) Close() GGTHXErrorCode {
+func (p *Peer2PeerBackend) Close() ErrorCode {
 	for _, e := range p.endpoints {
 		e.Close()
 	}
 	for _, s := range p.spectators {
 		s.Close()
 	}
-	return GGTHX_OK
+	return Ok
 }
-func (p *Peer2PeerBackend) DoPoll(timeout int) GGTHXErrorCode {
+func (p *Peer2PeerBackend) DoPoll(timeout int) ErrorCode {
 	if !p.sync.InRollback() {
 		p.poll.Pump(0)
 
@@ -120,11 +120,11 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) GGTHXErrorCode {
 				}
 
 				if interval > 0 {
-					var info GGTHXEvent
-					info.Code = GGTHX_EVENTCODE_TIMESYNC
+					var info Event
+					info.Code = EventCodeTimeSync
 					info.framesAhead = interval
 					p.callbacks.OnEvent(&info)
-					p.nextRecommendedSleep = currentFrame + RECOMMENDATION_INTERVAL
+					p.nextRecommendedSleep = currentFrame + RecommendationInterval
 				}
 			}
 			// because GGPO had this
@@ -133,7 +133,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) GGTHXErrorCode {
 			}
 		}
 	}
-	return GGTHX_OK
+	return Ok
 }
 
 // Checks each endpoint to see if it's running (i.e we haven't called Synchronize or Disconnect
@@ -234,13 +234,13 @@ func (p *Peer2PeerBackend) AddRemotePlayer(ip string, port int, queue int) {
 	p.endpoints[queue].Synchronize()
 }
 
-func (p *Peer2PeerBackend) AddSpectator(ip string, port int) GGTHXErrorCode {
-	if p.numSpectators == GGTHX_MAX_SPECTATORS {
-		return GGTHX_ERRORCODE_TOO_MANY_SPECTATORS
+func (p *Peer2PeerBackend) AddSpectator(ip string, port int) ErrorCode {
+	if p.numSpectators == MaxSpectators {
+		return ErrorCodeTooManySpectators
 	}
 	// Currently, we can only add spectators before the game starts.
 	if !p.synchronizing {
-		return GGTHX_ERRORCODE_INVALID_REQUEST
+		return ErrorCodeInvalidRequest
 	}
 	queue := p.numSpectators
 	p.numSpectators++
@@ -251,48 +251,48 @@ func (p *Peer2PeerBackend) AddSpectator(ip string, port int) GGTHXErrorCode {
 	p.spectators[queue].SetDisconnectNotifyStart(p.disconnectNotifyStart)
 	p.spectators[queue].Synchronize()
 
-	return GGTHX_OK
+	return Ok
 }
 
 // Adds player or spectator
 // Maps to top level API function
-func (p *Peer2PeerBackend) AddPlayer(player *GGTHXPlayer, handle *GGTHXPlayerHandle) GGTHXErrorCode {
-	if player.PlayerType == GGTHX_PLAYERTYPE_SPECTATOR {
+func (p *Peer2PeerBackend) AddPlayer(player *Player, handle *PlayerHandle) ErrorCode {
+	if player.PlayerType == PlayerTypeSpectator {
 		return p.AddSpectator(player.Remote.IpAdress, player.Remote.Port)
 	}
 
 	queue := player.PlayerNum - 1
 	if player.PlayerNum < 1 || player.PlayerNum > p.numPlayers {
-		return GGTHX_ERRORCODE_PLAYER_OUT_OF_RANGE
+		return ErrorCodePlayerOutOfRange
 	}
 	*handle = p.QueueToPlayerHandle(queue)
 
-	if player.PlayerType == GGTHX_PLAYERTYPE_REMOTE {
+	if player.PlayerType == PlayerTypeRemote {
 		p.AddRemotePlayer(player.Remote.IpAdress, player.Remote.Port, queue)
 	}
 
-	return GGTHX_OK
+	return Ok
 }
 
 // Sends input to the synchronization layer and to all the endpoints.
 // Which adds it to those respective queues (inputQueue for synchronization layer, pendingOutput
 // for endpoint)
 // Maps to top level API function.
-func (p *Peer2PeerBackend) AddLocalInput(player GGTHXPlayerHandle, values []byte, size int) GGTHXErrorCode {
+func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, size int) ErrorCode {
 	var queue int
 	var input GameInput
 
 	if p.sync.InRollback() {
-		return GGTHX_ERRORCODE_IN_ROLLBACK
+		return ErrorCodeInRollback
 	}
 	if p.synchronizing {
-		return GGTHX_ERRORCODE_NOT_SYNCHRONIZED
+		return ErrorCodeNotSynchronized
 	}
 
 	input = NewGameInput(-1, values, size)
 	// Feed the input for the current frame into the synchronization layer.
 	if !p.sync.AddLocalInput(queue, &input) {
-		return GGTHX_ERRORCODE_PREDICTION_THRESHOLD
+		return ErrorCodePredictionThreshod
 	}
 
 	if input.Frame != NullFrame {
@@ -312,7 +312,7 @@ func (p *Peer2PeerBackend) AddLocalInput(player GGTHXPlayerHandle, values []byte
 		}
 	}
 
-	return GGTHX_OK
+	return Ok
 }
 
 // Maps to top level API function
@@ -320,16 +320,16 @@ func (p *Peer2PeerBackend) AddLocalInput(player GGTHXPlayerHandle, values []byte
 // Which can be a prediction (i.e the last frame) or the latest input recieved
 // Also used to fetch inputs from GGPO  to update the game states during the advance
 // frame callback
-func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, GGTHXErrorCode) {
+func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, ErrorCode) {
 	// Wait until we've started to return inputs.
 	if p.synchronizing {
-		return nil, GGTHX_ERRORCODE_NOT_SYNCHRONIZED
+		return nil, ErrorCodeNotSynchronized
 	}
 	values, flags := p.sync.SynchronizeInputs()
 	if disconnectFlags != nil {
 		*disconnectFlags = flags
 	}
-	return values, GGTHX_OK
+	return values, Ok
 }
 
 // Maps to top level API AdvanceFrame function
@@ -337,13 +337,13 @@ func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, GGTHXError
 // current state via user provided callback
 // Do Poll Not only runs everything in the system that's registered to poll
 // it... well does everything. I'll get ti it when I get to it.
-func (p *Peer2PeerBackend) IncrementFrame() GGTHXErrorCode {
+func (p *Peer2PeerBackend) IncrementFrame() ErrorCode {
 	log.Printf("End of frame (%d)...\n", p.sync.GetFrameCount())
 	p.sync.IncrementFrame()
 	p.DoPoll(0)
 	p.PollSyncEvents()
 
-	return GGTHX_OK
+	return Ok
 }
 
 // We don't do anything with these events in the P2PBackend for sure,
@@ -414,12 +414,12 @@ func (p *Peer2PeerBackend) OnUdpProtocolSpectatorEvent(evt *UdpProtocolEvent, qu
 	handle := p.QueueToSpectatorHandle(queue)
 	p.OnUdpProtocolEvent(evt, handle)
 
-	var info GGTHXEvent
+	var info Event
 	switch evt.eventType {
 	case DisconnectedEvent:
 		p.spectators[queue].Disconnect()
 
-		info.Code = GGTHX_EVENTCODE_DISCONNECTED_FROM_PEER
+		info.Code = EventCodeDisconnectedFromPeer
 		info.player = handle
 		p.callbacks.OnEvent(&info)
 	}
@@ -428,37 +428,37 @@ func (p *Peer2PeerBackend) OnUdpProtocolSpectatorEvent(evt *UdpProtocolEvent, qu
 // Logic for parsing UdpProtocol events and sending them up to the user via callbacks.
 // In P2P Backend, called by OnUdpProtocolSpectatorEvent and OnUdpProtocolPeerEvent,
 // which themselves are called by PollUdpProtocolEvents, which happens every DoPoll
-func (p *Peer2PeerBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent, handle GGTHXPlayerHandle) {
-	var info GGTHXEvent
+func (p *Peer2PeerBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent, handle PlayerHandle) {
+	var info Event
 
 	switch evt.eventType {
 	case ConnectedEvent:
-		info.Code = GGTHX_EVENTCODE_CONNECTED_TO_PEER
+		info.Code = EventCodeConnectedToPeer
 		info.player = handle
 		p.callbacks.OnEvent(&info)
 
 	case SynchronizingEvent:
-		info.Code = GGTHX_EVENTCODE_SYNCHRONIZING_WITH_PEER
+		info.Code = EventCodeSynchronizingWithPeer
 		info.player = handle
 		info.count = evt.count
 		info.total = evt.total
 		p.callbacks.OnEvent(&info)
 
 	case SynchronziedEvent:
-		info.Code = GGTHX_EVENTCODE_SYNCHRONIZED_WITH_PEER
+		info.Code = EventCodeSynchronizedWithPeer
 		info.player = handle
 		p.callbacks.OnEvent(&info)
 
 		p.CheckInitialSync()
 
 	case NetworkInterruptedEvent:
-		info.Code = GGTHX_EVENTCODE_CONNECTION_INTERRUPTED
+		info.Code = EventCodeConnectionInterrupted
 		info.player = handle
 		info.disconnectTimeout = evt.disconnectTimeout
 		p.callbacks.OnEvent(&info)
 
 	case NetworkResumedEvent:
-		info.Code = GGTHX_EVENTCODE_CONNECTION_RESUMED
+		info.Code = EventCodeConnectionResumed
 		info.player = handle
 		p.callbacks.OnEvent(&info)
 	}
@@ -474,16 +474,16 @@ func (p *Peer2PeerBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent, handle GGTH
 	up to the backend.
     Also maps to API function
 */
-func (p *Peer2PeerBackend) DisconnectPlayer(player GGTHXPlayerHandle) GGTHXErrorCode {
+func (p *Peer2PeerBackend) DisconnectPlayer(player PlayerHandle) ErrorCode {
 	var queue int
 
 	result := p.PlayerHandleToQueue(player, &queue)
-	if !GGTHX_SUCESS(result) {
+	if !Success(result) {
 		return result
 	}
 
 	if p.localConnectStatus[queue].Disconnected > 0 {
-		return GGTHX_ERRORCODE_PLAYER_DISCONNECTED
+		return ErrorCodePlayerDisconnected
 	}
 
 	if !p.endpoints[queue].IsInitialized() {
@@ -506,7 +506,7 @@ func (p *Peer2PeerBackend) DisconnectPlayer(player GGTHXPlayerHandle) GGTHXError
 			queue, p.localConnectStatus[queue].LastFrame)
 		p.DisconnectPlayerQueue(queue, p.localConnectStatus[queue].LastFrame)
 	}
-	return GGTHX_OK
+	return Ok
 }
 
 /*
@@ -517,7 +517,7 @@ func (p *Peer2PeerBackend) DisconnectPlayer(player GGTHXPlayerHandle) GGTHXError
 	Then sends the Disconnect Event up to te user.
 */
 func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
-	var info GGTHXEvent
+	var info Event
 	frameCount := p.sync.GetFrameCount()
 
 	p.endpoints[queue].Disconnect()
@@ -534,7 +534,7 @@ func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
 		log.Printf("Finished adjusting simulation.\n")
 	}
 
-	info.Code = GGTHX_EVENTCODE_DISCONNECTED_FROM_PEER
+	info.Code = EventCodeDisconnectedFromPeer
 	info.player = p.QueueToPlayerHandle(queue)
 	p.callbacks.OnEvent(&info)
 
@@ -547,17 +547,17 @@ func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
 	All coming from the UdpProtocol Endpoint
 	Maps to top level API function.
 */
-func (p *Peer2PeerBackend) GetNetworkStats(stats *GGTHXNetworkStats, player GGTHXPlayerHandle) GGTHXErrorCode {
+func (p *Peer2PeerBackend) GetNetworkStats(stats *NetworkStats, player PlayerHandle) ErrorCode {
 	var queue int
 
 	result := p.PlayerHandleToQueue(player, &queue)
-	if !GGTHX_SUCESS(result) {
+	if !Success(result) {
 		return result
 	}
 
 	p.endpoints[queue].GetNetworkStats(stats)
 
-	return GGTHX_OK
+	return Ok
 }
 
 /*
@@ -568,15 +568,15 @@ func (p *Peer2PeerBackend) GetNetworkStats(stats *GGTHXNetworkStats, player GGTH
 	should be on by increasing it frameDelay amount
 	Maps to top level API function
 */
-func (p *Peer2PeerBackend) SetFrameDelay(player GGTHXPlayerHandle, delay int) GGTHXErrorCode {
+func (p *Peer2PeerBackend) SetFrameDelay(player PlayerHandle, delay int) ErrorCode {
 	var queue int
 
 	result := p.PlayerHandleToQueue(player, &queue)
-	if !GGTHX_SUCESS(result) {
+	if !Success(result) {
 		return result
 	}
 	p.sync.SetFrameDelay(queue, delay)
-	return GGTHX_OK
+	return Ok
 }
 
 /*
@@ -588,14 +588,14 @@ func (p *Peer2PeerBackend) SetFrameDelay(player GGTHXPlayerHandle, delay int) GG
 	then sends the event upward.
 	Mapped to top level API function
 */
-func (p *Peer2PeerBackend) SetDisconnectTimeout(timeout int) GGTHXErrorCode {
+func (p *Peer2PeerBackend) SetDisconnectTimeout(timeout int) ErrorCode {
 	p.disconnectTimeout = timeout
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].IsInitialized() {
 			p.endpoints[i].SetDisconnectTimeout(p.disconnectTimeout)
 		}
 	}
-	return GGTHX_OK
+	return Ok
 }
 
 /*
@@ -605,38 +605,38 @@ func (p *Peer2PeerBackend) SetDisconnectTimeout(timeout int) GGTHXErrorCode {
 	up to the backend, check sends it up to the user via the API's callbacks.
 	Mapped to top level Api function
 */
-func (p *Peer2PeerBackend) SetDisconnectNotifyStart(timeout int) GGTHXErrorCode {
+func (p *Peer2PeerBackend) SetDisconnectNotifyStart(timeout int) ErrorCode {
 	p.disconnectNotifyStart = timeout
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].IsInitialized() {
 			p.endpoints[i].SetDisconnectNotifyStart(p.disconnectNotifyStart)
 		}
 	}
-	return GGTHX_OK
+	return Ok
 }
 
 /*
 	Used for getting the index for PlayerHandle mapped arrays such as
 	endpoints, localConnectStatus, andinputQueues in Sync
 */
-func (p *Peer2PeerBackend) PlayerHandleToQueue(player GGTHXPlayerHandle, queue *int) GGTHXErrorCode {
+func (p *Peer2PeerBackend) PlayerHandleToQueue(player PlayerHandle, queue *int) ErrorCode {
 	offset := int(player) - 1
 	if offset < 0 || offset >= p.numPlayers {
-		return GGTHX_ERRORCODE_INVALID_PLAYER_HANDLE
+		return ErrorCodeInvalidPlayerHandle
 	}
 	*queue = offset
-	return GGTHX_OK
+	return Ok
 }
 
 /*
 	Does the inverse of the above. Turns index index into human readible number
 */
-func (p *Peer2PeerBackend) QueueToPlayerHandle(queue int) GGTHXPlayerHandle {
-	return GGTHXPlayerHandle(queue + 1)
+func (p *Peer2PeerBackend) QueueToPlayerHandle(queue int) PlayerHandle {
+	return PlayerHandle(queue + 1)
 }
 
-func (p *Peer2PeerBackend) QueueToSpectatorHandle(queue int) GGTHXPlayerHandle {
-	return GGTHXPlayerHandle(queue + 1000) /* out of range of the player array, basically  - pond3r*/
+func (p *Peer2PeerBackend) QueueToSpectatorHandle(queue int) PlayerHandle {
+	return PlayerHandle(queue + 1000) /* out of range of the player array, basically  - pond3r*/
 }
 
 /*
@@ -682,8 +682,8 @@ func (p *Peer2PeerBackend) CheckInitialSync() {
 			}
 		}
 
-		var info GGTHXEvent
-		info.Code = GGTHX_EVENTCODE_RUNNING
+		var info Event
+		info.Code = EventCodeRunning
 		p.callbacks.OnEvent(&info)
 		p.synchronizing = false
 	}
@@ -693,10 +693,10 @@ func (p *Peer2PeerBackend) OnSyncEvent(e *SyncEvent) {
 	// stub function as it was in GGPO
 }
 
-func (p *Peer2PeerBackend) Chat(text string) GGTHXErrorCode {
-	return GGTHX_OK
+func (p *Peer2PeerBackend) Chat(text string) ErrorCode {
+	return Ok
 }
 
-func (p *Peer2PeerBackend) Logv(format string, args ...int) GGTHXErrorCode {
-	return GGTHX_OK
+func (p *Peer2PeerBackend) Logv(format string, args ...int) ErrorCode {
+	return Ok
 }

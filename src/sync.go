@@ -5,7 +5,7 @@ import (
 )
 
 type Sync struct {
-	callbacks  GGTHXSessionCallbacks
+	callbacks  SessionCallbacks
 	savedState savedState
 	config     SyncConfig
 
@@ -23,7 +23,7 @@ type Sync struct {
 const MAX_PREDICTION_FRAMES int = 8
 
 type SyncConfig struct {
-	callbacks           GGTHXSessionCallbacks
+	callbacks           SessionCallbacks
 	numPredictionFrames int
 	numPlayers          int
 	inputSize           int

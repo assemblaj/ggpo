@@ -38,7 +38,7 @@ func main() {
 		panic("Please enter integer currentPlayer")
 	}
 
-	players := make([]ggthx.GGTHXPlayer, numPlayers)
+	players := make([]ggthx.Player, numPlayers)
 	for i := 0; i < numPlayers; i++ {
 		if ipAddress[i] == "local" {
 			players[i] = ggthx.NewLocalPlayer(20, i+1)
@@ -75,7 +75,7 @@ func main() {
 	now = start
 	next = start
 
-	Game_Init(localPort, numPlayers, players, 0)
+	GameInit(localPort, numPlayers, players, 0)
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}

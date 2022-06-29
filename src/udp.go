@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-const MAX_UDP_ENDPOINTS int = 16
-const MAX_UDP_PACKET_SIZE int = 4096
+const MaxUDPEndpoints int = 16
+const MaxUDPPacketSize int = 4096
 
 type Udp struct {
 	Stats UdpStats // may not need this, may just be a service used by others
@@ -93,7 +93,7 @@ func (u *Udp) SendTo(msg *UdpMsg, remoteIp string, remotePort int) {
 
 func (u *Udp) Read() {
 	defer u.listener.Close()
-	recvBuf := make([]byte, MAX_UDP_PACKET_SIZE)
+	recvBuf := make([]byte, MaxUDPPacketSize)
 	for {
 		len, addr, err := u.listener.ReadFrom(recvBuf)
 

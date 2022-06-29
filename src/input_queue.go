@@ -4,8 +4,8 @@ import (
 	"log"
 )
 
-const INPUT_QUEUE_LENGTH int = 128
-const DEFAULT_INPUT_SIZE int = 4
+const InputQueueLength int = 128
+const DefaultInputSize int = 4
 
 type InputQueue struct {
 	id         int
@@ -26,7 +26,7 @@ type InputQueue struct {
 }
 
 func NewInputQueue(id int, inputSize int) InputQueue {
-	inputs := make([]GameInput, INPUT_QUEUE_LENGTH)
+	inputs := make([]GameInput, InputQueueLength)
 	for i, _ := range inputs {
 		inputs[i] = NewGameInput(-1, nil, inputSize)
 
@@ -69,7 +69,7 @@ func (i *InputQueue) DiscardConfirmedFrames(frame int) {
 		log.Printf("difference of %d frames.\n", offset)
 		Assert(offset >= 0)
 
-		i.tail = (i.tail + offset) % INPUT_QUEUE_LENGTH
+		i.tail = (i.tail + offset) % InputQueueLength
 		i.length -= offset
 	}
 
@@ -90,7 +90,7 @@ func (i *InputQueue) ResetPrediction(frame int) {
 
 func (i InputQueue) GetConfirmedInput(requestedFrame int, input *GameInput) bool {
 	Assert(i.firstIncorrectFrame == NullFrame || requestedFrame < i.firstIncorrectFrame)
-	offset := requestedFrame % INPUT_QUEUE_LENGTH
+	offset := requestedFrame % InputQueueLength
 	if i.inputs[offset].Frame != requestedFrame {
 		return false
 	}
@@ -110,7 +110,7 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) bool {
 		offset := requestedFrame - i.inputs[i.tail].Frame
 
 		if offset < i.length {
-			offset = (offset + i.tail) % INPUT_QUEUE_LENGTH
+			offset = (offset + i.tail) % InputQueueLength
 			Assert(i.inputs[offset].Frame == requestedFrame)
 			*input = i.inputs[offset]
 			log.Printf("returning confirmed frame number %d.\n", input.Frame)
@@ -167,7 +167,7 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) {
 	 */
 	i.inputs[i.head] = *input
 	i.inputs[i.head].Frame = frameNumber
-	i.head = (i.head + 1) % INPUT_QUEUE_LENGTH
+	i.head = (i.head + 1) % InputQueueLength
 	i.length++
 	i.firstFrame = false
 
@@ -189,7 +189,7 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) {
 		}
 	}
 
-	Assert(i.length <= INPUT_QUEUE_LENGTH)
+	Assert(i.length <= InputQueueLength)
 }
 
 func (i *InputQueue) AdvanceQueueHead(frame int) int {
@@ -223,7 +223,7 @@ func (i *InputQueue) AdvanceQueueHead(frame int) int {
 
 func previousFrame(offset int) int {
 	if offset == 0 {
-		return INPUT_QUEUE_LENGTH - 1
+		return InputQueueLength - 1
 	} else {
 		return offset - 1
 	}

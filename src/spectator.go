@@ -4,10 +4,10 @@ import (
 	"log"
 )
 
-const SPECTATOR_FRAME_BUFFER_SIZE int = 64
+const SpectatorFrameBufferSize int = 64
 
 type SpectatorBackend struct {
-	callbacks       GGTHXSessionCallbacks
+	callbacks       SessionCallbacks
 	poll            Poll
 	udp             Udp
 	host            UdpProtocol
@@ -18,7 +18,7 @@ type SpectatorBackend struct {
 	inputs          []GameInput
 }
 
-func NewSpectatorBackend(cb *GGTHXSessionCallbacks,
+func NewSpectatorBackend(cb *SessionCallbacks,
 	gameName string, localPort int, numPlayers int, inputSize int, hostIp string, hostPort int) SpectatorBackend {
 	s := SpectatorBackend{}
 	s.numPlayers = numPlayers
@@ -28,7 +28,7 @@ func NewSpectatorBackend(cb *GGTHXSessionCallbacks,
 	s.callbacks = *cb
 	s.synchonizing = true
 
-	inputs := make([]GameInput, SPECTATOR_FRAME_BUFFER_SIZE)
+	inputs := make([]GameInput, SpectatorFrameBufferSize)
 	for _, i := range inputs {
 		i.Frame = -1
 	}
@@ -41,28 +41,28 @@ func NewSpectatorBackend(cb *GGTHXSessionCallbacks,
 	return s
 }
 
-func (s *SpectatorBackend) DoPoll(timeout int) GGTHXErrorCode {
+func (s *SpectatorBackend) DoPoll(timeout int) ErrorCode {
 	s.poll.Pump(0)
 
 	s.PollUdpProtocolEvents()
-	return GGTHX_OK
+	return Ok
 }
 
-func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([]byte, GGTHXErrorCode) {
+func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([]byte, ErrorCode) {
 	// Wait until we've started to return inputs
 	if s.synchonizing {
-		return nil, GGTHX_ERRORCODE_NOT_SYNCHRONIZED
+		return nil, ErrorCodeNotSynchronized
 	}
 
-	input := s.inputs[s.nextInputToSend%SPECTATOR_FRAME_BUFFER_SIZE]
+	input := s.inputs[s.nextInputToSend%SpectatorFrameBufferSize]
 	if input.Frame < s.nextInputToSend {
 		// Haved recieved input from the host yet. Wait
-		return nil, GGTHX_ERRORCODE_PREDICTION_THRESHOLD
+		return nil, ErrorCodePredictionThreshod
 	}
 	if input.Frame > s.nextInputToSend {
 		// The host is way way way far ahead of the spetator. How'd this
 		// happen? Any, the input we need is gone forever.
-		return nil, GGTHX_ERRORCODE_GENERAL_FAILURE
+		return nil, ErrorCodeGeneralFailure
 	}
 
 	size := len(input.Bits)
@@ -75,15 +75,15 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([]byte, GGTHXErrorCo
 		*disconnectFlags = 0 // xxx: we should get them from the host! -pond3r
 	}
 	s.nextInputToSend++
-	return values, GGTHX_OK
+	return values, Ok
 }
 
-func (s *SpectatorBackend) IncrementFrame() GGTHXErrorCode {
+func (s *SpectatorBackend) IncrementFrame() ErrorCode {
 	log.Printf("End of frame (%d)...\n", s.nextInputToSend-1)
 	s.DoPoll(0)
 	s.PollUdpProtocolEvents()
 
-	return GGTHX_OK
+	return Ok
 }
 
 func (s *SpectatorBackend) PollUdpProtocolEvents() {
@@ -98,16 +98,16 @@ func (s *SpectatorBackend) PollUdpProtocolEvents() {
 }
 
 func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
-	var info GGTHXEvent
+	var info Event
 
 	switch evt.eventType {
 	case ConnectedEvent:
-		info.Code = GGTHX_EVENTCODE_CONNECTED_TO_PEER
+		info.Code = EventCodeConnectedToPeer
 		info.player = 0
 		s.callbacks.OnEvent(&info)
 
 	case SynchronizingEvent:
-		info.Code = GGTHX_EVENTCODE_SYNCHRONIZING_WITH_PEER
+		info.Code = EventCodeSynchronizingWithPeer
 		info.player = 0
 		info.count = evt.count
 		info.total = evt.total
@@ -115,28 +115,28 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 
 	case SynchronziedEvent:
 		if s.synchonizing {
-			info.Code = GGTHX_EVENTCODE_SYNCHRONIZED_WITH_PEER
+			info.Code = EventCodeSynchronizedWithPeer
 			info.player = 0
 			s.callbacks.OnEvent(&info)
 
-			info.Code = GGTHX_EVENTCODE_RUNNING
+			info.Code = EventCodeRunning
 			s.callbacks.OnEvent(&info)
 			s.synchonizing = false
 		}
 
 	case NetworkInterruptedEvent:
-		info.Code = GGTHX_EVENTCODE_CONNECTION_INTERRUPTED
+		info.Code = EventCodeConnectionInterrupted
 		info.player = 0
 		info.disconnectTimeout = evt.disconnectTimeout
 		s.callbacks.OnEvent(&info)
 
 	case NetworkResumedEvent:
-		info.Code = GGTHX_EVENTCODE_CONNECTION_RESUMED
+		info.Code = EventCodeConnectionResumed
 		info.player = 0
 		s.callbacks.OnEvent(&info)
 
 	case DisconnectedEvent:
-		info.Code = GGTHX_EVENTCODE_DISCONNECTED_FROM_PEER
+		info.Code = EventCodeDisconnectedFromPeer
 		info.player = 0
 		s.callbacks.OnEvent(&info)
 
@@ -145,7 +145,7 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 
 		s.host.SetLocalFrameNumber(input.Frame)
 		s.host.SendInputAck()
-		s.inputs[input.Frame%SPECTATOR_FRAME_BUFFER_SIZE] = input
+		s.inputs[input.Frame%SpectatorFrameBufferSize] = input
 	}
 }
 

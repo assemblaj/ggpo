@@ -4,10 +4,10 @@ import (
 	"log"
 )
 
-const FRAME_WINDOW_SIZE int = 40
-const MIN_UNIQUE_FRAMES int = 10
-const MIN_FRAME_ADVANTAGE int = 3
-const MAX_FRAME_ADVANTAGE int = 9
+const FrameWindowSize int = 40
+const MinUniqueFrames int = 10
+const MinFrameAdvantage int = 3
+const MaxFrameAdvantage int = 9
 
 type TimeSync struct {
 	local          []int
@@ -18,10 +18,10 @@ type TimeSync struct {
 
 func NewTimeSync() TimeSync {
 	return TimeSync{
-		local:          make([]int, FRAME_WINDOW_SIZE),
-		remote:         make([]int, FRAME_WINDOW_SIZE),
-		lastInputs:     make([]GameInput, MIN_UNIQUE_FRAMES),
-		nextPrediction: FRAME_WINDOW_SIZE * 3,
+		local:          make([]int, FrameWindowSize),
+		remote:         make([]int, FrameWindowSize),
+		lastInputs:     make([]GameInput, MinUniqueFrames),
+		nextPrediction: FrameWindowSize * 3,
 	}
 }
 
@@ -66,7 +66,7 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) int {
 
 	// Some things just aren't worth correcting for.  Make sure
 	// the difference is relevant before proceeding.
-	if sleepFrames < MIN_FRAME_ADVANTAGE {
+	if sleepFrames < MinFrameAdvantage {
 		return 0
 	}
 
@@ -84,5 +84,5 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) int {
 	}
 
 	// Success!!! Recommend the number of frames to sleep and adjust
-	return Min(sleepFrames, MAX_FRAME_ADVANTAGE)
+	return Min(sleepFrames, MaxFrameAdvantage)
 }

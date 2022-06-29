@@ -17,7 +17,7 @@ import (
 
 //var session *ggthx.SyncTestBackend
 var session *ggthx.Peer2PeerBackend
-var callbacks ggthx.GGTHXSessionCallbacks
+var callbacks ggthx.SessionCallbacks
 var player1 Player
 var player2 Player
 var game *Game
@@ -55,13 +55,13 @@ func (g *Game) RunFrame() {
 	input := g.ReadInputs()
 	buffer := encodeInputs(input)
 
-	result := ggthx.AddLocalInput(session, ggthx.GGTHXPlayerHandle(currentPlayer), buffer, len(buffer))
-	if ggthx.GGTHX_SUCESS(result) {
+	result := ggthx.AddLocalInput(session, ggthx.PlayerHandle(currentPlayer), buffer, len(buffer))
+	if ggthx.Success(result) {
 		var values [][]byte
 		disconnectFlags := 0
 
 		values, result = ggthx.SynchronizeInput(session, &disconnectFlags)
-		if ggthx.GGTHX_SUCESS(result) {
+		if ggthx.Success(result) {
 			inputs := decodeInputs(values)
 			g.AdvanceFrame(inputs, disconnectFlags)
 		}
@@ -194,7 +194,7 @@ func advanceFrame(flags int) bool {
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
 	inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
-	if result != ggthx.GGTHX_OK {
+	if result != ggthx.Ok {
 		log.Fatal("Error from GGTHXSynchronizeInput")
 	}
 
@@ -204,38 +204,38 @@ func advanceFrame(flags int) bool {
 	return true
 }
 
-func onEvent(info *ggthx.GGTHXEvent) bool {
+func onEvent(info *ggthx.Event) bool {
 	switch info.Code {
-	case ggthx.GGTHX_EVENTCODE_CONNECTED_TO_PEER:
-		log.Println("GGTHX_EVENTCODE_CONNECTED_TO_PEER")
+	case ggthx.EventCodeConnectedToPeer:
+		log.Println("EventCodeConnectedToPeer")
 		break
-	case ggthx.GGTHX_EVENTCODE_SYNCHRONIZING_WITH_PEER:
-		log.Println("GGTHX_EVENTCODE_SYNCHRONIZING_WITH_PEER")
+	case ggthx.EventCodeSynchronizingWithPeer:
+		log.Println("EventCodeSynchronizingWithPeer")
 		break
-	case ggthx.GGTHX_EVENTCODE_SYNCHRONIZED_WITH_PEER:
-		log.Println("GGTHX_EVENTCODE_SYNCHRONIZED_WITH_PEER")
+	case ggthx.EventCodeSynchronizedWithPeer:
+		log.Println("EventCodeSynchronizedWithPeer")
 		break
-	case ggthx.GGTHX_EVENTCODE_RUNNING:
-		log.Println("GGTHX_EVENTCODE_RUNNING")
+	case ggthx.EventCodeRunning:
+		log.Println("EventCodeRunning")
 		break
-	case ggthx.GGTHX_EVENTCODE_DISCONNECTED_FROM_PEER:
-		log.Println("GGTHX_EVENTCODE_DISCONNECTED_FROM_PEER")
+	case ggthx.EventCodeDisconnectedFromPeer:
+		log.Println("EventCodeDisconnectedFromPeer")
 		break
-	case ggthx.GGTHX_EVENTCODE_TIMESYNC:
-		log.Println("GGTHX_EVENTCODE_TIMESYNC")
+	case ggthx.EventCodeTimeSync:
+		log.Println("EventCodeTimeSync")
 		break
-	case ggthx.GGTHX_EVENTCODE_CONNECTION_INTERRUPTED:
-		log.Println("GGTHX_EVENTCODE_CONNECTION_INTERRUPTED")
+	case ggthx.EventCodeConnectionInterrupted:
+		log.Println("EventCodeconnectionInterrupted")
 		break
-	case ggthx.GGTHX_EVENTCODE_CONNECTION_RESUMED:
-		log.Println("GGTHX_EVENTCODE_CONNECTION_RESUMED")
+	case ggthx.EventCodeConnectionResumed:
+		log.Println("EventCodeconnectionInterrupted")
 		break
 	}
 	return true
 }
 
-func Game_Init(localPort int, numPlayers int, players []ggthx.GGTHXPlayer, numSpectators int) {
-	var result ggthx.GGTHXErrorCode
+func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectators int) {
+	var result ggthx.ErrorCode
 	var inputSize int = len(encodeInputs(Input{}))
 
 	callbacks.AdvanceFrame = advanceFrame
@@ -247,7 +247,7 @@ func Game_Init(localPort int, numPlayers int, players []ggthx.GGTHXPlayer, numSp
 	callbacks.SaveGameState = saveGameState
 
 	session, result = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
-	if result != ggthx.GGTHX_OK {
+	if result != ggthx.Ok {
 		log.Fatalf("There's an issue / \n ")
 	}
 
@@ -255,12 +255,12 @@ func Game_Init(localPort int, numPlayers int, players []ggthx.GGTHXPlayer, numSp
 	ggthx.SetDisconnectNotifyStart(session, 1000)
 
 	for i := 0; i < numPlayers+numSpectators; i++ {
-		var handle ggthx.GGTHXPlayerHandle
+		var handle ggthx.PlayerHandle
 		result = ggthx.AddPlayer(session, &players[i], &handle)
-		if result != ggthx.GGTHX_OK {
+		if result != ggthx.Ok {
 			log.Fatalf("There's an issue from AddPlayer")
 		}
-		if players[i].PlayerType == ggthx.GGTHX_PLAYERTYPE_LOCAL {
+		if players[i].PlayerType == ggthx.PlayerTypeLocal {
 			ggthx.SetFrameDelay(session, handle, FRAME_DELAY)
 
 		}

@@ -3,18 +3,18 @@ package ggthx
 /*
 	Remember to
 */
-type GGTHXSession interface {
-	DoPoll(timeout int) GGTHXErrorCode
-	AddPlayer(player *GGTHXPlayer, handle *GGTHXPlayerHandle) GGTHXErrorCode
-	AddLocalInput(player GGTHXPlayerHandle, values []byte, size int) GGTHXErrorCode
-	SyncInput(disconnect_flags *int) ([][]byte, GGTHXErrorCode)
-	IncrementFrame() GGTHXErrorCode
-	Chat(text string) GGTHXErrorCode
-	DisconnectPlayer(handle GGTHXPlayerHandle) GGTHXErrorCode
-	GetNetworkStats(stats *GGTHXNetworkStats, handle GGTHXPlayerHandle) GGTHXErrorCode
-	Logv(format string, args ...int) GGTHXErrorCode
-	SetFrameDelay(player GGTHXPlayerHandle, delay int) GGTHXErrorCode
-	SetDisconnectTimeout(timeout int) GGTHXErrorCode
-	SetDisconnectNotifyStart(timeout int) GGTHXErrorCode
-	Close() GGTHXErrorCode
+type Session interface {
+	DoPoll(timeout int) ErrorCode
+	AddPlayer(player *Player, handle *PlayerHandle) ErrorCode
+	AddLocalInput(player PlayerHandle, values []byte, size int) ErrorCode
+	SyncInput(disconnect_flags *int) ([][]byte, ErrorCode)
+	IncrementFrame() ErrorCode
+	Chat(text string) ErrorCode
+	DisconnectPlayer(handle PlayerHandle) ErrorCode
+	GetNetworkStats(stats *NetworkStats, handle PlayerHandle) ErrorCode
+	Logv(format string, args ...int) ErrorCode
+	SetFrameDelay(player PlayerHandle, delay int) ErrorCode
+	SetDisconnectTimeout(timeout int) ErrorCode
+	SetDisconnectNotifyStart(timeout int) ErrorCode
+	Close() ErrorCode
 }
