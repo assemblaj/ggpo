@@ -88,7 +88,10 @@ func (s *Sync) SetLastConfirmedFrame(frame int) {
 	s.lastConfirmedFrame = frame
 	if s.lastConfirmedFrame > 0 {
 		for i := 0; i < s.config.numPlayers; i++ {
-			s.inputQueues[i].DiscardConfirmedFrames(frame - 1)
+			err := s.inputQueues[i].DiscardConfirmedFrames(frame - 1)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }
@@ -132,7 +135,10 @@ func (s Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 			disconnectFlags |= (1 << i)
 			input.Erase()
 		} else {
-			s.inputQueues[i].GetConfirmedInput(frame, &input)
+			_, err := s.inputQueues[i].GetConfirmedInput(frame, &input)
+			if err != nil {
+				panic(err)
+			}
 		}
 		// this was originally a memcpy
 		values = append(values, input.Bits)
@@ -154,7 +160,10 @@ func (s Sync) SynchronizeInputs() ([][]byte, int) {
 			disconnectFlags |= (1 << i)
 			input.Erase()
 		} else {
-			s.inputQueues[i].GetInput(s.frameCount, &input)
+			_, err := s.inputQueues[i].GetInput(s.frameCount, &input)
+			if err != nil {
+				panic(err)
+			}
 		}
 		values = append(values, input.Bits)
 	}

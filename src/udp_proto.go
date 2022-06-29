@@ -387,13 +387,19 @@ func (u *UdpProtocol) GetEvent() (*UdpProtocolEvent, error) {
 	if err != nil {
 		panic(err)
 	}
-	u.eventQueue.Pop()
+	err = u.eventQueue.Pop()
+	if err != nil {
+		panic(err)
+	}
 	return &e, nil
 }
 
 func (u *UdpProtocol) QueueEvent(evt *UdpProtocolEvent) {
 	log.Printf("Queueing event %s", *evt)
-	u.eventQueue.Push(*evt)
+	err := u.eventQueue.Push(*evt)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (u *UdpProtocol) Disconnect() {
@@ -419,9 +425,14 @@ func (u *UdpProtocol) SendMsg(msg *UdpMsg) {
 	if u.peerAddress == "" {
 		panic("peerAdress empty, why?")
 	}
-	u.sendQueue.Push(NewQueEntry(
+	var err error
+	err = u.sendQueue.Push(NewQueEntry(
 		int(time.Now().UnixMilli()), u.peerAddress, u.peerPort, msg))
-	err := u.PumpSendQueue()
+	if err != nil {
+		panic(err)
+	}
+
+	err = u.PumpSendQueue()
 	if err != nil {
 		panic(err)
 	}
@@ -492,7 +503,10 @@ func (u *UdpProtocol) OnInput(msg *UdpMsg, length int) (bool, error) {
 	for u.pendingOutput.Size() > 0 && (input.Frame < msg.Input.AckFrame) {
 		log.Printf("Throwing away pending output frame %d\n", input.Frame)
 		u.lastAckedInput = input
-		u.pendingOutput.Pop()
+		err = u.pendingOutput.Pop()
+		if err != nil {
+			panic(err)
+		}
 	}
 	return true, nil
 }
@@ -507,7 +521,10 @@ func (u *UdpProtocol) OnInputAck(msg *UdpMsg, len int) (bool, error) {
 	for u.pendingOutput.Size() > 0 && input.Frame > msg.Input.AckFrame {
 		log.Printf("Throwing away pending output frame %d\n", input.Frame)
 		u.lastAckedInput = input
-		u.pendingOutput.Pop()
+		err = u.pendingOutput.Pop()
+		if err != nil {
+			panic(err)
+		}
 	}
 	return true, nil
 }
@@ -586,7 +603,10 @@ func (u *UdpProtocol) PumpSendQueue() error {
 
 			// would delete the udpmsg here
 		}
-		u.sendQueue.Pop()
+		err := u.sendQueue.Pop()
+		if err != nil {
+			panic(err)
+		}
 	}
 	if u.ooPacket.msg != nil && u.ooPacket.sendTime < int(time.Now().UnixMilli()) {
 		log.Printf("sending rogue oop!")
@@ -599,7 +619,10 @@ func (u *UdpProtocol) PumpSendQueue() error {
 func (u *UdpProtocol) ClearSendQueue() {
 	for !u.sendQueue.Empty() {
 		// i'd manually delete the QueueEntry in a language where I could
-		u.sendQueue.Pop()
+		err := u.sendQueue.Pop()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -627,7 +650,10 @@ func (u *UdpProtocol) SendInput(input *GameInput) {
 			u.timesync.AdvanceFrames(input, u.localFrameAdvantage, u.remoteFrameAdvantage)
 
 			// Save this input packet.
-			u.pendingOutput.Push(*input)
+			err := u.pendingOutput.Push(*input)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	err := u.SendPendingOutput()

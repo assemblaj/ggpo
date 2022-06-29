@@ -262,7 +262,10 @@ func (i *InputQueue) AdvanceQueueHead(frame int) (int, error) {
 		log.Printf("Adding padding frame %d to account for change in frame delay.\n",
 			expectedFrame)
 		lastFrame := i.inputs[previousFrame(i.head)]
-		i.AddDelayedInputToQueue(&lastFrame, expectedFrame)
+		err := i.AddDelayedInputToQueue(&lastFrame, expectedFrame)
+		if err != nil {
+			panic(err)
+		}
 		expectedFrame++
 	}
 
