@@ -381,7 +381,7 @@ func (u *UdpProtocol) SendInputAck() {
 
 func (u *UdpProtocol) GetEvent() (*UdpProtocolEvent, error) {
 	if u.eventQueue.Size() == 0 {
-		return nil, errors.New("No events")
+		return nil, errors.New("no events")
 	}
 	e, err := u.eventQueue.Front()
 	if err != nil {
@@ -698,7 +698,7 @@ func (u *UdpProtocol) OnInvalid(msg *UdpMsg, len int) (bool, error) {
 	//  Assert(false) // ? ASSERT(FALSE && "Invalid msg in UdpProtocol");
 	// ah
 	log.Printf("Invalid msg in UdpProtocol ")
-	return false, errors.New("Invalid msg in UdpProtocol")
+	return false, errors.New("invalid msg in UdpProtocol")
 }
 
 func (u *UdpProtocol) OnSyncRequest(msg *UdpMsg, len int) (bool, error) {
