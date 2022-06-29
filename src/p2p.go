@@ -6,9 +6,11 @@ import (
 	"time"
 )
 
-const RecommendationInterval int = 240
-const DefaultDisconnectTimeout int = 5000
-const DefaultDisconnectNotifyStart int = 750
+const (
+	RecommendationInterval       = 240
+	DefaultDisconnectTimeout     = 5000
+	DefaultDisconnectNotifyStart = 750
+)
 
 type Peer2PeerBackend struct {
 	callbacks     SessionCallbacks

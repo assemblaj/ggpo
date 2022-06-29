@@ -7,9 +7,11 @@ import (
 	"strings"
 )
 
-const GameInputMaxBytes int = 9
-const GameInputMaxPlayers int = 2
-const NullFrame int = -1
+const (
+	GameInputMaxBytes   = 9
+	GameInputMaxPlayers = 2
+	NullFrame           = -1
+)
 
 type GameInput struct {
 	Frame  int

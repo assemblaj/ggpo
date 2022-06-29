@@ -5,8 +5,10 @@ import (
 	"unsafe"
 )
 
-const MaxCompressedBits int = 4096
-const UDPMsgMaxPlayers int = 4
+const (
+	MaxCompressedBits = 4096
+	UDPMsgMaxPlayers  = 4
+)
 
 // Bad bad bad. Want to find way around this. Giga packet.
 // Original used Union

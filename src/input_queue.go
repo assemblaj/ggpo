@@ -4,8 +4,10 @@ import (
 	"log"
 )
 
-const InputQueueLength int = 128
-const DefaultInputSize int = 4
+const (
+	InputQueueLength = 128
+	DefaultInputSize = 4
+)
 
 type InputQueue struct {
 	id         int

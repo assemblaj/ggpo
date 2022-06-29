@@ -1,9 +1,11 @@
 package ggthx
 
-const MaxPlayers int = 4
-const MaxPredictionFrames int = 8
-const MaxSpectators int = 32
-const SpectatorInputInterval int = 4
+const (
+	MaxPlayers             = 4
+	MaxPredictionFrames    = 8
+	MaxSpectators          = 32
+	SpectatorInputInterval = 4
+)
 
 type PlayerHandle int
 

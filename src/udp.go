@@ -8,8 +8,10 @@ import (
 	"strconv"
 )
 
-const MaxUDPEndpoints int = 16
-const MaxUDPPacketSize int = 4096
+const (
+	MaxUDPEndpoints  = 16
+	MaxUDPPacketSize = 4096
+)
 
 type Udp struct {
 	Stats UdpStats // may not need this, may just be a service used by others

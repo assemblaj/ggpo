@@ -4,10 +4,12 @@ import (
 	"log"
 )
 
-const FrameWindowSize int = 40
-const MinUniqueFrames int = 10
-const MinFrameAdvantage int = 3
-const MaxFrameAdvantage int = 9
+const (
+	FrameWindowSize   = 40
+	MinUniqueFrames   = 10
+	MinFrameAdvantage = 3
+	MaxFrameAdvantage = 9
+)
 
 type TimeSync struct {
 	local          []int
