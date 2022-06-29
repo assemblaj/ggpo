@@ -137,8 +137,10 @@ func NewUdpMsg(t UdpMsgType) UdpMsg {
 
 func (u *UdpMsg) PacketSize() int {
 	size, err := u.PaylaodSize()
+	//Unknown Packet type somehow
 	if err != nil {
-		panic(err)
+		// Send size of whole object
+		return int(unsafe.Sizeof(u))
 	}
 	return int(unsafe.Sizeof(u.Header)) + size
 }
@@ -171,7 +173,7 @@ func (u *UdpMsg) PaylaodSize() (int, error) {
 		size += int(u.Input.NumBits+7) / 8
 		return size, nil
 	}
-	return 0, errors.New("invalid packet type, could not find payload size")
+	return 0, errors.New("ggthx UdpMsg PayloadSize: invalid packet type, could not find payload size")
 }
 
 // might just wanna make this a log function specifically, but this'll do for not

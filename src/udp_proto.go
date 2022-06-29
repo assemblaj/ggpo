@@ -327,7 +327,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 		msg.Input.InputSize = uint8(input.Size)
 
 		if !(last.Frame == -1 || last.Frame+1 == int(msg.Input.StartFrame)) {
-			return errors.New("!((last.Frame == -1 || last.Frame+1 == int(msg.Input.StartFrame))) ")
+			return errors.New("ggthx UdpProtocol SendPendingOutput: !((last.Frame == -1 || last.Frame+1 == int(msg.Input.StartFrame))) ")
 		}
 
 		for j = 0; j < u.pendingOutput.Size(); j++ {
@@ -367,7 +367,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 	}
 
 	if offset >= MaxCompressedBits {
-		return errors.New("offset >= MaxCompressedBits")
+		return errors.New("ggthx UdpProtocol SendPendingOutput: offset >= MaxCompressedBits")
 	}
 	u.SendMsg(&msg)
 	return nil
@@ -381,7 +381,7 @@ func (u *UdpProtocol) SendInputAck() {
 
 func (u *UdpProtocol) GetEvent() (*UdpProtocolEvent, error) {
 	if u.eventQueue.Size() == 0 {
-		return nil, errors.New("no events")
+		return nil, errors.New("ggthx UdpProtocol GetEvent:no events")
 	}
 	e, err := u.eventQueue.Front()
 	if err != nil {
@@ -456,7 +456,7 @@ func (u *UdpProtocol) OnInput(msg *UdpMsg, length int) (bool, error) {
 		remoteStatus := msg.Input.PeerConnectStatus
 		for i := 0; i < len(u.peerConnectStatus); i++ {
 			if remoteStatus[i].LastFrame < u.peerConnectStatus[i].LastFrame {
-				return false, errors.New("remoteStatus[i].LastFrame < u.peerConnectStatus[i].LastFrame")
+				return false, errors.New("ggthx UdpProtocol OnInput: remoteStatus[i].LastFrame < u.peerConnectStatus[i].LastFrame")
 			}
 			if u.peerConnectStatus[i].Disconnected > 0 || remoteStatus[i].Disconnected > 0 {
 				u.peerConnectStatus[i].Disconnected = 1
@@ -492,7 +492,7 @@ func (u *UdpProtocol) OnInput(msg *UdpMsg, length int) (bool, error) {
 	}
 
 	if u.lastRecievedInput.Frame < lastRecievedFrameNumber {
-		return false, errors.New("u.lastRecievedInput.Frame < lastRecievedFrameNumber")
+		return false, errors.New("ggthx UdpProtocol OnInput: u.lastRecievedInput.Frame < lastRecievedFrameNumber")
 	}
 	// Get rid of our buffered input
 	input, err := u.pendingOutput.Front()
@@ -597,7 +597,7 @@ func (u *UdpProtocol) PumpSendQueue() error {
 			u.ooPacket.destIp = entry.destIp
 		} else {
 			if entry.destIp == "" {
-				return errors.New("entry.destIp == \"\"")
+				return errors.New("ggthx UdpProtocol PumpSendQueue: entry.destIp == \"\"")
 			}
 			u.udp.SendTo(entry.msg, entry.destIp, entry.destPort)
 
@@ -651,8 +651,10 @@ func (u *UdpProtocol) SendInput(input *GameInput) {
 
 			// Save this input packet.
 			err := u.pendingOutput.Push(*input)
+			// if for whatever reason the capacity is full, pop off the end of the buffer and try again
 			if err != nil {
-				panic(err)
+				u.pendingOutput.Pop()
+				u.pendingOutput.Push(*input)
 			}
 		}
 	}
@@ -698,7 +700,7 @@ func (u *UdpProtocol) OnInvalid(msg *UdpMsg, len int) (bool, error) {
 	//  Assert(false) // ? ASSERT(FALSE && "Invalid msg in UdpProtocol");
 	// ah
 	log.Printf("Invalid msg in UdpProtocol ")
-	return false, errors.New("invalid msg in UdpProtocol")
+	return false, errors.New("ggthx UdpProtocol OnInvalid: invalid msg in UdpProtocol")
 }
 
 func (u *UdpProtocol) OnSyncRequest(msg *UdpMsg, len int) (bool, error) {

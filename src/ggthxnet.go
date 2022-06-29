@@ -59,7 +59,7 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf("%s:%d", e.Name, e.Code)
+	return fmt.Sprintf("ggthx: %s:%d", e.Name, e.Code)
 }
 
 type ErrorCode int

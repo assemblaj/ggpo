@@ -18,7 +18,7 @@ func (b BitVector) ClearBit(offset *int) {
 
 func (b BitVector) WriteNibblet(nibble int, offset *int) error {
 	if !(nibble < (1 << BitVectorNibbleSize)) {
-		return errors.New("! (nibble < (1 << BitVectorNibbleSize))")
+		return errors.New(" ggthx BitVector WriteNibblet : ! (nibble < (1 << BitVectorNibbleSize))")
 	}
 	for i := 0; i < BitVectorNibbleSize; i++ {
 		if nibble&(1<<i) == 1 {

@@ -24,7 +24,7 @@ type GameInput struct {
 // Will come back to this if the needing the offset becomes a thing
 func NewGameInput(frame int, bits []byte, size int, offset ...int) (GameInput, error) {
 	if size <= 0 {
-		return GameInput{}, errors.New("size must be greater than 0")
+		return GameInput{}, errors.New("ggthx: newGameInput: size must be greater than 0")
 	}
 	/* Not useful for our purposes
 	if len(offset) == 0 {
@@ -40,11 +40,11 @@ func NewGameInput(frame int, bits []byte, size int, offset ...int) (GameInput, e
 
 }
 
-func (g GameInput) IsNull() bool {
+func (g *GameInput) IsNull() bool {
 	return g.Frame == NullFrame
 }
 
-func (g GameInput) Value(i int) bool {
+func (g *GameInput) Value(i int) bool {
 	return (g.Bits[i/8] & (1 << (i % 8))) != 0
 }
 
@@ -62,7 +62,7 @@ func (g *GameInput) Erase() {
 	}
 }
 
-func (g GameInput) Log(prefix string, showFrame bool) {
+func (g *GameInput) Log(prefix string, showFrame bool) {
 	log.Printf("%s%s", prefix, g)
 }
 
@@ -76,7 +76,7 @@ func (g GameInput) String() string {
 	return retval + builder.String()
 }
 
-func (g GameInput) Equal(other *GameInput, bitsonly bool) (bool, error) {
+func (g *GameInput) Equal(other *GameInput, bitsonly bool) (bool, error) {
 	if !bitsonly && g.Frame != other.Frame {
 		log.Printf("frames don't match: %d, %d\n", g.Frame, other.Frame)
 	}
@@ -87,7 +87,7 @@ func (g GameInput) Equal(other *GameInput, bitsonly bool) (bool, error) {
 		log.Printf("bits don't match\n")
 	}
 	if !(g.Size > 0 && other.Size > 0) {
-		return false, errors.New("!(g.Size > 0 && other.Size > 0)")
+		return false, errors.New("ggthx: GameInput Equal : !(g.Size > 0 && other.Size > 0)")
 	}
 	return (bitsonly || g.Frame == other.Frame) &&
 		g.Size == other.Size &&

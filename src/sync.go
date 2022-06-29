@@ -122,7 +122,7 @@ func (s *Sync) AddRemoteInput(queue int, input *GameInput) {
 // originally took in a void ptr buffer and filled it with input
 // maybe i should return that the filled buffer instead idk
 // used by p2pbackend
-func (s Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
+func (s *Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 	disconnectFlags := 0
 
 	//Assert(size >= s.config.numPlayers*s.config.inputSize)
@@ -147,7 +147,7 @@ func (s Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 }
 
 // used by p2pbackend
-func (s Sync) SynchronizeInputs() ([][]byte, int) {
+func (s *Sync) SynchronizeInputs() ([][]byte, int) {
 	disconnectFlags := 0
 
 	//Assert(size >= s.config.numPlayers*s.config.inputSize)
@@ -170,7 +170,7 @@ func (s Sync) SynchronizeInputs() ([][]byte, int) {
 	return values, disconnectFlags
 }
 
-func (s Sync) CheckSimulation(timeout int) {
+func (s *Sync) CheckSimulation(timeout int) {
 	var seekTo int
 	if !s.CheckSimulationConsistency(&seekTo) {
 		err := s.AdjustSimulation(seekTo)
@@ -199,7 +199,7 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	}
 
 	if s.frameCount != seekTo {
-		return errors.New("s.frameCount != seekTo")
+		return errors.New("ggthx Sync AdjustSimulation: s.frameCount != seekTo")
 	}
 
 	// Advance frame by frame (stuffing notifications back to
@@ -210,7 +210,7 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	}
 
 	if s.frameCount != frameCount {
-		return errors.New("s.frameCount != frameCount")
+		return errors.New("ggthx Sync AdjustSimulation: s.frameCount != frameCount")
 	}
 	s.rollingBack = false
 
@@ -227,14 +227,14 @@ func (s *Sync) LoadFrame(frame int) error {
 	var err error
 	s.savedState.head, err = s.FindSavedFrameIndex(frame)
 	if err != nil {
-		panic(err)
+		s.savedState.head = 0
 	}
 	state := s.savedState.frames[s.savedState.head]
 
 	log.Printf("=== Loading frame info %d (size: %d  checksum: %08x).\n",
 		state.frame, state.cbuf, state.checksum)
 	if state.buf == nil || state.cbuf <= 0 {
-		return errors.New("state.buf == nil || state.cbuf <= 0 ")
+		return errors.New("ggthx Sync LoadFrame: state.buf == nil || state.cbuf <= 0 ")
 	}
 	s.callbacks.LoadGameState(state.buf, state.cbuf)
 
@@ -280,7 +280,7 @@ func (s *Sync) FindSavedFrameIndex(frame int) (int, error) {
 		}
 	}
 	if i == count {
-		return 0, errors.New("i == count")
+		return 0, errors.New("ggthx Sync FindSavedFrameIndex: i == count")
 	}
 	return i, nil
 }
@@ -312,17 +312,17 @@ func (s Sync) CheckSimulationConsistency(seekTo *int) bool {
 	return false
 }
 
-func (s Sync) SetFrameDelay(queue int, delay int) {
+func (s *Sync) SetFrameDelay(queue int, delay int) {
 	s.inputQueues[queue].SetFrameDelay(delay)
 }
 
-func (s Sync) ResetPrediction(frameNumber int) {
+func (s *Sync) ResetPrediction(frameNumber int) {
 	for i := 0; i < s.config.numPlayers; i++ {
 		s.inputQueues[i].ResetPrediction(frameNumber)
 	}
 }
 
-func (s Sync) GetEvent(e *SyncEvent) bool {
+func (s *Sync) GetEvent(e *SyncEvent) bool {
 	var err error
 	if s.eventQueue.Size() > 0 {
 		*e, err = s.eventQueue.Front()
@@ -335,10 +335,10 @@ func (s Sync) GetEvent(e *SyncEvent) bool {
 	return false
 }
 
-func (s Sync) FrameCount() int {
+func (s *Sync) FrameCount() int {
 	return s.frameCount
 }
 
-func (s Sync) InRollback() bool {
+func (s *Sync) InRollback() bool {
 	return s.rollingBack
 }

@@ -404,7 +404,7 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue i
 			currentRemoteFrame := p.localConnectStatus[queue].LastFrame
 			newRemoteFrame := evt.input.Frame
 			if !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) {
-				return errors.New("!(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) ")
+				return errors.New("ggthx Peer2PeerBackend OnUdpProtocolPeerEvent : !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) ")
 			}
 
 			p.sync.AddRemoteInput(queue, &evt.input)
