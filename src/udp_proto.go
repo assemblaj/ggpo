@@ -230,7 +230,11 @@ func (u *UdpProtocol) OnLoopPoll(cookie []byte) bool {
 	now := uint(time.Now().UnixMilli())
 	var nextInterval uint
 
-	u.PumpSendQueue()
+	err := u.PumpSendQueue()
+	if err != nil {
+		panic(err)
+	}
+
 	switch u.currentState {
 	case SyncingState:
 		if int(u.state.roundTripRemaining) == NumSyncPackets {
@@ -247,7 +251,10 @@ func (u *UdpProtocol) OnLoopPoll(cookie []byte) bool {
 		if u.state.lastInputPacketRecvTime > 0 || u.state.lastInputPacketRecvTime+uint32(RunningRetryInterval) > uint32(now) {
 			log.Printf("Haven't exchanged packets in a while (last received:%d  last sent:%d).  Resending.\n",
 				u.lastRecievedInput.Frame, u.lastSentInput.Frame)
-			u.SendPendingOutput()
+			err := u.SendPendingOutput()
+			if err != nil {
+				panic(err)
+			}
 			u.state.lastInputPacketRecvTime = uint32(now)
 		}
 
@@ -414,7 +421,10 @@ func (u *UdpProtocol) SendMsg(msg *UdpMsg) {
 	}
 	u.sendQueue.Push(NewQueEntry(
 		int(time.Now().UnixMilli()), u.peerAddress, u.peerPort, msg))
-	u.PumpSendQueue()
+	err := u.PumpSendQueue()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // finally bitvector at work
@@ -569,8 +579,9 @@ func (u *UdpProtocol) PumpSendQueue() error {
 			u.ooPacket.msg = entry.msg
 			u.ooPacket.destIp = entry.destIp
 		} else {
-			return errors.New("entry.destIp == \"\"")
-
+			if entry.destIp == "" {
+				return errors.New("entry.destIp == \"\"")
+			}
 			u.udp.SendTo(entry.msg, entry.destIp, entry.destPort)
 
 			// would delete the udpmsg here
@@ -619,7 +630,10 @@ func (u *UdpProtocol) SendInput(input *GameInput) {
 			u.pendingOutput.Push(*input)
 		}
 	}
-	u.SendPendingOutput()
+	err := u.SendPendingOutput()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (u *UdpProtocol) UpdateNetworkStats() {
