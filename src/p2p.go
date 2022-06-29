@@ -1,6 +1,7 @@
 package ggthx
 
 import (
+	"errors"
 	"log"
 	"math"
 	"time"
@@ -71,7 +72,7 @@ func (p *Peer2PeerBackend) Close() ErrorCode {
 	}
 	return Ok
 }
-func (p *Peer2PeerBackend) DoPoll(timeout int) ErrorCode {
+func (p *Peer2PeerBackend) DoPoll(timeout int) (ErrorCode, error) {
 	if !p.sync.InRollback() {
 		p.poll.Pump(0)
 
@@ -95,7 +96,9 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) ErrorCode {
 
 			log.Printf("last confirmed frame in p2p backend is %d.\n", totalMinConfirmed)
 			if totalMinConfirmed >= 0 {
-				Assert(totalMinConfirmed != math.MaxInt)
+				if totalMinConfirmed == math.MaxInt {
+					return ErrorCodeGeneralFailure, errors.New("totalMinConfirmed == math.MaxInt")
+				}
 				if p.numSpectators > 0 {
 					for p.nextSpectatorFrame <= totalMinConfirmed {
 						log.Printf("pushing frame %d to spectators.\n", p.nextSpectatorFrame)
@@ -135,7 +138,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) ErrorCode {
 			}
 		}
 	}
-	return Ok
+	return Ok, nil
 }
 
 // Checks each endpoint to see if it's running (i.e we haven't called Synchronize or Disconnect
@@ -283,6 +286,7 @@ func (p *Peer2PeerBackend) AddPlayer(player *Player, handle *PlayerHandle) Error
 func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, size int) ErrorCode {
 	var queue int
 	var input GameInput
+	var err error
 
 	if p.sync.InRollback() {
 		return ErrorCodeInRollback
@@ -291,7 +295,11 @@ func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, siz
 		return ErrorCodeNotSynchronized
 	}
 
-	input = NewGameInput(-1, values, size)
+	input, err = NewGameInput(-1, values, size)
+	if err != nil {
+		panic(err)
+	}
+
 	// Feed the input for the current frame into the synchronization layer.
 	if !p.sync.AddLocalInput(queue, &input) {
 		return ErrorCodePredictionThreshod
@@ -387,7 +395,7 @@ func (p *Peer2PeerBackend) PollUdpProtocolEvents() {
 // Also updates that lastFrame for this endpoint as the most
 // recently recived frame.
 // Disconnects if necesary
-func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue int) {
+func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue int) error {
 	handle := p.QueueToPlayerHandle(queue)
 	p.OnUdpProtocolEvent(evt, handle)
 	switch evt.eventType {
@@ -395,7 +403,9 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue i
 		if p.localConnectStatus[queue].Disconnected != 0 {
 			currentRemoteFrame := p.localConnectStatus[queue].LastFrame
 			newRemoteFrame := evt.input.Frame
-			Assert(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1))
+			if !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) {
+				return errors.New("!(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) ")
+			}
 
 			p.sync.AddRemoteInput(queue, &evt.input)
 			// Notify the other endpoints which frame we received from a peer
@@ -406,6 +416,7 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue i
 	case DisconnectedEvent:
 		p.DisconnectPlayer(handle)
 	}
+	return nil
 }
 
 // Every DoPoll, every endpoint and spectator goes through its event queue

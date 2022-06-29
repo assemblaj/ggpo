@@ -78,7 +78,11 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) int {
 	// Street Fighter), which could cause the player to miss moves.
 	if requireIdleInput {
 		for i = 1; i < len(t.lastInputs); i++ {
-			if !t.lastInputs[i].Equal(&t.lastInputs[0], true) {
+			equal, err := t.lastInputs[i].Equal(&t.lastInputs[0], true)
+			if err != nil {
+				panic(err)
+			}
+			if !equal {
 				log.Printf("iteration %d:  rejecting due to input stuff at position %d...!!!\n", count, i)
 				return 0
 			}

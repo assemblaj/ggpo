@@ -85,7 +85,13 @@ func (s *SyncTestBackend) AddLocalInput(player PlayerHandle, values []byte, size
 
 func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, ErrorCode) {
 	if s.rollingBack {
-		s.lastInput = s.savedFrames.Front().input
+		var info savedInfo
+		var err error
+		info, err = s.savedFrames.Front()
+		if err != nil {
+			panic(err)
+		}
+		s.lastInput = info.input
 	} else {
 		if s.sync.GetFrameCount() == 0 {
 			s.sync.SaveCurrentFrame()
@@ -115,6 +121,7 @@ func (s *SyncTestBackend) IncrementFrame() ErrorCode {
 	// Hold onto the current frame in our queue of saved states. We'll need
 	// the checksum later to verify that our replay of the same frame got the
 	// same results
+	var err error
 	var info savedInfo
 	info.frame = frame
 	info.input = s.lastInput
@@ -136,7 +143,10 @@ func (s *SyncTestBackend) IncrementFrame() ErrorCode {
 
 			// Verify that the checksum of this frame is the same as the one in our
 			// list
-			info = s.savedFrames.Front()
+			info, err = s.savedFrames.Front()
+			if err != nil {
+				panic(err)
+			}
 			s.savedFrames.Pop()
 
 			if info.frame != s.sync.GetFrameCount() {

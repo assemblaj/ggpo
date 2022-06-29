@@ -1,5 +1,7 @@
 package ggthx
 
+import "errors"
+
 const BitVectorNibbleSize int = 8
 
 type BitVector []byte
@@ -14,8 +16,10 @@ func (b BitVector) ClearBit(offset *int) {
 	*offset += 1
 }
 
-func (b BitVector) WriteNibblet(nibble int, offset *int) {
-	Assert(nibble < (1 << BitVectorNibbleSize))
+func (b BitVector) WriteNibblet(nibble int, offset *int) error {
+	if !(nibble < (1 << BitVectorNibbleSize)) {
+		return errors.New("! (nibble < (1 << BitVectorNibbleSize))")
+	}
 	for i := 0; i < BitVectorNibbleSize; i++ {
 		if nibble&(1<<i) == 1 {
 			b.SetBit(offset)
@@ -23,6 +27,7 @@ func (b BitVector) WriteNibblet(nibble int, offset *int) {
 			b.ClearBit(offset)
 		}
 	}
+	return nil
 }
 
 func (b BitVector) ReadBit(offset *int) bool {

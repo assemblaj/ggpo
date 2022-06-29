@@ -66,7 +66,7 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([]byte, ErrorCode) {
 	}
 
 	size := len(input.Bits)
-	Assert(size >= s.inputSize*s.numPlayers)
+	//Assert(size >= s.inputSize*s.numPlayers)
 
 	values := make([]byte, size)
 	copy(values, input.Bits)

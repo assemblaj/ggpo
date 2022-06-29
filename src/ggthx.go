@@ -1,5 +1,7 @@
 package ggthx
 
+import "errors"
+
 func StartSession(
 	cb *SessionCallbacks,
 	game string,
@@ -38,9 +40,9 @@ func SetFrameDelay(ggthx Session,
 	return ggthx.SetFrameDelay(player, frameDelay)
 }
 
-func Idle(ggthx Session, timeout int) ErrorCode {
+func Idle(ggthx Session, timeout int) (ErrorCode, error) {
 	if ggthx == nil {
-		return ErrorCodeInvalidSession
+		return ErrorCodeInvalidSession, errors.New("ErrorCodeInvalidSession")
 	}
 	return ggthx.DoPoll(timeout)
 }

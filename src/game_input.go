@@ -2,6 +2,7 @@ package ggthx
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -21,9 +22,10 @@ type GameInput struct {
 }
 
 // Will come back to this if the needing the offset becomes a thing
-func NewGameInput(frame int, bits []byte, size int, offset ...int) GameInput {
-
-	Assert(size > 0)
+func NewGameInput(frame int, bits []byte, size int, offset ...int) (GameInput, error) {
+	if size <= 0 {
+		return GameInput{}, errors.New("size must be greater than 0")
+	}
 	/* Not useful for our purposes
 	if len(offset) == 0 {
 		Assert(size <= GAMEINPUT_MAX_BYTES*GAMEINPUT_MAX_PLAYERS)
@@ -34,7 +36,7 @@ func NewGameInput(frame int, bits []byte, size int, offset ...int) GameInput {
 		Frame: frame,
 		Size:  size,
 		Bits:  bits,
-	}
+	}, nil
 
 }
 
@@ -65,7 +67,6 @@ func (g GameInput) Log(prefix string, showFrame bool) {
 }
 
 func (g GameInput) String() string {
-	Assert(g.Size > 0)
 	retval := fmt.Sprintf("(frame:%d size:%d", g.Frame, g.Size)
 	builder := strings.Builder{}
 	for i := 0; i < len(g.Bits); i++ {
@@ -75,7 +76,7 @@ func (g GameInput) String() string {
 	return retval + builder.String()
 }
 
-func (g GameInput) Equal(other *GameInput, bitsonly bool) bool {
+func (g GameInput) Equal(other *GameInput, bitsonly bool) (bool, error) {
 	if !bitsonly && g.Frame != other.Frame {
 		log.Printf("frames don't match: %d, %d\n", g.Frame, other.Frame)
 	}
@@ -85,8 +86,10 @@ func (g GameInput) Equal(other *GameInput, bitsonly bool) bool {
 	if !bytes.Equal(g.Bits, other.Bits) {
 		log.Printf("bits don't match\n")
 	}
-	Assert(g.Size > 0 && other.Size > 0)
+	if !(g.Size > 0 && other.Size > 0) {
+		return false, errors.New("!(g.Size > 0 && other.Size > 0)")
+	}
 	return (bitsonly || g.Frame == other.Frame) &&
 		g.Size == other.Size &&
-		bytes.Equal(g.Bits, other.Bits)
+		bytes.Equal(g.Bits, other.Bits), nil
 }

@@ -1,6 +1,7 @@
 package ggthx
 
 import (
+	"errors"
 	"fmt"
 	"unsafe"
 )
@@ -135,25 +136,29 @@ func NewUdpMsg(t UdpMsgType) UdpMsg {
 //}
 
 func (u *UdpMsg) PacketSize() int {
-	return int(unsafe.Sizeof(u.Header)) + u.PaylaodSize()
+	size, err := u.PaylaodSize()
+	if err != nil {
+		panic(err)
+	}
+	return int(unsafe.Sizeof(u.Header)) + size
 }
 
-func (u *UdpMsg) PaylaodSize() int {
+func (u *UdpMsg) PaylaodSize() (int, error) {
 	var size int
 
 	switch UdpMsgType(u.Header.HeaderType) {
 	case SyncRequestMsg:
-		return int(unsafe.Sizeof(u.SyncRequest))
+		return int(unsafe.Sizeof(u.SyncRequest)), nil
 	case SyncReplyMsg:
-		return int(unsafe.Sizeof(u.SyncReply))
+		return int(unsafe.Sizeof(u.SyncReply)), nil
 	case QualityReportMsg:
-		return int(unsafe.Sizeof(u.QualityReport))
+		return int(unsafe.Sizeof(u.QualityReport)), nil
 	case QualityReplyMsg:
-		return int(unsafe.Sizeof(u.QualityReply))
+		return int(unsafe.Sizeof(u.QualityReply)), nil
 	case InputAckMsg:
-		return int(unsafe.Sizeof(u.InputAck))
+		return int(unsafe.Sizeof(u.InputAck)), nil
 	case KeepAliveMsg:
-		return 0
+		return 0, nil
 	case InputMsg:
 		for _, s := range u.Input.PeerConnectStatus {
 			size += int(unsafe.Sizeof(s))
@@ -164,10 +169,9 @@ func (u *UdpMsg) PaylaodSize() int {
 		size += int(unsafe.Sizeof(u.Input.NumBits))
 		size += int(unsafe.Sizeof(u.Input.InputSize))
 		size += int(u.Input.NumBits+7) / 8
-		return size
+		return size, nil
 	}
-	Assert(false)
-	return 0
+	return 0, errors.New("invalid packet type, could not find payload size")
 }
 
 // might just wanna make this a log function specifically, but this'll do for not

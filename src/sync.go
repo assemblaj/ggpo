@@ -1,6 +1,7 @@
 package ggthx
 
 import (
+	"errors"
 	"log"
 )
 
@@ -172,7 +173,7 @@ func (s *Sync) IncrementFrame() {
 	s.SaveCurrentFrame()
 }
 
-func (s *Sync) AdjustSimulation(seekTo int) {
+func (s *Sync) AdjustSimulation(seekTo int) error {
 	frameCount := s.frameCount
 	count := s.frameCount - seekTo
 
@@ -181,7 +182,10 @@ func (s *Sync) AdjustSimulation(seekTo int) {
 
 	// flush our input queue and load the last frame
 	s.LoadFrame(seekTo)
-	Assert(s.frameCount == seekTo)
+
+	if s.frameCount != seekTo {
+		return errors.New("s.frameCount != seekTo")
+	}
 
 	// Advance frame by frame (stuffing notifications back to
 	// the master).
@@ -189,31 +193,41 @@ func (s *Sync) AdjustSimulation(seekTo int) {
 	for i := 0; i < count; i++ {
 		s.callbacks.AdvanceFrame(0)
 	}
-	Assert(s.frameCount == frameCount)
 
+	if s.frameCount != frameCount {
+		return errors.New("s.frameCount != frameCount")
+	}
 	s.rollingBack = false
 
 	log.Printf("---\n")
+	return nil
 }
 
-func (s *Sync) LoadFrame(frame int) {
+func (s *Sync) LoadFrame(frame int) error {
 	if frame == s.frameCount {
 		log.Printf("Skipping NOP.\n")
-		return
+		return nil
 	}
 	// Move the head pointer back and load it up
-	s.savedState.head = s.FindSavedFrameIndex(frame)
+	var err error
+	s.savedState.head, err = s.FindSavedFrameIndex(frame)
+	if err != nil {
+		panic(err)
+	}
 	state := s.savedState.frames[s.savedState.head]
 
 	log.Printf("=== Loading frame info %d (size: %d  checksum: %08x).\n",
 		state.frame, state.cbuf, state.checksum)
-	Assert(state.buf != nil && state.cbuf > 0)
+	if state.buf == nil || state.cbuf <= 0 {
+		return errors.New("state.buf == nil || state.cbuf <= 0 ")
+	}
 	s.callbacks.LoadGameState(state.buf, state.cbuf)
 
 	// Reset framecount and the head of the state ring-buffer to point in
 	// advance of the current frame (as if we had just finished executing it).
 	s.frameCount = state.frame
 	s.savedState.head = (s.savedState.head + 1) % len(s.savedState.frames)
+	return nil
 }
 
 func (s *Sync) SaveCurrentFrame() {
@@ -242,7 +256,7 @@ func (s *Sync) GetLastSavedFrame() savedFrame {
 	return s.savedState.frames[i]
 }
 
-func (s *Sync) FindSavedFrameIndex(frame int) int {
+func (s *Sync) FindSavedFrameIndex(frame int) (int, error) {
 	count := len(s.savedState.frames)
 	var i int
 	for i = 0; i < count; i++ {
@@ -251,9 +265,9 @@ func (s *Sync) FindSavedFrameIndex(frame int) int {
 		}
 	}
 	if i == count {
-		Assert(false)
+		return 0, errors.New("i == count")
 	}
-	return i
+	return i, nil
 }
 
 func (s *Sync) CreateQueues(config SyncConfig) bool {
@@ -294,8 +308,12 @@ func (s Sync) ResetPrediction(frameNumber int) {
 }
 
 func (s Sync) GetEvent(e *SyncEvent) bool {
+	var err error
 	if s.eventQueue.Size() > 0 {
-		*e = s.eventQueue.Front()
+		*e, err = s.eventQueue.Front()
+		if err != nil {
+			panic(err)
+		}
 		s.eventQueue.Pop()
 		return true
 	}

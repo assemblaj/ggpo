@@ -44,7 +44,10 @@ func (p *Poll) Pump(timeout int) bool {
 		p.startTime = int(time.Now().UnixMilli())
 	}
 	for i := 0; i < p.loopSinks.Size(); i++ {
-		cb := p.loopSinks.Get(i)
+		cb, err := p.loopSinks.Get(i)
+		if err != nil {
+			panic(err)
+		}
 		finished = !(cb.sink.OnLoopPoll(cb.cookie) || finished)
 	}
 	return finished
