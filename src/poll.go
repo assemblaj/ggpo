@@ -8,6 +8,12 @@ type Poll struct {
 	loopSinks   StaticBuffer[PollSinkCb]
 }
 
+type Poller interface {
+	RegisterLoop(sink PollSink, cookie []byte)
+	Run()
+	Pump(timeout int) bool
+}
+
 type PollSinkCb struct {
 	sink   PollSink
 	cookie []byte
@@ -26,10 +32,13 @@ func NewPoll() Poll {
 }
 
 func (p *Poll) RegisterLoop(sink PollSink, cookie []byte) {
-	p.loopSinks.PushBack(
+	err := p.loopSinks.PushBack(
 		PollSinkCb{
 			sink:   sink,
 			cookie: cookie})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (p *Poll) Run() {

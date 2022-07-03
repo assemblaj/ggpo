@@ -54,17 +54,17 @@ func NewInputQueue(id int, inputSize int) InputQueue {
 
 }
 
-func (i InputQueue) LastConfirmedFrame() int {
+func (i *InputQueue) LastConfirmedFrame() int {
 	log.Printf("returning last confirmed frame %d.\n", i.lastUserAddedFrame)
 	return i.lastAddedFrame
 }
 
-func (i InputQueue) FirstIncorrectFrame() int {
+func (i *InputQueue) FirstIncorrectFrame() int {
 	return i.firstIncorrectFrame
 }
 
 func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
-	if frame <= 0 {
+	if frame < 0 {
 		return errors.New("ggthx: InputQueue discardConfirmedFrames: frames <= 0")
 	}
 
@@ -108,7 +108,7 @@ func (i *InputQueue) ResetPrediction(frame int) error {
 	return nil
 }
 
-func (i InputQueue) GetConfirmedInput(requestedFrame int, input *GameInput) (bool, error) {
+func (i *InputQueue) GetConfirmedInput(requestedFrame int, input *GameInput) (bool, error) {
 	if !(i.firstIncorrectFrame == NullFrame || requestedFrame < i.firstIncorrectFrame) {
 		return false, errors.New("ggthx: InputQueue GetConfirmedInput : i.firstIncorrectFrame != NullFrame && requestedFrame >")
 	}
@@ -176,7 +176,7 @@ func (i *InputQueue) AddInput(input *GameInput) error {
 	log.Printf("adding input frame number %d to queue.\n", input.Frame)
 
 	if !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1) {
-		return errors.New("ggthx : AddInput : !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1)")
+		return errors.New("ggthx : InputQueue AddInput : !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1)")
 	}
 	i.lastUserAddedFrame = input.Frame
 
@@ -213,7 +213,6 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) e
 	i.firstFrame = false
 
 	i.lastAddedFrame = frameNumber
-
 	if i.prediction.Frame != NullFrame {
 		if frameNumber != i.prediction.Frame {
 			return errors.New("ggthx: InputQueue AddDelayedInputToQueue : frameNumber != i.prediction.Frame")
@@ -285,4 +284,8 @@ func previousFrame(offset int) int {
 
 func (i *InputQueue) SetFrameDelay(delay int) {
 	i.frameDelay = delay
+}
+
+func (i *InputQueue) Length() int {
+	return i.length
 }

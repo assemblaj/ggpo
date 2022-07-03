@@ -8,7 +8,7 @@ const SpectatorFrameBufferSize int = 64
 
 type SpectatorBackend struct {
 	callbacks       SessionCallbacks
-	poll            Poll
+	poll            Poller
 	udp             Udp
 	host            UdpProtocol
 	synchonizing    bool
@@ -34,9 +34,10 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	}
 	s.inputs = inputs
 	//port := strconv.Itoa(hostPort)
-	s.udp = NewUdp("127.2.1.1", localPort, &s.poll, &s)
-	s.host = NewUdpProtocol(&s.udp, &s.poll, 0, hostIp, hostPort, nil)
-	s.poll = NewPoll()
+	s.udp = NewUdp(&s, "127.2.1.1", localPort)
+	s.host = NewUdpProtocol(&s.udp, 0, hostIp, hostPort, nil)
+	var poll Poll = NewPoll()
+	s.poll = &poll
 	s.callbacks.BeginGame(gameName)
 	return s
 }
@@ -149,7 +150,8 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 	}
 }
 
-func (s *SpectatorBackend) OnMsg(msg *UdpMsg, len int) {
-	//if s.host.HandlesMsg()
-	s.host.OnMsg(msg, len)
+func (s *SpectatorBackend) HandleMessage(msg *UdpMsg, len int) {
+	if s.host.HandlesMsg() {
+		s.host.OnMsg(msg, len)
+	}
 }

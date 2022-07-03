@@ -16,7 +16,7 @@ import (
 )
 
 //var session *ggthx.SyncTestBackend
-var session *ggthx.Peer2PeerBackend
+var session ggthx.Peer2PeerBackend
 var player1 Player
 var player2 Player
 var game *Game
@@ -42,7 +42,10 @@ type Player struct {
 
 func (g *Game) Update() error {
 	now = int(time.Now().UnixMilli())
-	ggthx.Idle(session, int(math.Max(0, float64(next-now-1))))
+	//ggthx.Idle(session, int(math.Max(0, float64(next-now-1))))
+	fmt.Println("Idling ")
+	session.DoPoll(int(math.Max(0, float64(next-now-1))))
+	fmt.Println("Idling Complete")
 	if now >= next {
 		g.RunFrame()
 		next = now + 1000/60
@@ -54,22 +57,35 @@ func (g *Game) RunFrame() {
 	input := g.ReadInputs()
 	buffer := encodeInputs(input)
 
-	result := ggthx.AddLocalInput(session, ggthx.PlayerHandle(currentPlayer), buffer, len(buffer))
+	fmt.Println("Attempting to add local inputs")
+	//result := ggthx.AddLocalInput(session, ggthx.PlayerHandle(currentPlayer), buffer, len(buffer))
+	result := session.AddLocalInput(ggthx.PlayerHandle(currentPlayer), buffer, len(buffer))
+	fmt.Println("Attempt to add local inputs complete")
 	if result == nil {
+		fmt.Println("Attempt to add local inputs was successful")
 		var values [][]byte
 		disconnectFlags := 0
 
-		values, result = ggthx.SynchronizeInput(session, &disconnectFlags)
+		fmt.Println("Attempting to synchronize inputs")
+		//values, result = ggthx.SynchronizeInput(session, &disconnectFlags)
+		values, result = session.SyncInput(&disconnectFlags)
 		if result == nil {
+			fmt.Println("Attempt synchronize inputs was sucessful")
+
 			inputs := decodeInputs(values)
 			g.AdvanceFrame(inputs, disconnectFlags)
+		} else {
+			fmt.Println("Attempt synchronize inputs was unsucessful")
 		}
+	} else {
+		fmt.Println("Attempt to add local inputs unsuccessful")
 	}
 }
 
 func (g *Game) AdvanceFrame(inputs []Input, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
-	err := ggthx.AdvanceFrame(session)
+	//err := ggthx.AdvanceFrame(session)
+	err := session.IncrementFrame()
 	if err != nil {
 		panic(err)
 	}
@@ -191,11 +207,13 @@ func freeBuffer(buffer []byte) {
 }
 
 func advanceFrame(flags int) bool {
+	fmt.Println("Advancing frame. ")
 	var discconectFlags int
 
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
-	inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
+	//inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
+	inputs, result := session.SyncInput(&discconectFlags)
 	if result != nil {
 		log.Fatal("Error from GGTHXSynchronizeInput")
 	}
@@ -242,19 +260,27 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 	callbacks.OnEvent = onEvent
 	callbacks.SaveGameState = saveGameState
 
-	session = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
+	//session = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
+	session = ggthx.NewPeer2PeerBackend(&callbacks, "Test", localPort, numPlayers, inputSize)
+	session.SetDisconnectTimeout(3000)
+	session.SetDisconnectNotifyStart(1000)
 
-	ggthx.SetDisconnectTimeout(session, 3000)
-	ggthx.SetDisconnectNotifyStart(session, 1000)
+	//ggthx.SetDisconnectTimeout(session, 3000)
+	//ggthx.SetDisconnectNotifyStart(session, 1000)
 
 	for i := 0; i < numPlayers+numSpectators; i++ {
 		var handle ggthx.PlayerHandle
-		result = ggthx.AddPlayer(session, &players[i], &handle)
+		//result = ggthx.AddPlayer(session, &players[i], &handle)
+		result = session.AddPlayer(&players[i], &handle)
+		if players[i].PlayerType == ggthx.PlayerTypeLocal {
+			currentPlayer = int(handle)
+		}
 		if result != nil {
 			log.Fatalf("There's an issue from AddPlayer")
 		}
 		if players[i].PlayerType == ggthx.PlayerTypeLocal {
-			ggthx.SetFrameDelay(session, handle, FRAME_DELAY)
+			//ggthx.SetFrameDelay(session, handle, FRAME_DELAY)
+			session.SetFrameDelay(handle, FRAME_DELAY)
 
 		}
 	}

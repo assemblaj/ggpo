@@ -38,7 +38,7 @@ const (
 )
 
 type UdpConnectStatus struct {
-	Disconnected uint
+	Disconnected bool
 	LastFrame    int
 }
 
@@ -73,12 +73,12 @@ type UdpInputPacket struct {
 	PeerConnectStatus []UdpConnectStatus
 	StartFrame        uint32
 
-	DisconectRequested int
+	DisconectRequested bool
 	AckFrame           int
 
 	NumBits   uint16
 	InputSize uint8
-	Bits      []byte
+	Bits      [][]byte
 }
 
 type UdpInputAckPacket struct {
@@ -140,7 +140,8 @@ func (u *UdpMsg) PacketSize() int {
 	//Unknown Packet type somehow
 	if err != nil {
 		// Send size of whole object
-		return int(unsafe.Sizeof(u))
+		//return int(unsafe.Sizeof(u))
+		panic(err)
 	}
 	return int(unsafe.Sizeof(u.Header)) + size
 }

@@ -15,7 +15,7 @@ const (
 
 type Peer2PeerBackend struct {
 	callbacks     SessionCallbacks
-	poll          Poll
+	poll          Poller
 	sync          Sync
 	udp           Udp
 	endpoints     []UdpProtocol
@@ -43,8 +43,9 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	p.synchronizing = true
 	p.disconnectTimeout = DefaultDisconnectTimeout
 	p.disconnectNotifyStart = DefaultDisconnectNotifyStart
-	p.poll = NewPoll()
-	p.udp = NewUdp("127.0.0.1", localPort, &p.poll, &p)
+	var poll Poll = NewPoll()
+	p.poll = &poll
+	p.udp = NewUdp(&p, "127.0.0.1", localPort)
 
 	p.localConnectStatus = make([]UdpConnectStatus, UDPMsgMaxPlayers)
 	for i := 0; i < len(p.localConnectStatus); i++ {
@@ -59,7 +60,6 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	p.endpoints = make([]UdpProtocol, numPlayers)
 	p.callbacks.BeginGame(gameName)
 	go p.udp.Read()
-
 	return p
 }
 
@@ -87,6 +87,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) error {
 			for i := 0; i < p.numPlayers; i++ {
 				p.endpoints[i].SetLocalFrameNumber(currentFrame)
 			}
+
 			var totalMinConfirmed int
 			if p.numPlayers <= 2 {
 				totalMinConfirmed = p.Poll2Players(currentFrame)
@@ -159,12 +160,12 @@ func (p *Peer2PeerBackend) Poll2Players(currentFrame int) int {
 			var ignore int
 			queueConnected = p.endpoints[i].GetPeerConnectStatus(i, &ignore)
 		}
-		if p.localConnectStatus[i].Disconnected == 0 {
+		if !p.localConnectStatus[i].Disconnected {
 			totalMinConfirmed = Min(p.localConnectStatus[i].LastFrame, totalMinConfirmed)
 		}
 		log.Printf("  local endp: connected = %t, last_received = %d, total_min_confirmed = %d.\n",
-			p.localConnectStatus[i].Disconnected == 0, p.localConnectStatus[i].LastFrame, totalMinConfirmed)
-		if !queueConnected && p.localConnectStatus[i].Disconnected == 0 {
+			!p.localConnectStatus[i].Disconnected, p.localConnectStatus[i].LastFrame, totalMinConfirmed)
+		if !queueConnected && !p.localConnectStatus[i].Disconnected {
 			log.Printf("disconnecting i %d by remote request.\n", i)
 			p.DisconnectPlayerQueue(i, totalMinConfirmed)
 		}
@@ -188,6 +189,8 @@ func (p *Peer2PeerBackend) PollNPlayers(currentFrame int) int {
 			// throw away the rest. -pond3r
 			if p.endpoints[i].IsRunning() {
 				connected := p.endpoints[i].GetPeerConnectStatus(queue, &lastRecieved)
+
+				queueConnected = queueConnected && connected
 				queueMinConfirmed = Min(lastRecieved, queueMinConfirmed)
 				log.Printf("  endpoint %d: connected = %t, last_received = %d, queue_min_confirmed = %d.\n",
 					i, connected, lastRecieved, queueMinConfirmed)
@@ -196,11 +199,11 @@ func (p *Peer2PeerBackend) PollNPlayers(currentFrame int) int {
 			}
 		}
 		// merge in our local status only if we're still connected!
-		if p.localConnectStatus[queue].Disconnected == 0 {
+		if !p.localConnectStatus[queue].Disconnected {
 			queueMinConfirmed = Min(p.localConnectStatus[queue].LastFrame, queueMinConfirmed)
 		}
 		log.Printf("  local endp: connected = %t, last_received = %d, queue_min_confirmed = %d.\n",
-			p.localConnectStatus[queue].Disconnected == 0, p.localConnectStatus[queue].LastFrame, queueMinConfirmed)
+			!p.localConnectStatus[queue].Disconnected, p.localConnectStatus[queue].LastFrame, queueMinConfirmed)
 
 		if queueConnected {
 			totalMinConfirmed = Min(queueMinConfirmed, totalMinConfirmed)
@@ -208,7 +211,7 @@ func (p *Peer2PeerBackend) PollNPlayers(currentFrame int) int {
 			// check to see if this disconnect notification is further back than we've been before.  If
 			// so, we need to re-adjust.  This can happen when we detect our own disconnect at frame n
 			// and later receive a disconnect notification for frame n-1.
-			if p.localConnectStatus[queue].Disconnected == 0 || p.localConnectStatus[queue].LastFrame > queueMinConfirmed {
+			if !p.localConnectStatus[queue].Disconnected || p.localConnectStatus[queue].LastFrame > queueMinConfirmed {
 				log.Printf("disconnecting queue %d by remote request.\n", queue)
 				p.DisconnectPlayerQueue(queue, queueMinConfirmed)
 			}
@@ -227,7 +230,7 @@ func (p *Peer2PeerBackend) PollNPlayers(currentFrame int) int {
 func (p *Peer2PeerBackend) AddRemotePlayer(ip string, port int, queue int) {
 	p.synchronizing = true
 
-	p.endpoints[queue] = NewUdpProtocol(&p.udp, &p.poll, queue, ip, port, p.localConnectStatus)
+	p.endpoints[queue] = NewUdpProtocol(&p.udp, queue, ip, port, &p.localConnectStatus)
 	// have to reqgister the loop from here or else the Poll won't see changed state
 	// that we've initiated.
 	p.poll.RegisterLoop(&(p.endpoints[queue]), nil)
@@ -249,8 +252,8 @@ func (p *Peer2PeerBackend) AddSpectator(ip string, port int) error {
 	}
 	queue := p.numSpectators
 	p.numSpectators++
-	udp := NewUdp(ip, port, &p.poll, p)
-	p.spectators[queue] = NewUdpProtocol(&udp, &p.poll, queue+1000, ip, port, p.localConnectStatus)
+
+	p.spectators[queue] = NewUdpProtocol(&p.udp, queue+1000, ip, port, &p.localConnectStatus)
 	p.poll.RegisterLoop(&(p.spectators[queue]), nil)
 	p.spectators[queue].SetDisconnectTimeout(p.disconnectTimeout)
 	p.spectators[queue].SetDisconnectNotifyStart(p.disconnectNotifyStart)
@@ -295,6 +298,11 @@ func (p *Peer2PeerBackend) AddLocalInput(player PlayerHandle, values []byte, siz
 		return Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
 
+	result := p.PlayerHandleToQueue(player, &queue)
+	if result != nil {
+		return result
+	}
+
 	input, err = NewGameInput(-1, values, size)
 	if err != nil {
 		panic(err)
@@ -336,6 +344,7 @@ func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 		return nil, Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
 	values, flags := p.sync.SynchronizeInputs()
+
 	if disconnectFlags != nil {
 		*disconnectFlags = flags
 	}
@@ -350,7 +359,10 @@ func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 func (p *Peer2PeerBackend) IncrementFrame() error {
 	log.Printf("End of frame (%d)...\n", p.sync.FrameCount())
 	p.sync.IncrementFrame()
-	p.DoPoll(0)
+	err := p.DoPoll(0)
+	if err != nil {
+		panic(err)
+	}
 	p.PollSyncEvents()
 
 	return nil
@@ -374,7 +386,10 @@ func (p *Peer2PeerBackend) PollUdpProtocolEvents() {
 			if err != nil {
 				break
 			} else {
-				p.OnUdpProtocolPeerEvent(evt, i)
+				err := p.OnUdpProtocolPeerEvent(evt, i)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	}
@@ -400,9 +415,10 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue i
 	p.OnUdpProtocolEvent(evt, handle)
 	switch evt.eventType {
 	case InputEvent:
-		if p.localConnectStatus[queue].Disconnected != 0 {
+		if !p.localConnectStatus[queue].Disconnected {
 			currentRemoteFrame := p.localConnectStatus[queue].LastFrame
 			newRemoteFrame := evt.input.Frame
+
 			if !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) {
 				return errors.New("ggthx Peer2PeerBackend OnUdpProtocolPeerEvent : !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) ")
 			}
@@ -414,7 +430,10 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue i
 			p.localConnectStatus[queue].LastFrame = evt.input.Frame
 		}
 	case DisconnectedEvent:
-		p.DisconnectPlayer(handle)
+		err := p.DisconnectPlayer(handle)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return nil
 }
@@ -495,7 +514,7 @@ func (p *Peer2PeerBackend) DisconnectPlayer(player PlayerHandle) error {
 		return result
 	}
 
-	if p.localConnectStatus[queue].Disconnected > 0 {
+	if p.localConnectStatus[queue].Disconnected {
 		return Error{Code: ErrorCodePlayerDisconnected, Name: "ErrorCodePlayerDisconnected"}
 	}
 
@@ -538,7 +557,7 @@ func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
 	log.Printf("Changing queue %d local connect status for last frame from %d to %d on disconnect request (current: %d).\n",
 		queue, p.localConnectStatus[queue].LastFrame, syncto, frameCount)
 
-	p.localConnectStatus[queue].Disconnected = 1
+	p.localConnectStatus[queue].Disconnected = true
 	p.localConnectStatus[queue].LastFrame = syncto
 
 	if syncto < frameCount {
@@ -657,7 +676,7 @@ func (p *Peer2PeerBackend) QueueToSpectatorHandle(queue int) PlayerHandle {
 	As of right now it hands the message off to the first endpoint that
 	handles it then returns?
 */
-func (p *Peer2PeerBackend) OnMsg(msg *UdpMsg, length int) {
+func (p *Peer2PeerBackend) HandleMessage(msg *UdpMsg, length int) {
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].HandlesMsg() {
 			p.endpoints[i].OnMsg(msg, length)
@@ -684,7 +703,7 @@ func (p *Peer2PeerBackend) CheckInitialSync() {
 		// go and tell the client that we're ok to accept in.
 		for i = 0; i < p.numPlayers; i++ {
 			// xxx: IsInitialized() must go... we're actually using it as a proxy for "represents the local player" -pond3r
-			if p.endpoints[i].IsInitialized() && !p.endpoints[i].IsSynchronized() && p.localConnectStatus[i].Disconnected == 0 {
+			if p.endpoints[i].IsInitialized() && !p.endpoints[i].IsSynchronized() && !p.localConnectStatus[i].Disconnected {
 				return
 			}
 		}

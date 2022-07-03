@@ -16,10 +16,9 @@ const (
 type Udp struct {
 	Stats UdpStats // may not need this, may just be a service used by others
 
-	socket    net.Conn
-	callbacks UdpCallbacks
-	poll      Poll
-	listener  net.PacketConn
+	socket         net.Conn
+	messageHandler MessageHandler
+	listener       net.PacketConn
 }
 
 type UdpStats struct {
@@ -28,10 +27,10 @@ type UdpStats struct {
 	KbpsSent    float64
 }
 
-type UdpCallbacks interface {
+type MessageHandler interface {
 	// from should be sockaddr_in
 	//OnMsg(from string, msg *UdpMsg, len int)
-	OnMsg(msg *UdpMsg, len int)
+	HandleMessage(msg *UdpMsg, len int)
 }
 
 func (u *Udp) CreateSocket(ipAddress, port string, retries int) net.Conn {
@@ -53,18 +52,15 @@ func (u *Udp) Close() {
 // Which is called by backend::AddPlayer
 // which is called by Session:AddPlayer
 // and obtained via the GGPOPlayer object
-func NewUdp(ipAdress string, localPort int, p *Poll, callbacks UdpCallbacks) Udp {
+func NewUdp(messageHandler MessageHandler, ipAdress string, localPort int) Udp {
 	u := Udp{}
-	u.callbacks = callbacks
-	u.poll = *p
-	u.poll.RegisterLoop(&u, nil)
+	u.messageHandler = messageHandler
 
 	portStr := strconv.Itoa(localPort)
 
 	log.Printf("binding udp socket to port %d.\n", localPort)
 	//u.socket = u.CreateSocket(ipAdress, portStr, 0)
 	u.listener, _ = net.ListenPacket("udp", ipAdress+":"+portStr)
-
 	return u
 }
 
@@ -112,14 +108,10 @@ func (u *Udp) Read() {
 			if err = dec.Decode(&msg); err != nil {
 				log.Fatal(err)
 			}
-			u.callbacks.OnMsg(&msg, len)
+			u.messageHandler.HandleMessage(&msg, len)
 		}
 
 	}
-}
-
-func (u *Udp) OnLoopPoll(cookie []byte) bool {
-	return true
 }
 
 func (u *Udp) IsInitialized() bool {

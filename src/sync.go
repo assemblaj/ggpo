@@ -98,7 +98,6 @@ func (s *Sync) SetLastConfirmedFrame(frame int) {
 
 func (s *Sync) AddLocalInput(queue int, input *GameInput) bool {
 	framesBehind := s.frameCount - s.lastConfirmedFrame
-
 	if s.frameCount >= s.maxPredictionFrames && framesBehind >= s.maxPredictionFrames {
 		log.Printf("Rejecting input from emulator: reached prediction barrier.\n")
 		return false
@@ -110,13 +109,20 @@ func (s *Sync) AddLocalInput(queue int, input *GameInput) bool {
 
 	log.Printf("Sending undelayed local frame %d to queue %d.\n", s.frameCount, queue)
 	input.Frame = s.frameCount
-	s.inputQueues[queue].AddInput(input)
+	err := s.inputQueues[queue].AddInput(input)
+	if err != nil {
+		panic(err)
+	}
 
 	return true
 }
 
 func (s *Sync) AddRemoteInput(queue int, input *GameInput) {
-	s.inputQueues[queue].AddInput(input)
+
+	err := s.inputQueues[queue].AddInput(input)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // originally took in a void ptr buffer and filled it with input
@@ -124,14 +130,13 @@ func (s *Sync) AddRemoteInput(queue int, input *GameInput) {
 // used by p2pbackend
 func (s *Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 	disconnectFlags := 0
-
 	//Assert(size >= s.config.numPlayers*s.config.inputSize)
 
 	//values := make([]byte, size)
 	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
-		if s.localConnectStatus[i].Disconnected > 0 && frame > s.localConnectStatus[i].LastFrame {
+		if (s.localConnectStatus[i].Disconnected) && (frame > s.localConnectStatus[i].LastFrame) {
 			disconnectFlags |= (1 << i)
 			input.Erase()
 		} else {
@@ -149,14 +154,13 @@ func (s *Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 // used by p2pbackend
 func (s *Sync) SynchronizeInputs() ([][]byte, int) {
 	disconnectFlags := 0
-
 	//Assert(size >= s.config.numPlayers*s.config.inputSize)
 
 	//values := make([]byte, size)
 	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
-		if s.localConnectStatus[i].Disconnected > 0 && s.frameCount > s.localConnectStatus[i].LastFrame {
+		if s.localConnectStatus[i].Disconnected && s.frameCount > s.localConnectStatus[i].LastFrame {
 			disconnectFlags |= (1 << i)
 			input.Erase()
 		} else {
@@ -171,6 +175,7 @@ func (s *Sync) SynchronizeInputs() ([][]byte, int) {
 }
 
 func (s *Sync) CheckSimulation(timeout int) {
+
 	var seekTo int
 	if !s.CheckSimulationConsistency(&seekTo) {
 		err := s.AdjustSimulation(seekTo)
@@ -182,6 +187,7 @@ func (s *Sync) CheckSimulation(timeout int) {
 
 func (s *Sync) IncrementFrame() {
 	s.frameCount++
+
 	s.SaveCurrentFrame()
 }
 
@@ -227,7 +233,7 @@ func (s *Sync) LoadFrame(frame int) error {
 	var err error
 	s.savedState.head, err = s.FindSavedFrameIndex(frame)
 	if err != nil {
-		s.savedState.head = 0
+		panic(err)
 	}
 	state := s.savedState.frames[s.savedState.head]
 
@@ -241,11 +247,13 @@ func (s *Sync) LoadFrame(frame int) error {
 	// Reset framecount and the head of the state ring-buffer to point in
 	// advance of the current frame (as if we had just finished executing it).
 	s.frameCount = state.frame
+
 	s.savedState.head = (s.savedState.head + 1) % len(s.savedState.frames)
 	return nil
 }
 
 func (s *Sync) SaveCurrentFrame() {
+
 	// originally was
 	// SavedFrame *state = _savedstate.frames + _savedstate.head;
 	state := s.savedState.frames[s.savedState.head]
@@ -254,10 +262,9 @@ func (s *Sync) SaveCurrentFrame() {
 		state.buf = nil
 	}
 	state.frame = s.frameCount
-	buf, result := s.callbacks.SaveGameState(&state.cbuf, &state.checksum, state.frame)
-	if result {
-		state.buf = buf
-	}
+	buf, _ := s.callbacks.SaveGameState(&state.cbuf, &state.checksum, state.frame)
+	state.buf = buf
+
 	s.savedState.frames[s.savedState.head] = state
 	log.Printf("=== Saved frame info %d (size: %d  checksum: %08x).\n", state.frame, state.cbuf, state.checksum)
 	s.savedState.head = (s.savedState.head + 1) % len(s.savedState.frames)
@@ -272,6 +279,7 @@ func (s *Sync) GetLastSavedFrame() savedFrame {
 }
 
 func (s *Sync) FindSavedFrameIndex(frame int) (int, error) {
+
 	count := len(s.savedState.frames)
 	var i int
 	for i = 0; i < count; i++ {
@@ -286,6 +294,7 @@ func (s *Sync) FindSavedFrameIndex(frame int) (int, error) {
 }
 
 func (s *Sync) CreateQueues(config SyncConfig) bool {
+
 	s.inputQueues = make([]InputQueue, s.config.numPlayers)
 	for i := 0; i < s.config.numPlayers; i++ {
 		s.inputQueues[i] = NewInputQueue(i, s.config.inputSize)
@@ -293,7 +302,8 @@ func (s *Sync) CreateQueues(config SyncConfig) bool {
 	return true
 }
 
-func (s Sync) CheckSimulationConsistency(seekTo *int) bool {
+func (s *Sync) CheckSimulationConsistency(seekTo *int) bool {
+
 	firstInorrect := NullFrame
 	for i := 0; i < s.config.numPlayers; i++ {
 		incorrect := s.inputQueues[i].FirstIncorrectFrame()
@@ -318,7 +328,10 @@ func (s *Sync) SetFrameDelay(queue int, delay int) {
 
 func (s *Sync) ResetPrediction(frameNumber int) {
 	for i := 0; i < s.config.numPlayers; i++ {
-		s.inputQueues[i].ResetPrediction(frameNumber)
+		err := s.inputQueues[i].ResetPrediction(frameNumber)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -329,7 +342,10 @@ func (s *Sync) GetEvent(e *SyncEvent) bool {
 		if err != nil {
 			panic(err)
 		}
-		s.eventQueue.Pop()
+		err = s.eventQueue.Pop()
+		if err != nil {
+			panic(err)
+		}
 		return true
 	}
 	return false
