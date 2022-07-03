@@ -135,7 +135,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) error {
 			}
 			// because GGPO had this
 			if timeout > 0 {
-				time.Sleep(time.Second)
+				time.Sleep(time.Millisecond)
 			}
 		}
 	}
