@@ -74,7 +74,18 @@ func main() {
 	start = int(time.Now().UnixMilli())
 	now = start
 	next = start
+	/*	Just for me
+		f, err := os.OpenFile("Player"+argsWithoutProg[4]+".log", os.O_CREATE|os.O_RDWR, 0666)
+		if err != nil {
+			panic(err)
+		}
 
+		// don't forget to close it
+		defer f.Close()
+
+		// assign it to the standard logger
+		log.SetOutput(f)
+	*/
 	GameInit(localPort, numPlayers, players, 0)
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)

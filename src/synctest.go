@@ -51,27 +51,27 @@ func NewSyncTestBackend(cb *SessionCallbacks,
 	return s
 }
 
-func (s *SyncTestBackend) DoPoll(timeout int) ErrorCode {
+func (s *SyncTestBackend) DoPoll(timeout int) error {
 	if !s.running {
 		var info Event
 		info.Code = EventCodeRunning
 		s.callbacks.OnEvent(&info)
 		s.running = true
 	}
-	return Ok
+	return nil
 }
 
-func (s *SyncTestBackend) AddPlayer(player *Player, handle *PlayerHandle) ErrorCode {
+func (s *SyncTestBackend) AddPlayer(player *Player, handle *PlayerHandle) error {
 	if player.PlayerNum < 1 || player.PlayerNum > s.numPlayers {
-		return ErrorCodePlayerOutOfRange
+		return Error{Code: ErrorCodePlayerOutOfRange, Name: "ErrorCodePlayerOutOfRange"}
 	}
 	*handle = (PlayerHandle(player.PlayerNum - 1))
-	return Ok
+	return nil
 }
 
-func (s *SyncTestBackend) AddLocalInput(player PlayerHandle, values []byte, size int) ErrorCode {
+func (s *SyncTestBackend) AddLocalInput(player PlayerHandle, values []byte, size int) error {
 	if !s.running {
-		return ErrorCodeNotSynchronized
+		return Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
 
 	//index := int(player)
@@ -80,10 +80,10 @@ func (s *SyncTestBackend) AddLocalInput(player PlayerHandle, values []byte, size
 	//}
 	s.currentInput.Bits = make([]byte, len(values))
 	copy(s.currentInput.Bits, values)
-	return Ok
+	return nil
 }
 
-func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, ErrorCode) {
+func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, error) {
 	if s.rollingBack {
 		var info savedInfo
 		var err error
@@ -104,17 +104,17 @@ func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, ErrorCode) 
 	if *discconectFlags > 0 {
 		*discconectFlags = 0
 	}
-	return [][]byte{values}, Ok
+	return [][]byte{values}, nil
 }
 
-func (s *SyncTestBackend) IncrementFrame() ErrorCode {
+func (s *SyncTestBackend) IncrementFrame() error {
 	s.sync.IncrementFrame()
-	//s.currentInput.Erase()
+	s.currentInput.Erase()
 
 	log.Printf("End of frame(%d)...\n", s.sync.FrameCount())
 
 	if s.rollingBack {
-		return Ok
+		return nil
 	}
 
 	frame := s.sync.FrameCount()
@@ -130,12 +130,18 @@ func (s *SyncTestBackend) IncrementFrame() ErrorCode {
 	copy(info.buf, s.sync.GetLastSavedFrame().buf)
 	info.checksum = s.sync.GetLastSavedFrame().checksum
 
-	s.savedFrames.Push(info)
+	err = s.savedFrames.Push(info)
+	if err != nil {
+		panic(err)
+	}
 
 	if frame-s.lastVerified == s.checkDistance {
 		// We've gone far enough ahead and should now now start replaying frames
 		// Load the last verified frame and set the rollback flag to true.
-		s.sync.LoadFrame(s.lastVerified)
+		err = s.sync.LoadFrame(s.lastVerified)
+		if err != nil {
+			panic(err)
+		}
 
 		s.rollingBack = true
 		for !s.savedFrames.Empty() {
@@ -147,7 +153,10 @@ func (s *SyncTestBackend) IncrementFrame() ErrorCode {
 			if err != nil {
 				panic(err)
 			}
-			s.savedFrames.Pop()
+			err = s.savedFrames.Pop()
+			if err != nil {
+				panic(err)
+			}
 
 			if info.frame != s.sync.FrameCount() {
 				log.Printf("Frame number %d does not match saved frame number %d", info.frame, frame)
@@ -164,10 +173,10 @@ func (s *SyncTestBackend) IncrementFrame() ErrorCode {
 		s.lastVerified = frame
 		s.rollingBack = false
 	}
-	return Ok
+	return nil
 }
 
-func (s SyncTestBackend) LogGameStates(info savedInfo) {
+func (s *SyncTestBackend) LogGameStates(info savedInfo) {
 	s.callbacks.LogGameState("saved:", info.buf, len(info.buf))
 	s.callbacks.LogGameState("loaded:", s.sync.GetLastSavedFrame().buf, s.sync.GetLastSavedFrame().cbuf)
 }

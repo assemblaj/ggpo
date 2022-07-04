@@ -1,7 +1,6 @@
 package ggthx
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -335,9 +334,8 @@ func (u *UdpProtocol) SendPendingOutput() error {
 			if err != nil {
 				panic(err)
 			}
-			if !bytes.Equal(current.Bits, last.Bits) {
-				msg.Input.Bits = append(msg.Input.Bits, current.Bits)
-			}
+			msg.Input.Bits = append(msg.Input.Bits, current.Bits)
+
 			last = current // might get rid of this
 			u.lastSentInput = current
 		}
@@ -464,40 +462,40 @@ func (u *UdpProtocol) OnInput(msg *UdpMsg, length int) (bool, error) {
 
 	// Decompress the input (gob should already have done this)
 	lastRecievedFrameNumber := u.lastRecievedInput.Frame
-	if msg.Input.NumBits > 0 {
-		currentFrame := msg.Input.StartFrame
 
-		u.lastRecievedInput.Size = int(msg.Input.InputSize)
-		if u.lastRecievedInput.Frame < 0 {
-			u.lastRecievedInput.Frame = int(msg.Input.StartFrame - 1)
+	currentFrame := msg.Input.StartFrame
+
+	u.lastRecievedInput.Size = int(msg.Input.InputSize)
+	if u.lastRecievedInput.Frame < 0 {
+		u.lastRecievedInput.Frame = int(msg.Input.StartFrame) - 1
+	}
+
+	// my logic, not GGPO
+
+	for i := 0; i < len(msg.Input.Bits); i++ {
+
+		if currentFrame > uint32(u.lastRecievedInput.Frame+1) {
+			return false, errors.New("ggthx UdpProtocol OnInput: currentFrame > uint32(u.lastRecievedInput.Frame + 1)")
 		}
-
-		// my logic, not GGPO
-
-		for i := 0; i < len(msg.Input.Bits); i++ {
-			if currentFrame > uint32(u.lastRecievedInput.Frame+1) {
-				return false, errors.New("ggthx UdpProtocol OnInput: currentFrame > uint32(u.lastRecievedInput.Frame + 1)")
+		useInputs := currentFrame == uint32(u.lastRecievedInput.Frame+1)
+		if useInputs {
+			if currentFrame != uint32(u.lastRecievedInput.Frame)+1 {
+				return false, errors.New("ggthx UdpProtocol OnInput: currentFrame != uint32(u.lastRecievedInput.Frame) +1")
 			}
-			useInputs := currentFrame == uint32(u.lastRecievedInput.Frame+1)
-			if useInputs {
-				if currentFrame != uint32(u.lastRecievedInput.Frame)+1 {
-					return false, errors.New("ggthx UdpProtocol OnInput: currentFrame != uint32(u.lastRecievedInput.Frame) +1")
-				}
-				u.lastRecievedInput.Bits = msg.Input.Bits[i]
-				u.lastRecievedInput.Frame = int(currentFrame)
-				evt := UdpProtocolEvent{
-					eventType: InputEvent,
-					input:     u.lastRecievedInput,
-				}
-				u.state.lastInputPacketRecvTime = uint32(time.Now().UnixMilli())
-				log.Printf("Sending frame %d to emu queue %d.\n", u.lastRecievedInput.Frame, u.queue)
-				u.QueueEvent(&evt)
-			} else {
-				log.Printf("Skipping past frame:(%d) current is %d.\n", currentFrame, u.lastRecievedInput.Frame)
-
+			u.lastRecievedInput.Bits = msg.Input.Bits[i]
+			u.lastRecievedInput.Frame = int(currentFrame)
+			evt := UdpProtocolEvent{
+				eventType: InputEvent,
+				input:     u.lastRecievedInput,
 			}
-			currentFrame++
+			u.state.lastInputPacketRecvTime = uint32(time.Now().UnixMilli())
+			log.Printf("Sending frame %d to emu queue %d.\n", u.lastRecievedInput.Frame, u.queue)
+			u.QueueEvent(&evt)
+		} else {
+			log.Printf("Skipping past frame:(%d) current is %d.\n", currentFrame, u.lastRecievedInput.Frame)
+
 		}
+		currentFrame++
 	}
 
 	if u.lastRecievedInput.Frame < lastRecievedFrameNumber {
@@ -752,6 +750,7 @@ func (u *UdpProtocol) OnMsg(msg *UdpMsg, length int) {
 	seq := msg.Header.SequenceNumber
 	if msg.Header.HeaderType != uint8(SyncRequestMsg) && msg.Header.HeaderType != uint8(SyncReplyMsg) {
 		if msg.Header.Magic != u.remoteMagicNumber {
+			log.Printf("msg.Header.Magic %d u.remoteMagicNumber %d\n", msg.Header.Magic, u.remoteMagicNumber)
 			log.Printf("recv rejecting %s", msg)
 			return
 		}
@@ -765,7 +764,7 @@ func (u *UdpProtocol) OnMsg(msg *UdpMsg, length int) {
 	}
 
 	u.nextRecvSeq = seq
-	log.Printf("recv %s", msg)
+	log.Printf("recv %s on queue %d\n", msg, u.queue)
 	if int(msg.Header.HeaderType) >= len(table) {
 		u.OnInvalid(msg, length)
 	} else {

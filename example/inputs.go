@@ -34,7 +34,7 @@ func decodeInputs(buffer [][]byte) []Input {
 			inputs[i] = NewInput()
 			//panic("eof")
 		} else {
-			log.Printf("inputs properly encoded: %s\n", inputs[i])
+			log.Printf("inputs properly decoded: %s\n", inputs[i])
 		}
 	}
 	return inputs

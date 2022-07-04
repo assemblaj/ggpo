@@ -44,7 +44,10 @@ func (g *Game) Update() error {
 	now = int(time.Now().UnixMilli())
 	//ggthx.Idle(session, int(math.Max(0, float64(next-now-1))))
 	fmt.Println("Idling ")
-	session.DoPoll(int(math.Max(0, float64(next-now-1))))
+	err := session.DoPoll(int(math.Max(0, float64(next-now-1))))
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("Idling Complete")
 	if now >= next {
 		g.RunFrame()
@@ -73,12 +76,13 @@ func (g *Game) RunFrame() {
 			fmt.Println("Attempt synchronize inputs was sucessful")
 
 			inputs := decodeInputs(values)
+			fmt.Println("Advancing Frame from game loop")
 			g.AdvanceFrame(inputs, disconnectFlags)
 		} else {
-			fmt.Println("Attempt synchronize inputs was unsucessful")
+			fmt.Printf("Attempt synchronize inputs was unsuccessful: %s\n", result)
 		}
 	} else {
-		fmt.Println("Attempt to add local inputs unsuccessful")
+		fmt.Printf("Attempt to add local inputs unsuccessful: %s\n", result)
 	}
 }
 
@@ -94,6 +98,7 @@ func (g *Game) AdvanceFrame(inputs []Input, disconnectFlags int) {
 func (g *Game) UpdateByInputs(inputs []Input) {
 	for _, input := range inputs {
 		for _, v := range input.Key {
+
 			if ebiten.Key(v) == ebiten.KeyArrowUp {
 				g.Players[input.PlayerNum-1].Y--
 			}
@@ -207,7 +212,6 @@ func freeBuffer(buffer []byte) {
 }
 
 func advanceFrame(flags int) bool {
-	fmt.Println("Advancing frame. ")
 	var discconectFlags int
 
 	// Make sure we fetch the inputs from GGPO and use these to update
@@ -262,6 +266,7 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 
 	//session = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
 	session = ggthx.NewPeer2PeerBackend(&callbacks, "Test", localPort, numPlayers, inputSize)
+	//session = ggthx.NewSyncTestBackend(&callbacks, "Test", numPlayers, 8, inputSize)
 	session.SetDisconnectTimeout(3000)
 	session.SetDisconnectNotifyStart(1000)
 

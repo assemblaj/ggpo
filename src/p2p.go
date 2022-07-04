@@ -59,6 +59,7 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	p.sync = NewSync(p.localConnectStatus, &config)
 	p.endpoints = make([]UdpProtocol, numPlayers)
 	p.callbacks.BeginGame(gameName)
+	//p.poll.RegisterLoop(&p.udp, nil )
 	go p.udp.Read()
 	return p
 }

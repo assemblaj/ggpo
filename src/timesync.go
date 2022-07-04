@@ -14,7 +14,7 @@ const (
 type TimeSync struct {
 	local          []int
 	remote         []int
-	lastInputs     []GameInput
+	lastInputs     []*GameInput
 	nextPrediction int
 }
 
@@ -22,14 +22,14 @@ func NewTimeSync() TimeSync {
 	return TimeSync{
 		local:          make([]int, FrameWindowSize),
 		remote:         make([]int, FrameWindowSize),
-		lastInputs:     make([]GameInput, MinUniqueFrames),
+		lastInputs:     make([]*GameInput, MinUniqueFrames),
 		nextPrediction: FrameWindowSize * 3,
 	}
 }
 
 func (t *TimeSync) AdvanceFrames(input *GameInput, advantage int, radvantage int) {
 	// Remember the last frame and frame advantage
-	t.lastInputs[input.Frame%len(t.lastInputs)] = *input
+	t.lastInputs[input.Frame%len(t.lastInputs)] = input
 	t.local[input.Frame%len(t.local)] = advantage
 	t.remote[input.Frame%len(t.remote)] = radvantage
 }
@@ -78,7 +78,7 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) int {
 	// Street Fighter), which could cause the player to miss moves.
 	if requireIdleInput {
 		for i = 1; i < len(t.lastInputs); i++ {
-			equal, err := t.lastInputs[i].Equal(&t.lastInputs[0], true)
+			equal, err := t.lastInputs[i].Equal(t.lastInputs[0], true)
 			if err != nil {
 				panic(err)
 			}
