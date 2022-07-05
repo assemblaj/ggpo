@@ -396,7 +396,7 @@ func (p *Peer2PeerBackend) PollUdpProtocolEvents() {
 	}
 	for i := 0; i < p.numSpectators; i++ {
 		for {
-			evt, err := p.endpoints[i].GetEvent()
+			evt, err := p.spectators[i].GetEvent()
 			if err != nil {
 				break
 			} else {
