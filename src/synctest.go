@@ -182,23 +182,27 @@ func (s *SyncTestBackend) LogGameStates(info savedInfo) {
 }
 
 // We must 'impliment' these for this to be a true Session
-func (s *SyncTestBackend) Chat(text string) ErrorCode { return ErrorCodeInvalidRequest }
-func (s *SyncTestBackend) DisconnectPlayer(handle *PlayerHandle) ErrorCode {
-	return ErrorCodeInvalidRequest
+func (s *SyncTestBackend) Chat(text string) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) GetNetworkStats(stats *NetworkStats, handle PlayerHandle) ErrorCode {
-	return ErrorCodeInvalidRequest
+func (s *SyncTestBackend) DisconnectPlayer(handle PlayerHandle) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) Logv(format string, args ...int) ErrorCode {
-	return ErrorCodeInvalidRequest
+func (s *SyncTestBackend) GetNetworkStats(stats *NetworkStats, handle PlayerHandle) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) SetFrameDelay(player PlayerHandle, delay int) ErrorCode {
-	return ErrorCodeInvalidRequest
+func (s *SyncTestBackend) Logv(format string, args ...int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) SetDisconnectTimeout(timeout int) ErrorCode {
-	return ErrorCodeInvalidRequest
+func (s *SyncTestBackend) SetFrameDelay(player PlayerHandle, delay int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) SetDisconnectNotifyStart(timeout int) ErrorCode {
-	return ErrorCodeInvalidRequest
+func (s *SyncTestBackend) SetDisconnectTimeout(timeout int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) Close() ErrorCode { return ErrorCodeInvalidRequest }
+func (s *SyncTestBackend) SetDisconnectNotifyStart(timeout int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SyncTestBackend) Close() error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}

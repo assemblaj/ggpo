@@ -58,6 +58,7 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	config.numPredictionFrames = MAX_PREDICTION_FRAMES
 	p.sync = NewSync(p.localConnectStatus, &config)
 	p.endpoints = make([]UdpProtocol, numPlayers)
+	p.spectators = make([]UdpProtocol, MaxSpectators)
 	p.callbacks.BeginGame(gameName)
 	//p.poll.RegisterLoop(&p.udp, nil )
 	go p.udp.Read()
@@ -253,7 +254,6 @@ func (p *Peer2PeerBackend) AddSpectator(ip string, port int) error {
 	}
 	queue := p.numSpectators
 	p.numSpectators++
-
 	p.spectators[queue] = NewUdpProtocol(&p.udp, queue+1000, ip, port, &p.localConnectStatus)
 	p.poll.RegisterLoop(&(p.spectators[queue]), nil)
 	p.spectators[queue].SetDisconnectTimeout(p.disconnectTimeout)
@@ -681,13 +681,13 @@ func (p *Peer2PeerBackend) HandleMessage(msg *UdpMsg, length int) {
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].HandlesMsg() {
 			p.endpoints[i].OnMsg(msg, length)
-			return
+			break
 		}
 	}
 	for i := 0; i < p.numSpectators; i++ {
 		if p.spectators[i].HandlesMsg() {
 			p.spectators[i].OnMsg(msg, length)
-			return
+			break
 		}
 	}
 }

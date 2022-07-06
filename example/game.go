@@ -16,7 +16,7 @@ import (
 )
 
 //var session *ggthx.SyncTestBackend
-var session ggthx.Peer2PeerBackend
+var session ggthx.Session
 var player1 Player
 var player2 Player
 var game *Game
@@ -212,6 +212,7 @@ func freeBuffer(buffer []byte) {
 }
 
 func advanceFrame(flags int) bool {
+	fmt.Println("Advancing frame from callback. ")
 	var discconectFlags int
 
 	// Make sure we fetch the inputs from GGPO and use these to update
@@ -250,9 +251,28 @@ func onEvent(info *ggthx.Event) bool {
 	return true
 }
 
+func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort int) {
+	var callbacks ggthx.SessionCallbacks
+	InitGameState()
+
+	var inputSize int = len(encodeInputs(Input{}))
+
+	callbacks.AdvanceFrame = advanceFrame
+	callbacks.BeginGame = beginGame
+	callbacks.FreeBuffer = freeBuffer
+	callbacks.LoadGameState = loadGameState
+	callbacks.LogGameState = logGameState
+	callbacks.OnEvent = onEvent
+	callbacks.SaveGameState = saveGameState
+
+	backend := ggthx.NewSpectatorBackend(&callbacks, "Test", localPort, numPlayers, inputSize, hostIp, hostPort)
+	session = &backend
+}
+
 func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectators int) {
 	var result error
 	var callbacks ggthx.SessionCallbacks
+	InitGameState()
 
 	var inputSize int = len(encodeInputs(Input{}))
 
@@ -265,8 +285,10 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 	callbacks.SaveGameState = saveGameState
 
 	//session = ggthx.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
-	session = ggthx.NewPeer2PeerBackend(&callbacks, "Test", localPort, numPlayers, inputSize)
-	//session = ggthx.NewSyncTestBackend(&callbacks, "Test", numPlayers, 8, inputSize)
+	backend := ggthx.NewPeer2PeerBackend(&callbacks, "Test", localPort, numPlayers, inputSize)
+	//backend := ggthx.NewSyncTestBackend(&callbacks, "Test", numPlayers, 8, inputSize)
+	session = &backend
+
 	session.SetDisconnectTimeout(3000)
 	session.SetDisconnectNotifyStart(1000)
 
@@ -289,6 +311,22 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 
 		}
 	}
+}
+
+func InitGameState() {
+	player1 = Player{
+		X:         50,
+		Y:         50,
+		Color:     color.RGBA{255, 0, 0, 255},
+		PlayerNum: 1}
+	player2 = Player{
+		X:         150,
+		Y:         50,
+		Color:     color.RGBA{0, 0, 255, 255},
+		PlayerNum: 2}
+	game = &Game{
+		Players: []Player{player1, player2}}
+
 }
 
 func init() {

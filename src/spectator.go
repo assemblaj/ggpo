@@ -34,36 +34,39 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	}
 	s.inputs = inputs
 	//port := strconv.Itoa(hostPort)
-	s.udp = NewUdp(&s, "127.2.1.1", localPort)
+	s.udp = NewUdp(&s, "127.0.0.1", localPort)
 	s.host = NewUdpProtocol(&s.udp, 0, hostIp, hostPort, nil)
 	var poll Poll = NewPoll()
 	s.poll = &poll
+	s.host.Synchronize()
 	s.callbacks.BeginGame(gameName)
+	go s.udp.Read()
 	return s
 }
 
-func (s *SpectatorBackend) DoPoll(timeout int) ErrorCode {
+func (s *SpectatorBackend) DoPoll(timeout int) error {
 	s.poll.Pump(0)
 
 	s.PollUdpProtocolEvents()
-	return Ok
+	return nil
 }
 
-func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([]byte, ErrorCode) {
+func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	// Wait until we've started to return inputs
 	if s.synchonizing {
-		return nil, ErrorCodeNotSynchronized
+		return nil, Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
 
 	input := s.inputs[s.nextInputToSend%SpectatorFrameBufferSize]
 	if input.Frame < s.nextInputToSend {
 		// Haved recieved input from the host yet. Wait
-		return nil, ErrorCodePredictionThreshod
+		return nil, Error{Code: ErrorCodePredictionThreshod, Name: "ErrorCodePredictionThreshod"}
+
 	}
 	if input.Frame > s.nextInputToSend {
 		// The host is way way way far ahead of the spetator. How'd this
 		// happen? Any, the input we need is gone forever.
-		return nil, ErrorCodeGeneralFailure
+		return nil, Error{Code: ErrorCodeGeneralFailure, Name: "ErrorCodeGeneralFailure"}
 	}
 
 	size := len(input.Bits)
@@ -76,15 +79,15 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([]byte, ErrorCode) {
 		*disconnectFlags = 0 // xxx: we should get them from the host! -pond3r
 	}
 	s.nextInputToSend++
-	return values, Ok
+	return [][]byte{values}, nil
 }
 
-func (s *SpectatorBackend) IncrementFrame() ErrorCode {
+func (s *SpectatorBackend) IncrementFrame() error {
 	log.Printf("End of frame (%d)...\n", s.nextInputToSend-1)
 	s.DoPoll(0)
 	s.PollUdpProtocolEvents()
 
-	return Ok
+	return nil
 }
 
 func (s *SpectatorBackend) PollUdpProtocolEvents() {
@@ -100,7 +103,6 @@ func (s *SpectatorBackend) PollUdpProtocolEvents() {
 
 func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 	var info Event
-
 	switch evt.eventType {
 	case ConnectedEvent:
 		info.Code = EventCodeConnectedToPeer
@@ -154,4 +156,38 @@ func (s *SpectatorBackend) HandleMessage(msg *UdpMsg, len int) {
 	if s.host.HandlesMsg() {
 		s.host.OnMsg(msg, len)
 	}
+}
+
+func (p *SpectatorBackend) AddLocalInput(player PlayerHandle, values []byte, size int) error {
+	return nil
+}
+
+func (s *SpectatorBackend) AddPlayer(player *Player, handle *PlayerHandle) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+
+// We must 'impliment' these for this to be a true Session
+func (s *SpectatorBackend) Chat(text string) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SpectatorBackend) DisconnectPlayer(handle PlayerHandle) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SpectatorBackend) GetNetworkStats(stats *NetworkStats, handle PlayerHandle) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SpectatorBackend) Logv(format string, args ...int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SpectatorBackend) SetFrameDelay(player PlayerHandle, delay int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SpectatorBackend) SetDisconnectTimeout(timeout int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SpectatorBackend) SetDisconnectNotifyStart(timeout int) error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+func (s *SpectatorBackend) Close() error {
+	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }

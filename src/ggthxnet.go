@@ -43,6 +43,15 @@ func NewRemotePlayer(size int, playerNum int, ipAdress string, port int) Player 
 			Port:     port},
 	}
 }
+func NewSpectator(size int, ipAdress string, port int) Player {
+	return Player{
+		Size:       size,
+		PlayerType: PlayerTypeSpectator,
+		Remote: RemotePlayer{
+			IpAdress: ipAdress,
+			Port:     port},
+	}
+}
 
 type RemotePlayer struct {
 	IpAdress string
