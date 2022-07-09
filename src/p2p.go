@@ -45,7 +45,7 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	p.disconnectNotifyStart = DefaultDisconnectNotifyStart
 	var poll Poll = NewPoll()
 	p.poll = &poll
-	p.udp = NewUdp(&p, "127.0.0.1", localPort)
+	p.udp = NewUdp(&p, localPort)
 
 	p.localConnectStatus = make([]UdpConnectStatus, UDPMsgMaxPlayers)
 	for i := 0; i < len(p.localConnectStatus); i++ {
@@ -60,8 +60,11 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 	p.endpoints = make([]UdpProtocol, numPlayers)
 	p.spectators = make([]UdpProtocol, MaxSpectators)
 	p.callbacks.BeginGame(gameName)
+	//messages := make(chan UdpPacket)
 	//p.poll.RegisterLoop(&p.udp, nil )
-	go p.udp.Read()
+	//go p.udp.Read()
+	//go p.udp.ReadMsg(messages)
+	//go p.OnMsg(messages)
 	return p
 }
 
@@ -107,9 +110,13 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) error {
 						log.Printf("pushing frame %d to spectators.\n", p.nextSpectatorFrame)
 
 						var input GameInput
+						var inputs [][]byte
 						input.Frame = p.nextSpectatorFrame
 						input.Size = p.inputSize * p.numPlayers
-						input.Inputs, _ = p.sync.GetConfirmedInputs(p.nextSpectatorFrame)
+						inputs, _ = p.sync.GetConfirmedInputs(p.nextSpectatorFrame)
+						in := p.nextSpectatorFrame % p.numPlayers
+						input.Bits = make([]byte, len(inputs[in]))
+						copy(input.Bits, inputs[in])
 						for i := 0; i < p.numSpectators; i++ {
 							p.spectators[i].SendInput(&input)
 						}
@@ -677,17 +684,17 @@ func (p *Peer2PeerBackend) QueueToSpectatorHandle(queue int) PlayerHandle {
 	As of right now it hands the message off to the first endpoint that
 	handles it then returns?
 */
-func (p *Peer2PeerBackend) HandleMessage(msg *UdpMsg, length int) {
+func (p *Peer2PeerBackend) HandleMessage(ipAddress string, port int, msg *UdpMsg, length int) {
 	for i := 0; i < p.numPlayers; i++ {
-		if p.endpoints[i].HandlesMsg() {
+		if p.endpoints[i].HandlesMsg(ipAddress, port) {
 			p.endpoints[i].OnMsg(msg, length)
-			break
+			return
 		}
 	}
 	for i := 0; i < p.numSpectators; i++ {
-		if p.spectators[i].HandlesMsg() {
+		if p.spectators[i].HandlesMsg(ipAddress, port) {
 			p.spectators[i].OnMsg(msg, length)
-			break
+			return
 		}
 	}
 }
@@ -732,4 +739,12 @@ func (p *Peer2PeerBackend) Chat(text string) error {
 
 func (p *Peer2PeerBackend) Logv(format string, args ...int) error {
 	return nil
+}
+
+func (p *Peer2PeerBackend) Start() {
+	//messages := make(chan UdpPacket)
+	//go p.udp.ReadMsg(messages)
+	//go p.OnMsg(messages)
+	p.udp.messageHandler = p
+	go p.udp.Read()
 }

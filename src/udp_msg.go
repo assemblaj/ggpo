@@ -48,7 +48,10 @@ type UdpHeader struct {
 	HeaderType     uint8
 }
 
-type UdpPacket interface{}
+type UdpPacket struct {
+	msg *UdpMsg
+	len int
+}
 
 type UdpSyncRequestPacket struct {
 	RandomRequest  uint32
@@ -76,9 +79,10 @@ type UdpInputPacket struct {
 	DisconectRequested bool
 	AckFrame           int
 
-	NumBits   uint16
-	InputSize uint8
-	Bits      [][]byte
+	NumBits     uint16
+	InputSize   uint8
+	Bits        [][]byte
+	IsSpectator bool
 }
 
 type UdpInputAckPacket struct {

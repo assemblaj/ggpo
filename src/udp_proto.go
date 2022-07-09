@@ -325,6 +325,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 		}
 		msg.Input.StartFrame = uint32(input.Frame)
 		msg.Input.InputSize = uint8(input.Size)
+
 		if !(last.Frame == -1 || last.Frame+1 == int(msg.Input.StartFrame)) {
 			return errors.New("ggthx UdpProtocol SendPendingOutput: !((last.Frame == -1 || last.Frame+1 == int(msg.Input.StartFrame))) ")
 		}
@@ -470,10 +471,7 @@ func (u *UdpProtocol) OnInput(msg *UdpMsg, length int) (bool, error) {
 		u.lastRecievedInput.Frame = int(msg.Input.StartFrame) - 1
 	}
 
-	// my logic, not GGPO
-
 	for i := 0; i < len(msg.Input.Bits); i++ {
-
 		if currentFrame > uint32(u.lastRecievedInput.Frame+1) {
 			return false, errors.New("ggthx UdpProtocol OnInput: currentFrame > uint32(u.lastRecievedInput.Frame + 1)")
 		}
@@ -646,15 +644,11 @@ func (u *UdpProtocol) Close() {
 	u.udp.Close()
 }
 
-// this originally included something that looked like this
-//    return _peer_addr.sin_addr.S_un.S_addr == from.sin_addr.S_un.S_addr &&
-//   _peer_addr.sin_port == from.sin_port;
-// however since in this version of GGPO we don't listen in for all packets
-// and instead sendto/read from prespecified endpoints, I don't *think*
-// I need to do this. Will come back around to it
-func (u *UdpProtocol) HandlesMsg() bool {
-	return u.udp.IsInitialized()
-	//return u.peerAddress == from
+func (u *UdpProtocol) HandlesMsg(ipAddress string, port int) bool {
+	if !u.udp.IsInitialized() {
+		return false
+	}
+	return u.peerAddress == ipAddress && u.peerPort == port
 }
 
 func (u *UdpProtocol) SendInput(input *GameInput) {
@@ -700,9 +694,11 @@ func (u *UdpProtocol) UpdateNetworkStats() {
 }
 
 func (u *UdpProtocol) Synchronize() {
-	u.currentState = SyncingState
-	u.state.roundTripRemaining = uint32(NumSyncPackets)
-	u.SendSyncRequest()
+	if u.udp.IsInitialized() {
+		u.currentState = SyncingState
+		u.state.roundTripRemaining = uint32(NumSyncPackets)
+		u.SendSyncRequest()
+	}
 }
 
 func (u *UdpProtocol) GetPeerConnectStatus(id int, frame *int) bool {
@@ -733,7 +729,6 @@ func (u *UdpProtocol) OnSyncRequest(msg *UdpMsg, len int) (bool, error) {
 func (u *UdpProtocol) OnMsg(msg *UdpMsg, length int) {
 	handled := false
 	var err error
-
 	type UdpProtocolDispatchFunc func(msg *UdpMsg, length int) (bool, error)
 
 	table := []UdpProtocolDispatchFunc{
@@ -750,7 +745,6 @@ func (u *UdpProtocol) OnMsg(msg *UdpMsg, length int) {
 	seq := msg.Header.SequenceNumber
 	if msg.Header.HeaderType != uint8(SyncRequestMsg) && msg.Header.HeaderType != uint8(SyncReplyMsg) {
 		if msg.Header.Magic != u.remoteMagicNumber {
-			log.Printf("msg.Header.Magic %d u.remoteMagicNumber %d\n", msg.Header.Magic, u.remoteMagicNumber)
 			log.Printf("recv rejecting %s", msg)
 			return
 		}
@@ -807,7 +801,7 @@ func (u *UdpProtocol) OnSyncReply(msg *UdpMsg, length int) (bool, error) {
 	log.Printf("Checking sync state (%d round trips remaining).\n", u.state.roundTripRemaining)
 	u.state.roundTripRemaining--
 	if u.state.roundTripRemaining == 0 {
-		log.Printf("Synchronized\n")
+		log.Printf("Synchronized!\n")
 		u.QueueEvent(&UdpProtocolEvent{
 			eventType: SynchronziedEvent,
 		})

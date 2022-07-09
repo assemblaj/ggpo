@@ -267,6 +267,7 @@ func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort in
 
 	backend := ggthx.NewSpectatorBackend(&callbacks, "Test", localPort, numPlayers, inputSize, hostIp, hostPort)
 	session = &backend
+	session.Start()
 }
 
 func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectators int) {
@@ -288,6 +289,7 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 	backend := ggthx.NewPeer2PeerBackend(&callbacks, "Test", localPort, numPlayers, inputSize)
 	//backend := ggthx.NewSyncTestBackend(&callbacks, "Test", numPlayers, 8, inputSize)
 	session = &backend
+	session.Start()
 
 	session.SetDisconnectTimeout(3000)
 	session.SetDisconnectNotifyStart(1000)
@@ -311,6 +313,7 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 
 		}
 	}
+
 }
 
 func InitGameState() {

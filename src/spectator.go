@@ -16,6 +16,8 @@ type SpectatorBackend struct {
 	numPlayers      int
 	nextInputToSend int
 	inputs          []GameInput
+	hostIp          string
+	hostPort        int
 }
 
 func NewSpectatorBackend(cb *SessionCallbacks,
@@ -34,13 +36,13 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	}
 	s.inputs = inputs
 	//port := strconv.Itoa(hostPort)
-	s.udp = NewUdp(&s, "127.0.0.1", localPort)
-	s.host = NewUdpProtocol(&s.udp, 0, hostIp, hostPort, nil)
+	s.udp = NewUdp(&s, localPort)
+	s.hostIp = hostIp
+	s.hostPort = hostPort
 	var poll Poll = NewPoll()
 	s.poll = &poll
-	s.host.Synchronize()
 	s.callbacks.BeginGame(gameName)
-	go s.udp.Read()
+	//go s.udp.Read()
 	return s
 }
 
@@ -152,8 +154,8 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 	}
 }
 
-func (s *SpectatorBackend) HandleMessage(msg *UdpMsg, len int) {
-	if s.host.HandlesMsg() {
+func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg *UdpMsg, len int) {
+	if s.host.HandlesMsg(ipAddress, port) {
 		s.host.OnMsg(msg, len)
 	}
 }
@@ -190,4 +192,14 @@ func (s *SpectatorBackend) SetDisconnectNotifyStart(timeout int) error {
 }
 func (s *SpectatorBackend) Close() error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+
+func (s *SpectatorBackend) Start() {
+	s.udp.messageHandler = s
+	go s.udp.Read()
+
+	s.host = NewUdpProtocol(&s.udp, 0, s.hostIp, s.hostPort, nil)
+	s.poll.RegisterLoop(&s.host, nil)
+	s.host.Synchronize()
+
 }

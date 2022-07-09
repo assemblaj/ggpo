@@ -17,4 +17,5 @@ type Session interface {
 	SetDisconnectTimeout(timeout int) error
 	SetDisconnectNotifyStart(timeout int) error
 	Close() error
+	Start()
 }

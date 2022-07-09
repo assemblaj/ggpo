@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -19,6 +20,8 @@ type Udp struct {
 	socket         net.Conn
 	messageHandler MessageHandler
 	listener       net.PacketConn
+	localPort      int
+	ipAddress      string
 }
 
 type UdpStats struct {
@@ -26,11 +29,28 @@ type UdpStats struct {
 	PacketsSent int
 	KbpsSent    float64
 }
+type peerAddress struct {
+	ip   string
+	port int
+}
+
+func getPeerAddress(address string) peerAddress {
+	peerIPSlice := strings.Split(address, ":")
+	if len(peerIPSlice) < 2 {
+		panic("Please enter IP as ip:port")
+	}
+	peerPort, err := strconv.Atoi(peerIPSlice[1])
+	if err != nil {
+		panic("Please enter integer port")
+	}
+	return peerAddress{
+		ip:   peerIPSlice[0],
+		port: peerPort,
+	}
+}
 
 type MessageHandler interface {
-	// from should be sockaddr_in
-	//OnMsg(from string, msg *UdpMsg, len int)
-	HandleMessage(msg *UdpMsg, len int)
+	HandleMessage(ipAddress string, port int, msg *UdpMsg, len int)
 }
 
 func (u *Udp) CreateSocket(ipAddress, port string, retries int) net.Conn {
@@ -45,22 +65,17 @@ func (u *Udp) Close() {
 	u.socket.Close()
 }
 
-// Give one of these to every protocol object.
-// In AddRemotePlayer / AddSpectator
-// Or maybe even inside the protocol itself
-// AddRemotePlayer / AddSpectator is where we get the IP
-// Which is called by backend::AddPlayer
-// which is called by Session:AddPlayer
-// and obtained via the GGPOPlayer object
-func NewUdp(messageHandler MessageHandler, ipAdress string, localPort int) Udp {
+func NewUdp(messageHandler MessageHandler, localPort int) Udp {
 	u := Udp{}
 	u.messageHandler = messageHandler
 
 	portStr := strconv.Itoa(localPort)
 
+	u.localPort = localPort
 	log.Printf("binding udp socket to port %d.\n", localPort)
 	//u.socket = u.CreateSocket(ipAdress, portStr, 0)
-	u.listener, _ = net.ListenPacket("udp", ipAdress+":"+portStr)
+	u.listener, _ = net.ListenPacket("udp", "0.0.0.0:"+portStr)
+
 	return u
 }
 
@@ -68,17 +83,11 @@ func NewUdp(messageHandler MessageHandler, ipAdress string, localPort int) Udp {
 // maybe create Gob encoder and decoder members
 // instead of creating them on each message send
 func (u *Udp) SendTo(msg *UdpMsg, remoteIp string, remotePort int) {
-	//
 	if msg == nil || remoteIp == "" {
 		return
 	}
 
-	remotePortStr := strconv.Itoa(remotePort)
-	conn, conErr := net.Dial("udp", remoteIp+":"+remotePortStr)
-	if conErr != nil {
-		log.Fatal("Udp dial error ", conErr)
-	}
-	defer conn.Close()
+	RemoteEP := net.UDPAddr{IP: net.ParseIP(remoteIp), Port: remotePort}
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -86,12 +95,13 @@ func (u *Udp) SendTo(msg *UdpMsg, remoteIp string, remotePort int) {
 	if encErr != nil {
 		log.Fatal("encode error ", encErr)
 	}
-	conn.Write(buf.Bytes())
+
+	u.listener.WriteTo(buf.Bytes(), &RemoteEP)
 }
 
 func (u *Udp) Read() {
 	defer u.listener.Close()
-	recvBuf := make([]byte, MaxUDPPacketSize)
+	recvBuf := make([]byte, MaxUDPPacketSize*2)
 	for {
 		len, addr, err := u.listener.ReadFrom(recvBuf)
 
@@ -102,13 +112,15 @@ func (u *Udp) Read() {
 			log.Printf("no data recieved\n")
 		} else if len > 0 {
 			log.Printf("recvfrom returned (len:%d  from:%s).\n", len, addr.String())
+			peer := getPeerAddress(addr.String())
+
 			buf := bytes.NewBuffer(recvBuf)
 			dec := gob.NewDecoder(buf)
 			msg := UdpMsg{}
 			if err = dec.Decode(&msg); err != nil {
 				log.Fatal(err)
 			}
-			u.messageHandler.HandleMessage(&msg, len)
+			u.messageHandler.HandleMessage(peer.ip, peer.port, &msg, len)
 		}
 
 	}
