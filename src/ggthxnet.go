@@ -141,17 +141,17 @@ type advanceFrame func(flags int) bool
 type onEvent func(info *Event) bool
 
 type NetworkStats struct {
-	network  NetworkNetworkStats
-	timesync NetworkTimeSyncStats
+	Network  NetworkNetworkStats
+	Timesync NetworkTimeSyncStats
 }
 
 type NetworkNetworkStats struct {
-	sendQueueLen int
-	recvQueueLen int
-	ping         int
-	kbpsSent     int
+	SendQueueLen int
+	RecvQueueLen int
+	Ping         int
+	KbpsSent     int
 }
 type NetworkTimeSyncStats struct {
-	localFramesBehind  int
-	remoteFramesBehind int
+	LocalFramesBehind  int
+	RemoteFramesBehind int
 }

@@ -1,8 +1,6 @@
 package ggthx
 
 import (
-	"bytes"
-	"encoding/gob"
 	"log"
 	"net"
 	"strconv"
@@ -50,7 +48,7 @@ func getPeerAddress(address string) peerAddress {
 }
 
 type MessageHandler interface {
-	HandleMessage(ipAddress string, port int, msg *UdpMsg, len int)
+	HandleMessage(ipAddress string, port int, msg UDPMessage, len int)
 }
 
 func (u *Udp) CreateSocket(ipAddress, port string, retries int) net.Conn {
@@ -82,21 +80,18 @@ func NewUdp(messageHandler MessageHandler, localPort int) Udp {
 // dst should be sockaddr
 // maybe create Gob encoder and decoder members
 // instead of creating them on each message send
-func (u *Udp) SendTo(msg *UdpMsg, remoteIp string, remotePort int) {
+func (u *Udp) SendTo(msg UDPMessage, remoteIp string, remotePort int) {
 	if msg == nil || remoteIp == "" {
 		return
 	}
 
 	RemoteEP := net.UDPAddr{IP: net.ParseIP(remoteIp), Port: remotePort}
 
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	encErr := enc.Encode(msg)
-	if encErr != nil {
-		log.Fatal("encode error ", encErr)
+	buf, err := EncodeMessage(msg)
+	if err != nil {
+		log.Fatalf("encode error %s", err)
 	}
-
-	u.listener.WriteTo(buf.Bytes(), &RemoteEP)
+	u.listener.WriteTo(buf, &RemoteEP)
 }
 
 func (u *Udp) Read() {
@@ -114,13 +109,12 @@ func (u *Udp) Read() {
 			log.Printf("recvfrom returned (len:%d  from:%s).\n", len, addr.String())
 			peer := getPeerAddress(addr.String())
 
-			buf := bytes.NewBuffer(recvBuf)
-			dec := gob.NewDecoder(buf)
-			msg := UdpMsg{}
-			if err = dec.Decode(&msg); err != nil {
-				log.Fatal(err)
+			msg, err := DecodeMessage(recvBuf)
+			if err != nil {
+				log.Printf("Error decoding message: %s", err)
+				continue
 			}
-			u.messageHandler.HandleMessage(peer.ip, peer.port, &msg, len)
+			u.messageHandler.HandleMessage(peer.ip, peer.port, msg, len)
 		}
 
 	}

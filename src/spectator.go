@@ -4,7 +4,9 @@ import (
 	"log"
 )
 
-const SpectatorFrameBufferSize int = 64
+const SpectatorFrameBufferSize int = 32
+const DefaultMaxFramesBehind int = 10
+const DefaultCatchupSpeed int = 1
 
 type SpectatorBackend struct {
 	callbacks       SessionCallbacks
@@ -18,6 +20,7 @@ type SpectatorBackend struct {
 	inputs          []GameInput
 	hostIp          string
 	hostPort        int
+	framesBehind    int
 }
 
 func NewSpectatorBackend(cb *SessionCallbacks,
@@ -50,6 +53,16 @@ func (s *SpectatorBackend) DoPoll(timeout int) error {
 	s.poll.Pump(0)
 
 	s.PollUdpProtocolEvents()
+
+	if s.framesBehind > 0 {
+		for i := 0; i < s.framesBehind; i++ {
+			s.callbacks.AdvanceFrame(0)
+			log.Printf("In Spectator: skipping frame %d\n", s.nextInputToSend)
+			s.nextInputToSend++
+		}
+		s.framesBehind = 0
+	}
+
 	return nil
 }
 
@@ -66,22 +79,26 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 
 	}
 	if input.Frame > s.nextInputToSend {
+		s.framesBehind = input.Frame - s.nextInputToSend
 		// The host is way way way far ahead of the spetator. How'd this
 		// happen? Any, the input we need is gone forever.
 		return nil, Error{Code: ErrorCodeGeneralFailure, Name: "ErrorCodeGeneralFailure"}
 	}
+	//s.framesBehind = 0
 
-	size := len(input.Bits)
 	//Assert(size >= s.inputSize*s.numPlayers)
-
-	values := make([]byte, size)
-	copy(values, input.Bits)
+	values := make([][]byte, len(input.Sizes))
+	offset := 0
+	for i, v := range input.Sizes {
+		values[i] = input.Bits[offset : v+offset]
+		offset += v
+	}
 
 	if disconnectFlags != nil {
 		*disconnectFlags = 0 // xxx: we should get them from the host! -pond3r
 	}
 	s.nextInputToSend++
-	return [][]byte{values}, nil
+	return values, nil
 }
 
 func (s *SpectatorBackend) IncrementFrame() error {
@@ -154,7 +171,7 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 	}
 }
 
-func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg *UdpMsg, len int) {
+func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg UDPMessage, len int) {
 	if s.host.HandlesMsg(ipAddress, port) {
 		s.host.OnMsg(msg, len)
 	}

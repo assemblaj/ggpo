@@ -114,9 +114,11 @@ func (p *Peer2PeerBackend) DoPoll(timeout int) error {
 						input.Frame = p.nextSpectatorFrame
 						input.Size = p.inputSize * p.numPlayers
 						inputs, _ = p.sync.GetConfirmedInputs(p.nextSpectatorFrame)
-						in := p.nextSpectatorFrame % p.numPlayers
-						input.Bits = make([]byte, len(inputs[in]))
-						copy(input.Bits, inputs[in])
+						input.Sizes = make([]int, len(inputs))
+						for i, _ := range inputs {
+							input.Sizes[i] = len(inputs[i])
+							input.Bits = append(input.Bits, inputs[i]...)
+						}
 						for i := 0; i < p.numSpectators; i++ {
 							p.spectators[i].SendInput(&input)
 						}
@@ -426,7 +428,6 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *UdpProtocolEvent, queue i
 		if !p.localConnectStatus[queue].Disconnected {
 			currentRemoteFrame := p.localConnectStatus[queue].LastFrame
 			newRemoteFrame := evt.input.Frame
-
 			if !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) {
 				return errors.New("ggthx Peer2PeerBackend OnUdpProtocolPeerEvent : !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) ")
 			}
@@ -684,7 +685,7 @@ func (p *Peer2PeerBackend) QueueToSpectatorHandle(queue int) PlayerHandle {
 	As of right now it hands the message off to the first endpoint that
 	handles it then returns?
 */
-func (p *Peer2PeerBackend) HandleMessage(ipAddress string, port int, msg *UdpMsg, length int) {
+func (p *Peer2PeerBackend) HandleMessage(ipAddress string, port int, msg UDPMessage, length int) {
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].HandlesMsg(ipAddress, port) {
 			p.endpoints[i].OnMsg(msg, length)
