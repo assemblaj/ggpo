@@ -49,7 +49,6 @@ func main() {
 	if err != nil {
 		panic("Please enter integer numPlayers")
 	}
-
 	/*
 		logFileName := ""
 		if len(argsWithoutProg) > 4 {
@@ -67,8 +66,7 @@ func main() {
 		defer f.Close()
 
 		// assign it to the standard logger
-		log.SetOutput(f)
-	*/
+		log.SetOutput(f)*/
 
 	if argsWithoutProg[2] == "spectate" {
 		hostIp := argsWithoutProg[3]

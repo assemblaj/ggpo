@@ -219,12 +219,11 @@ func advanceFrame(flags int) bool {
 	// the game state instead of reading from the keyboard.
 	//inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
 	inputs, result := session.SyncInput(&discconectFlags)
-	if result != nil {
-		log.Fatal("Error from GGTHXSynchronizeInput")
+	if result == nil {
+		//log.Fatal("Error from GGTHXSynchronizeInput")
+		input := decodeInputs(inputs)
+		game.AdvanceFrame(input, discconectFlags)
 	}
-
-	input := decodeInputs(inputs)
-	game.AdvanceFrame(input, discconectFlags)
 
 	return true
 }
