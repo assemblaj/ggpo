@@ -27,7 +27,7 @@ type UdpProtocol struct {
 	event UdpProtocolEvent //
 
 	// Network transmission information
-	udp               Udp
+	udp               Connection
 	peerAddress       string
 	peerPort          int
 	magicNumber       uint16
@@ -93,6 +93,10 @@ type UdpProtocolEvent struct {
 	total             int       // for synchronizing
 	count             int       //
 	disconnectTimeout int       // network interrupted
+}
+
+func (upe UdpProtocolEvent) Type() UdpProtocolEventType {
+	return upe.eventType
 }
 
 // for logging purposes only
@@ -185,7 +189,7 @@ type OoPacket struct {
 	msg      UDPMessage
 }
 
-func NewUdpProtocol(udp *Udp, queue int, ip string, port int, status *[]UdpConnectStatus) UdpProtocol {
+func NewUdpProtocol(udp Connection, queue int, ip string, port int, status *[]UdpConnectStatus) UdpProtocol {
 	var magicNumber uint16
 	for {
 		magicNumber = uint16(rand.Int())
@@ -202,7 +206,7 @@ func NewUdpProtocol(udp *Udp, queue int, ip string, port int, status *[]UdpConne
 	lastAckedInput, _ := NewGameInput(-1, nil, 1)
 
 	protocol := UdpProtocol{
-		udp:                *udp,
+		udp:                udp,
 		queue:              queue,
 		localConnectStatus: status,
 		peerConnectStatus:  peerConnectStatus,
@@ -220,14 +224,14 @@ func NewUdpProtocol(udp *Udp, queue int, ip string, port int, status *[]UdpConne
 	return protocol
 }
 
-func (u *UdpProtocol) OnLoopPoll(cookie []byte) bool {
+func (u *UdpProtocol) OnLoopPoll(timeFunc FuncTimeType) bool {
 
 	// originally was if !udp
-	if !u.udp.IsInitialized() {
+	if u.udp == nil {
 		return true
 	}
+	now := uint(timeFunc())
 
-	now := uint(time.Now().UnixMilli())
 	var nextInterval uint
 
 	err := u.PumpSendQueue()
@@ -338,9 +342,9 @@ func (u *UdpProtocol) SendPendingOutput() error {
 			if err != nil {
 				panic(err)
 			}
-			inputMsg.Bits = append(inputMsg.Bits, current.Bits)
+			inputMsg.Bits = append(inputMsg.Bits, current.Bits...)
 			if len(current.Sizes) > 0 {
-				inputMsg.Sizes = make([]int, len(current.Sizes))
+				inputMsg.Sizes = make([]int32, len(current.Sizes))
 				copy(inputMsg.Sizes, current.Sizes)
 			}
 			last = current // might get rid of this
@@ -351,7 +355,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 		inputMsg.InputSize = 0
 	}
 
-	inputMsg.AckFrame = u.lastRecievedInput.Frame
+	inputMsg.AckFrame = int32(u.lastRecievedInput.Frame)
 	// msg.Input.NumBits = uint16(offset) caused major bug, numbits would always be 0
 	// causing input events to never be recieved
 	inputMsg.NumBits = uint16(inputMsg.InputSize)
@@ -377,7 +381,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 func (u *UdpProtocol) SendInputAck() {
 	msg := NewUDPMessage(InputAckMsg)
 	inputAck := msg.(*InputAckPacket)
-	inputAck.AckFrame = u.lastRecievedInput.Frame
+	inputAck.AckFrame = int32(u.lastRecievedInput.Frame)
 	u.SendMsg(inputAck)
 }
 
@@ -480,7 +484,9 @@ func (u *UdpProtocol) OnInput(msg UDPMessage, length int) (bool, error) {
 		u.lastRecievedInput.Frame = int(inputMessage.StartFrame) - 1
 	}
 
-	for i := 0; i < len(inputMessage.Bits); i++ {
+	offset := 0
+
+	for offset < len(inputMessage.Bits) {
 		if currentFrame > uint32(u.lastRecievedInput.Frame+1) {
 			return false, errors.New("ggthx UdpProtocol OnInput: currentFrame > uint32(u.lastRecievedInput.Frame + 1)")
 		}
@@ -490,10 +496,10 @@ func (u *UdpProtocol) OnInput(msg UDPMessage, length int) (bool, error) {
 				return false, errors.New("ggthx UdpProtocol OnInput: currentFrame != uint32(u.lastRecievedInput.Frame) +1")
 			}
 			if len(inputMessage.Sizes) > 0 {
-				u.lastRecievedInput.Sizes = make([]int, len(inputMessage.Sizes))
+				u.lastRecievedInput.Sizes = make([]int32, len(inputMessage.Sizes))
 				copy(u.lastRecievedInput.Sizes, inputMessage.Sizes)
 			}
-			u.lastRecievedInput.Bits = inputMessage.Bits[i]
+			u.lastRecievedInput.Bits = inputMessage.Bits[offset : offset+int(inputMessage.InputSize)]
 			u.lastRecievedInput.Frame = int(currentFrame)
 			evt := UdpProtocolEvent{
 				eventType: InputEvent,
@@ -502,10 +508,12 @@ func (u *UdpProtocol) OnInput(msg UDPMessage, length int) (bool, error) {
 			u.state.lastInputPacketRecvTime = uint32(time.Now().UnixMilli())
 			log.Printf("Sending frame %d to emu queue %d.\n", u.lastRecievedInput.Frame, u.queue)
 			u.QueueEvent(&evt)
+			u.SendInputAck()
 		} else {
 			log.Printf("Skipping past frame:(%d) current is %d.\n", currentFrame, u.lastRecievedInput.Frame)
 
 		}
+		offset += int(inputMessage.InputSize)
 		currentFrame++
 	}
 
@@ -519,7 +527,7 @@ func (u *UdpProtocol) OnInput(msg UDPMessage, length int) (bool, error) {
 		if err != nil {
 			panic(err)
 		}
-		if input.Frame < inputMessage.AckFrame {
+		if int32(input.Frame) < inputMessage.AckFrame {
 			log.Printf("Throwing away pending output frame %d\n", input.Frame)
 			u.lastAckedInput = input
 			err := u.pendingOutput.Pop()
@@ -541,7 +549,7 @@ func (u *UdpProtocol) OnInputAck(msg UDPMessage, len int) (bool, error) {
 		if err != nil {
 			panic(err)
 		}
-		if input.Frame < inputAck.AckFrame {
+		if int32(input.Frame) < inputAck.AckFrame {
 			log.Printf("Throwing away pending output frame %d\n", input.Frame)
 			u.lastAckedInput = input
 			err = u.pendingOutput.Pop()
@@ -629,7 +637,6 @@ func (u *UdpProtocol) PumpSendQueue() error {
 				return errors.New("ggthx UdpProtocol PumpSendQueue: entry.destIp == \"\"")
 			}
 			u.udp.SendTo(entry.msg, entry.destIp, entry.destPort)
-
 			// would delete the udpmsg here
 		}
 		err := u.sendQueue.Pop()
@@ -662,14 +669,14 @@ func (u *UdpProtocol) Close() {
 }
 
 func (u *UdpProtocol) HandlesMsg(ipAddress string, port int) bool {
-	if !u.udp.IsInitialized() {
+	if u.udp == nil {
 		return false
 	}
 	return u.peerAddress == ipAddress && u.peerPort == port
 }
 
 func (u *UdpProtocol) SendInput(input *GameInput) {
-	if u.udp.IsInitialized() {
+	if u.udp != nil {
 		if u.currentState == RunningState {
 			// check to see if this is a good time to adjust for the rift
 			u.timesync.AdvanceFrames(input, u.localFrameAdvantage, u.remoteFrameAdvantage)
@@ -711,14 +718,14 @@ func (u *UdpProtocol) UpdateNetworkStats() {
 }
 
 func (u *UdpProtocol) Synchronize() {
-	if u.udp.IsInitialized() {
+	if u.udp != nil {
 		u.currentState = SyncingState
 		u.state.roundTripRemaining = uint32(NumSyncPackets)
 		u.SendSyncRequest()
 	}
 }
 
-func (u *UdpProtocol) GetPeerConnectStatus(id int, frame *int) bool {
+func (u *UdpProtocol) GetPeerConnectStatus(id int, frame *int32) bool {
 	*frame = u.peerConnectStatus[id].LastFrame
 	// !u.peerConnectStatus[id].Disconnected from the C/++ world
 	return !u.peerConnectStatus[id].Disconnected
@@ -842,8 +849,7 @@ func (u *UdpProtocol) OnSyncReply(msg UDPMessage, length int) (bool, error) {
 }
 
 func (u *UdpProtocol) IsInitialized() bool {
-	// Originially checked if udp object was nill
-	return u.udp.IsInitialized()
+	return u.udp != nil
 }
 
 func (u *UdpProtocol) IsSynchronized() bool {

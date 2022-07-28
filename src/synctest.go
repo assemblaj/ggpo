@@ -157,7 +157,6 @@ func (s *SyncTestBackend) IncrementFrame() error {
 			if err != nil {
 				panic(err)
 			}
-
 			if info.frame != s.sync.FrameCount() {
 				log.Printf("Frame number %d does not match saved frame number %d", info.frame, frame)
 				panic("RaiseSyncError")
@@ -205,4 +204,10 @@ func (s *SyncTestBackend) SetDisconnectNotifyStart(timeout int) error {
 }
 func (s *SyncTestBackend) Close() error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+}
+
+func (s *SyncTestBackend) Start() {}
+
+func (s *SyncTestBackend) InitalizeConnection(c ...Connection) error {
+	return nil
 }

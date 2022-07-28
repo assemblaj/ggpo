@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	//	"net/http"
+	//	_ "net/http/pprof"
+
 	ggthx "github.com/assemblaj/ggthx/src"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -33,6 +36,10 @@ func getPeerAddress(address string) peerAddress {
 }
 
 func main() {
+	/*
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()*/
 
 	argsWithoutProg := os.Args[1:]
 	if len(argsWithoutProg) < 4 {
@@ -49,6 +56,7 @@ func main() {
 	if err != nil {
 		panic("Please enter integer numPlayers")
 	}
+
 	/*
 		logFileName := ""
 		if len(argsWithoutProg) > 4 {
@@ -65,8 +73,8 @@ func main() {
 		// don't forget to close it
 		defer f.Close()
 
-		// assign it to the standard logger
-		log.SetOutput(f)*/
+		ggthx.EnableLogger()
+		ggthx.SetLoggerOutput(f)*/
 
 	if argsWithoutProg[2] == "spectate" {
 		hostIp := argsWithoutProg[3]
@@ -111,4 +119,5 @@ func main() {
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
+
 }

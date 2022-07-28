@@ -4,7 +4,7 @@ package ggthx
 	Remember to
 */
 type Session interface {
-	DoPoll(timeout int) error
+	DoPoll(timeout int, timeFunc ...FuncTimeType) error
 	AddPlayer(player *Player, handle *PlayerHandle) error
 	AddLocalInput(player PlayerHandle, values []byte, size int) error
 	SyncInput(disconnect_flags *int) ([][]byte, error)
@@ -18,4 +18,5 @@ type Session interface {
 	SetDisconnectNotifyStart(timeout int) error
 	Close() error
 	Start()
+	InitalizeConnection(c ...Connection) error
 }

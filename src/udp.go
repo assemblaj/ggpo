@@ -4,7 +4,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -32,26 +31,28 @@ type peerAddress struct {
 	port int
 }
 
-func getPeerAddress(address string) peerAddress {
-	peerIPSlice := strings.Split(address, ":")
-	if len(peerIPSlice) < 2 {
-		panic("Please enter IP as ip:port")
+func getPeerAddress(address net.Addr) peerAddress {
+	switch addr := address.(type) {
+	case *net.UDPAddr:
+		return peerAddress{
+			ip:   addr.IP.String(),
+			port: addr.Port,
+		}
 	}
-	peerPort, err := strconv.Atoi(peerIPSlice[1])
-	if err != nil {
-		panic("Please enter integer port")
-	}
-	return peerAddress{
-		ip:   peerIPSlice[0],
-		port: peerPort,
-	}
+	return peerAddress{}
+}
+
+type Connection interface {
+	SendTo(msg UDPMessage, remoteIp string, remotePort int)
+	Read()
+	Close()
 }
 
 type MessageHandler interface {
 	HandleMessage(ipAddress string, port int, msg UDPMessage, len int)
 }
 
-func (u *Udp) CreateSocket(ipAddress, port string, retries int) net.Conn {
+func (u Udp) CreateSocket(ipAddress, port string, retries int) net.Conn {
 	conn, err := net.Dial("udp", ipAddress+":"+port)
 	if err != nil {
 		log.Fatal(err)
@@ -59,8 +60,8 @@ func (u *Udp) CreateSocket(ipAddress, port string, retries int) net.Conn {
 	return conn
 }
 
-func (u *Udp) Close() {
-	u.socket.Close()
+func (u Udp) Close() {
+	u.listener.Close()
 }
 
 func NewUdp(messageHandler MessageHandler, localPort int) Udp {
@@ -73,28 +74,30 @@ func NewUdp(messageHandler MessageHandler, localPort int) Udp {
 	log.Printf("binding udp socket to port %d.\n", localPort)
 	//u.socket = u.CreateSocket(ipAdress, portStr, 0)
 	u.listener, _ = net.ListenPacket("udp", "0.0.0.0:"+portStr)
-
 	return u
 }
 
 // dst should be sockaddr
 // maybe create Gob encoder and decoder members
 // instead of creating them on each message send
-func (u *Udp) SendTo(msg UDPMessage, remoteIp string, remotePort int) {
+func (u Udp) SendTo(msg UDPMessage, remoteIp string, remotePort int) {
 	if msg == nil || remoteIp == "" {
 		return
 	}
 
 	RemoteEP := net.UDPAddr{IP: net.ParseIP(remoteIp), Port: remotePort}
 
-	buf, err := EncodeMessage(msg)
-	if err != nil {
-		log.Fatalf("encode error %s", err)
-	}
+	//buf, err := EncodeMessage(msg)
+	//buf, err := EncodeMessageBinary(msg)
+	buf := msg.ToBytes()
+	/*
+		if err != nil {
+			log.Fatalf("encode error %s", err)
+		}*/
 	u.listener.WriteTo(buf, &RemoteEP)
 }
 
-func (u *Udp) Read() {
+func (u Udp) Read() {
 	defer u.listener.Close()
 	recvBuf := make([]byte, MaxUDPPacketSize*2)
 	for {
@@ -107,9 +110,11 @@ func (u *Udp) Read() {
 			log.Printf("no data recieved\n")
 		} else if len > 0 {
 			log.Printf("recvfrom returned (len:%d  from:%s).\n", len, addr.String())
-			peer := getPeerAddress(addr.String())
+			peer := getPeerAddress(addr)
 
-			msg, err := DecodeMessage(recvBuf)
+			//msg, err := DecodeMessage(recvBuf)
+			msg, err := DecodeMessageBinary(recvBuf)
+
 			if err != nil {
 				log.Printf("Error decoding message: %s", err)
 				continue
@@ -120,6 +125,6 @@ func (u *Udp) Read() {
 	}
 }
 
-func (u *Udp) IsInitialized() bool {
+func (u Udp) IsInitialized() bool {
 	return u.listener != nil
 }

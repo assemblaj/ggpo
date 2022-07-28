@@ -72,6 +72,18 @@ func NewSync(status []UdpConnectStatus, config *SyncConfig) Sync {
 	s.CreateQueues(*config)
 	return s
 }
+func NeweSyncConfig(callbacks SessionCallbacks, numPredictionFrames int,
+	numPlayers int, inputSize int) SyncConfig {
+	return SyncConfig{
+		callbacks:           callbacks,
+		numPredictionFrames: numPredictionFrames,
+		numPlayers:          numPlayers,
+		inputSize:           inputSize,
+	}
+}
+func (s *SyncConfig) InputSize() int {
+	return s.inputSize
+}
 
 // using close to mean delete
 func (s *Sync) Close() {
@@ -136,7 +148,7 @@ func (s *Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
-		if (s.localConnectStatus[i].Disconnected) && (frame > s.localConnectStatus[i].LastFrame) {
+		if (s.localConnectStatus[i].Disconnected) && (int32(frame) > s.localConnectStatus[i].LastFrame) {
 			disconnectFlags |= (1 << i)
 			input.Erase()
 		} else {
@@ -160,7 +172,7 @@ func (s *Sync) SynchronizeInputs() ([][]byte, int) {
 	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
 		var input GameInput
-		if s.localConnectStatus[i].Disconnected && s.frameCount > s.localConnectStatus[i].LastFrame {
+		if s.localConnectStatus[i].Disconnected && int32(s.frameCount) > s.localConnectStatus[i].LastFrame {
 			disconnectFlags |= (1 << i)
 			input.Erase()
 		} else {
@@ -242,7 +254,8 @@ func (s *Sync) LoadFrame(frame int) error {
 	if state.buf == nil || state.cbuf <= 0 {
 		return errors.New("ggthx Sync LoadFrame: state.buf == nil || state.cbuf <= 0 ")
 	}
-	s.callbacks.LoadGameState(state.buf, state.cbuf)
+	//s.callbacks.LoadGameState(state.buf, state.cbuf)
+	s.callbacks.LoadGameState(s.savedState.head)
 
 	// Reset framecount and the head of the state ring-buffer to point in
 	// advance of the current frame (as if we had just finished executing it).
@@ -262,8 +275,9 @@ func (s *Sync) SaveCurrentFrame() {
 		state.buf = nil
 	}
 	state.frame = s.frameCount
-	buf, _ := s.callbacks.SaveGameState(&state.cbuf, &state.checksum, state.frame)
+	buf, _ := s.callbacks.SaveGameState(s.savedState.head)
 	state.buf = buf
+	state.cbuf = 1000
 
 	s.savedState.frames[s.savedState.head] = state
 	log.Printf("=== Saved frame info %d (size: %d  checksum: %08x).\n", state.frame, state.cbuf, state.checksum)
@@ -278,6 +292,8 @@ func (s *Sync) GetLastSavedFrame() savedFrame {
 	return s.savedState.frames[i]
 }
 
+// Trying to load a frame when it hasn't been saved causes an error
+// that will panic up the chair.
 func (s *Sync) FindSavedFrameIndex(frame int) (int, error) {
 
 	count := len(s.savedState.frames)

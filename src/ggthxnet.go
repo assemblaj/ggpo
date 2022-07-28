@@ -133,8 +133,14 @@ type SessionCallbacks struct {
 }
 
 type beginGame func(game string) bool
+
+/*
 type saveGameState func(len *int, checksum *int, frame int) ([]byte, bool)
 type loadGameState func(buffer []byte, len int) bool
+*/
+type saveGameState func(stateID int) ([]byte, bool)
+type loadGameState func(stateID int) bool
+
 type logGameState func(fileName string, buffer []byte, len int) bool
 type freeBuffer func(buffer []byte)
 type advanceFrame func(flags int) bool
@@ -155,3 +161,10 @@ type NetworkTimeSyncStats struct {
 	LocalFramesBehind  int
 	RemoteFramesBehind int
 }
+
+type ConnectionType int
+
+const (
+	ConnectionTypeFake ConnectionType = iota - 1
+	ConnectionTypeUDP
+)

@@ -99,7 +99,6 @@ func (i *InputQueue) ResetPrediction(frame int) error {
 	if !(i.firstIncorrectFrame == NullFrame || frame <= i.firstIncorrectFrame) {
 		return errors.New("ggthx: InputQueue ResetPrediction: i.firstIncorrentFrame != NullFrame && frame > i.firstIncorrectFrame")
 	}
-
 	log.Printf("resetting all prediction errors back to frame %d.\n", frame)
 
 	i.prediction.Frame = NullFrame
@@ -132,7 +131,6 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error
 	if requestedFrame < i.inputs[i.tail].Frame {
 		return false, errors.New("ggthx: InputQueue GetInput : requestedFrame < i.inputs[i.tail].Frame")
 	}
-
 	if i.prediction.Frame == NullFrame {
 		offset := requestedFrame - i.inputs[i.tail].Frame
 

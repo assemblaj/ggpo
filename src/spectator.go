@@ -11,7 +11,7 @@ const DefaultCatchupSpeed int = 1
 type SpectatorBackend struct {
 	callbacks       SessionCallbacks
 	poll            Poller
-	udp             Udp
+	udp             Connection
 	host            UdpProtocol
 	synchonizing    bool
 	inputSize       int
@@ -21,6 +21,7 @@ type SpectatorBackend struct {
 	hostIp          string
 	hostPort        int
 	framesBehind    int
+	localPort       int
 }
 
 func NewSpectatorBackend(cb *SessionCallbacks,
@@ -39,9 +40,10 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	}
 	s.inputs = inputs
 	//port := strconv.Itoa(hostPort)
-	s.udp = NewUdp(&s, localPort)
+	//s.udp = NewUdp(&s, localPort)
 	s.hostIp = hostIp
 	s.hostPort = hostPort
+	s.localPort = localPort
 	var poll Poll = NewPoll()
 	s.poll = &poll
 	s.callbacks.BeginGame(gameName)
@@ -49,9 +51,12 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	return s
 }
 
-func (s *SpectatorBackend) DoPoll(timeout int) error {
-	s.poll.Pump(0)
-
+func (s *SpectatorBackend) DoPoll(timeout int, timeFunc ...FuncTimeType) error {
+	if len(timeFunc) == 0 {
+		s.poll.Pump()
+	} else {
+		s.poll.Pump(timeFunc[0])
+	}
 	s.PollUdpProtocolEvents()
 
 	if s.framesBehind > 0 {
@@ -90,8 +95,8 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	values := make([][]byte, len(input.Sizes))
 	offset := 0
 	for i, v := range input.Sizes {
-		values[i] = input.Bits[offset : v+offset]
-		offset += v
+		values[i] = input.Bits[offset : int(v)+offset]
+		offset += int(v)
 	}
 
 	if disconnectFlags != nil {
@@ -210,12 +215,20 @@ func (s *SpectatorBackend) SetDisconnectNotifyStart(timeout int) error {
 func (s *SpectatorBackend) Close() error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
+func (s *SpectatorBackend) InitalizeConnection(c ...Connection) error {
+	if len(c) == 0 {
+		s.udp = NewUdp(s, s.localPort)
+		return nil
+	}
+	s.udp = c[0]
+	return nil
+}
 
 func (s *SpectatorBackend) Start() {
-	s.udp.messageHandler = s
+	//s.udp.messageHandler = s
 	go s.udp.Read()
 
-	s.host = NewUdpProtocol(&s.udp, 0, s.hostIp, s.hostPort, nil)
+	s.host = NewUdpProtocol(s.udp, 0, s.hostIp, s.hostPort, nil)
 	s.poll.RegisterLoop(&s.host, nil)
 	s.host.Synchronize()
 

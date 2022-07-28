@@ -22,6 +22,7 @@ var player2 Player
 var game *Game
 var start, next, now int
 var playerInputs []Input
+var saveStates map[int]*Game
 
 var localPort, numPlayers int
 
@@ -38,6 +39,26 @@ type Player struct {
 	Y         float64
 	Color     color.Color
 	PlayerNum int
+}
+
+func (p Player) clone() Player {
+	result := Player{}
+	result.X = p.X
+	result.Y = p.Y
+	result.Color = p.Color
+	result.PlayerNum = p.PlayerNum
+	return result
+}
+
+func (g *Game) clone() (result *Game) {
+	result = &Game{}
+	*result = *g
+
+	result.Players = make([]Player, len(g.Players))
+	for i := range g.Players {
+		result.Players[i] = g.Players[i].clone()
+	}
+	return
 }
 
 func (g *Game) Update() error {
@@ -86,7 +107,7 @@ func (g *Game) RunFrame() {
 	}
 }
 
-func (g *Game) AdvanceFrame(inputs []Input, disconnectFlags int) {
+func (g *Game) AdvanceFrame(inputs []InputBits, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
 	//err := ggthx.AdvanceFrame(session)
 	err := session.IncrementFrame()
@@ -95,43 +116,55 @@ func (g *Game) AdvanceFrame(inputs []Input, disconnectFlags int) {
 	}
 }
 
-func (g *Game) UpdateByInputs(inputs []Input) {
-	for _, input := range inputs {
-		for _, v := range input.Key {
-
-			if ebiten.Key(v) == ebiten.KeyArrowUp {
-				g.Players[input.PlayerNum-1].Y--
-			}
-			if ebiten.Key(v) == ebiten.KeyArrowDown {
-				g.Players[input.PlayerNum-1].Y++
-			}
-			if ebiten.Key(v) == ebiten.KeyArrowLeft {
-				g.Players[input.PlayerNum-1].X--
-			}
-			if ebiten.Key(v) == ebiten.KeyArrowRight {
-				g.Players[input.PlayerNum-1].X++
-			}
-
+func (g *Game) UpdateByInputs(inputs []InputBits) {
+	for i, input := range inputs {
+		if input.isButtonOn(int(ebiten.KeyArrowUp)) {
+			g.Players[i].Y--
 		}
+		if input.isButtonOn(int(ebiten.KeyArrowDown)) {
+			g.Players[i].Y++
+		}
+		if input.isButtonOn(int(ebiten.KeyArrowLeft)) {
+			g.Players[i].X--
+		}
+		if input.isButtonOn(int(ebiten.KeyArrowRight)) {
+			g.Players[i].X++
+		}
+		/*
+			for _, v := range input.Key {
+
+				if ebiten.Key(v) == ebiten.KeyArrowUp {
+					g.Players[i].Y--
+				}
+				if ebiten.Key(v) == ebiten.KeyArrowDown {
+					g.Players[i].Y++
+				}
+				if ebiten.Key(v) == ebiten.KeyArrowLeft {
+					g.Players[i].X--
+				}
+				if ebiten.Key(v) == ebiten.KeyArrowRight {
+					g.Players[i].X++
+				}
+
+			}*/
+
 	}
 }
 
-func (g *Game) ReadInputs() Input {
-	in := Input{
-		PlayerNum: currentPlayer,
-		Key:       make([]ebiten.Key, 0)}
+func (g *Game) ReadInputs() InputBits {
+	var in InputBits
 
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
-		in.Key = append(in.Key, ebiten.KeyArrowUp)
+		in.setButton(int(ebiten.KeyArrowUp))
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
-		in.Key = append(in.Key, ebiten.KeyArrowDown)
+		in.setButton(int(ebiten.KeyArrowDown))
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		in.Key = append(in.Key, ebiten.KeyArrowLeft)
+		in.setButton(int(ebiten.KeyArrowLeft))
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		in.Key = append(in.Key, ebiten.KeyArrowRight)
+		in.setButton(int(ebiten.KeyArrowRight))
 	}
 	return in
 }
@@ -153,6 +186,7 @@ func beginGame(game string) bool {
 	return true
 }
 
+/*
 func saveGameState(length *int, checksum *int, frame int) ([]byte, bool) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -167,6 +201,11 @@ func saveGameState(length *int, checksum *int, frame int) ([]byte, bool) {
 	*length = len(buffer)
 	return buffer, true
 }
+*/
+func saveGameState(stateID int) ([]byte, bool) {
+	saveStates[stateID] = game.clone()
+	return []byte{}, true
+}
 
 func calculateChecksum(buffer []byte) int {
 	cSum := md5.Sum(buffer)
@@ -177,6 +216,7 @@ func calculateChecksum(buffer []byte) int {
 	return checksum
 }
 
+/*
 func loadGameState(buffer []byte, len int) bool {
 	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
 	dec := gob.NewDecoder(&buf)
@@ -184,6 +224,11 @@ func loadGameState(buffer []byte, len int) bool {
 	if err != nil {
 		log.Fatal("decode error:", err)
 	}
+	return true
+}
+*/
+func loadGameState(stateID int) bool {
+	game = saveStates[stateID]
 	return true
 }
 
@@ -254,7 +299,9 @@ func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort in
 	var callbacks ggthx.SessionCallbacks
 	InitGameState()
 
-	var inputSize int = len(encodeInputs(Input{}))
+	var inputBits InputBits = 0
+
+	var inputSize int = len(encodeInputs(inputBits))
 
 	callbacks.AdvanceFrame = advanceFrame
 	callbacks.BeginGame = beginGame
@@ -266,6 +313,7 @@ func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort in
 
 	backend := ggthx.NewSpectatorBackend(&callbacks, "Test", localPort, numPlayers, inputSize, hostIp, hostPort)
 	session = &backend
+	session.InitalizeConnection()
 	session.Start()
 }
 
@@ -273,8 +321,8 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 	var result error
 	var callbacks ggthx.SessionCallbacks
 	InitGameState()
-
-	var inputSize int = len(encodeInputs(Input{}))
+	var inputBits InputBits = 0
+	var inputSize int = len(encodeInputs(inputBits))
 
 	callbacks.AdvanceFrame = advanceFrame
 	callbacks.BeginGame = beginGame
@@ -288,10 +336,11 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 	backend := ggthx.NewPeer2PeerBackend(&callbacks, "Test", localPort, numPlayers, inputSize)
 	//backend := ggthx.NewSyncTestBackend(&callbacks, "Test", numPlayers, 8, inputSize)
 	session = &backend
+	session.InitalizeConnection()
 	session.Start()
 
-	session.SetDisconnectTimeout(3000)
-	session.SetDisconnectNotifyStart(1000)
+	//session.SetDisconnectTimeout(3000)
+	//session.SetDisconnectNotifyStart(1000)
 
 	//ggthx.SetDisconnectTimeout(session, 3000)
 	//ggthx.SetDisconnectNotifyStart(session, 1000)
@@ -312,6 +361,8 @@ func GameInit(localPort int, numPlayers int, players []ggthx.Player, numSpectato
 
 		}
 	}
+	session.SetDisconnectTimeout(3000)
+	session.SetDisconnectNotifyStart(1000)
 
 }
 
@@ -328,7 +379,7 @@ func InitGameState() {
 		PlayerNum: 2}
 	game = &Game{
 		Players: []Player{player1, player2}}
-
+	saveStates = make(map[int]*Game)
 }
 
 func init() {

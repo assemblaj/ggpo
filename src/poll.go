@@ -2,6 +2,12 @@ package ggthx
 
 import "time"
 
+type FuncTimeType func() int64
+
+func DefaultTime() int64 {
+	return time.Now().UnixMilli()
+}
+
 type Poll struct {
 	startTime   int
 	handleCount int
@@ -10,8 +16,7 @@ type Poll struct {
 
 type Poller interface {
 	RegisterLoop(sink PollSink, cookie []byte)
-	Run()
-	Pump(timeout int) bool
+	Pump(timeFunc ...FuncTimeType) bool
 }
 
 type PollSinkCb struct {
@@ -20,7 +25,7 @@ type PollSinkCb struct {
 }
 
 type PollSink interface {
-	OnLoopPoll([]byte) bool
+	OnLoopPoll(timeFunc FuncTimeType) bool
 }
 
 func NewPoll() Poll {
@@ -41,13 +46,7 @@ func (p *Poll) RegisterLoop(sink PollSink, cookie []byte) {
 	}
 }
 
-func (p *Poll) Run() {
-	for p.Pump(100) {
-		continue
-	}
-}
-
-func (p *Poll) Pump(timeout int) bool {
+func (p *Poll) Pump(timeFunc ...FuncTimeType) bool {
 	finished := false
 	if p.startTime == 0 {
 		p.startTime = int(time.Now().UnixMilli())
@@ -57,7 +56,11 @@ func (p *Poll) Pump(timeout int) bool {
 		if err != nil {
 			panic(err)
 		}
-		finished = !(cb.sink.OnLoopPoll(cb.cookie) || finished)
+		if len(timeFunc) != 0 {
+			finished = !(cb.sink.OnLoopPoll(timeFunc[0]) || finished)
+		} else {
+			finished = !(cb.sink.OnLoopPoll(DefaultTime) || finished)
+		}
 	}
 	return finished
 

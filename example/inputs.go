@@ -5,24 +5,63 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Input struct {
-	PlayerNum int
-	Key       []ebiten.Key
+	ButtonMap int
+}
+
+type InputBits int
+
+func (i *InputBits) isButtonOn(button int) bool {
+	return *i&(1<<button) > 0
+}
+
+func (i *InputBits) setButton(button int) {
+	*i |= (1 << button)
+}
+
+func readI32(b []byte) int32 {
+	if len(b) < 4 {
+		return 0
+	}
+	return int32(b[0]) | int32(b[1])<<8 | int32(b[2])<<16 | int32(b[3])<<24
+}
+
+func writeI32(i32 int32) []byte {
+	b := []byte{byte(i32), byte(i32 >> 8), byte(i32 >> 16), byte(i32 >> 24)}
+	return b
+}
+
+func (i *Input) isButtonOn(button int) bool {
+	return i.ButtonMap&(1<<button) > 0
+}
+
+func (i *Input) setButton(button int) {
+	i.ButtonMap |= (1 << button)
 }
 
 func (i Input) String() string {
-	return fmt.Sprintf("Player: %d:: Input %s", i.PlayerNum, i.Key)
+	return fmt.Sprintf("Input %d", i.ButtonMap)
 }
 
 func NewInput() Input {
 	return Input{}
 }
 
-func decodeInputs(buffer [][]byte) []Input {
+func encodeInputs(inputs InputBits) []byte {
+	return writeI32(int32(inputs))
+}
+
+func decodeInputs(buffer [][]byte) []InputBits {
+	var inputs = make([]InputBits, len(buffer))
+	for i, b := range buffer {
+		inputs[i] = InputBits(readI32(b))
+	}
+	return inputs
+}
+
+func decodeInputsGob(buffer [][]byte) []Input {
 	var inputs = make([]Input, len(buffer))
 	for i, b := range buffer {
 		var buf bytes.Buffer = *bytes.NewBuffer(b)
@@ -40,7 +79,7 @@ func decodeInputs(buffer [][]byte) []Input {
 	return inputs
 }
 
-func encodeInputs(inputs Input) []byte {
+func encodeInputsGob(inputs Input) []byte {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(&inputs)

@@ -19,7 +19,7 @@ type GameInput struct {
 	Size   int
 	Bits   []byte
 	Inputs [][]byte
-	Sizes  []int
+	Sizes  []int32
 }
 
 // Will come back to this if the needing the offset becomes a thing
