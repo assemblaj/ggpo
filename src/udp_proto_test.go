@@ -735,6 +735,51 @@ func TestUDPProtocolDiscconect(t *testing.T) {
 	}
 }
 
+func TestUDPProtocolDiscconectOnLoopPoll(t *testing.T) {
+	connectStatus := []ggthx.UdpConnectStatus{
+		{Disconnected: false, LastFrame: 20},
+		{Disconnected: false, LastFrame: 22},
+	}
+	connection := NewFakeConnection()
+	peerAdress := "127.2.1.1"
+	peerPort := 7001
+	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint.Disconnect()
+	advance := func() int64 {
+		return time.Now().Add(time.Millisecond * 8000).UnixMilli()
+	}
+
+	endpoint.OnLoopPoll(advance)
+	if endpoint.IsInitialized() {
+		t.Errorf("Disconnected endpoints should not still be 'initalized' after they've been polled. ")
+	}
+}
+
+func TestUDPProtocolOnInputDisconnectedRequest(t *testing.T) {
+	connectStatus := []ggthx.UdpConnectStatus{
+		{Disconnected: false, LastFrame: 20},
+		{Disconnected: false, LastFrame: 22},
+		{Disconnected: false, LastFrame: 20},
+		{Disconnected: false, LastFrame: 22},
+	}
+	connection := NewFakeConnection()
+	peerAdress := "127.2.1.1"
+	peerPort := 7001
+	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	/*
+		advance := func() int64 {
+			return time.Now().Add(time.Millisecond * 8000).UnixMilli()
+		}*/
+	msg := ggthx.NewUDPMessage(ggthx.InputMsg)
+	inputPacket := msg.(*ggthx.InputPacket)
+	inputPacket.DisconectRequested = true
+	endpoint.OnInput(inputPacket, inputPacket.PacketSize())
+	evt, _ := endpoint.GetEvent()
+	if evt.Type() != ggthx.DisconnectedEvent {
+		t.Errorf("Recieving an input with DisconnectRequested = true should create a DisconnectedEvent")
+	}
+}
+
 func TestUDPProtocolIsInitalized(t *testing.T) {
 	connectStatus := []ggthx.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},

@@ -381,19 +381,8 @@ func (p *Peer2PeerBackend) IncrementFrame() error {
 	if err != nil {
 		panic(err)
 	}
-	p.PollSyncEvents()
 
 	return nil
-}
-
-// We don't do anything with these events in the P2PBackend for sure,
-// but I can't seem to find anywhere in GGPO that actually sync events
-func (p *Peer2PeerBackend) PollSyncEvents() {
-	var e SyncEvent
-	for p.sync.GetEvent(&e) {
-		p.OnSyncEvent(&e)
-	}
-	return
 }
 
 // Handles all the events  for all spactors and players. Done OnPoll
@@ -736,10 +725,6 @@ func (p *Peer2PeerBackend) CheckInitialSync() {
 		p.callbacks.OnEvent(&info)
 		p.synchronizing = false
 	}
-}
-
-func (p *Peer2PeerBackend) OnSyncEvent(e *SyncEvent) {
-	// stub function as it was in GGPO
 }
 
 func (p *Peer2PeerBackend) Chat(text string) error {

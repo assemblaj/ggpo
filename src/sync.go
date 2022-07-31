@@ -17,7 +17,6 @@ type Sync struct {
 
 	inputQueues []InputQueue
 
-	eventQueue         RingBuffer[SyncEvent]
 	localConnectStatus []UdpConnectStatus
 }
 
@@ -34,11 +33,6 @@ type SyncEvntType int
 
 const SyncConfirmedInput SyncEvntType = 0
 
-// have to get better about lowercase names for things I don't want to be public
-type syncConfirmedInput struct {
-	input GameInput
-}
-
 type savedFrame struct {
 	buf      []byte
 	cbuf     int
@@ -49,11 +43,6 @@ type savedFrame struct {
 type savedState struct {
 	frames []savedFrame
 	head   int
-}
-
-type SyncEvent struct {
-	syncType       SyncEvntType
-	confirmedInput syncConfirmedInput
 }
 
 func NewSync(status []UdpConnectStatus, config *SyncConfig) Sync {
@@ -67,7 +56,6 @@ func NewSync(status []UdpConnectStatus, config *SyncConfig) Sync {
 		rollingBack:         false,
 		savedState: savedState{
 			frames: make([]savedFrame, MAX_PREDICTION_FRAMES+2)},
-		eventQueue: NewRingBuffer[SyncEvent](32),
 	}
 	s.CreateQueues(*config)
 	return s
@@ -349,22 +337,6 @@ func (s *Sync) ResetPrediction(frameNumber int) {
 			panic(err)
 		}
 	}
-}
-
-func (s *Sync) GetEvent(e *SyncEvent) bool {
-	var err error
-	if s.eventQueue.Size() > 0 {
-		*e, err = s.eventQueue.Front()
-		if err != nil {
-			panic(err)
-		}
-		err = s.eventQueue.Pop()
-		if err != nil {
-			panic(err)
-		}
-		return true
-	}
-	return false
 }
 
 func (s *Sync) FrameCount() int {

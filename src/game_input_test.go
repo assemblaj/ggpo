@@ -86,3 +86,12 @@ func TestGameZeroSize(t *testing.T) {
 		t.Errorf("Inputs with sizes <= 0 should create an error.")
 	}
 }
+
+func TestGameInputIsNull(t *testing.T) {
+	input, _ := ggthx.NewGameInput(ggthx.NullFrame, []byte{1, 2, 3, 4}, 4)
+	want := true
+	got := input.IsNull()
+	if want != got {
+		t.Errorf("want %t got %t.", want, got)
+	}
+}

@@ -485,3 +485,29 @@ func TestSyncAddFrameDelay(t *testing.T) {
 		sync.AddRemoteInput(1, &input)
 	*/
 }
+func TestSyncUseAfterClose(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+
+	peerConnection := []ggthx.UdpConnectStatus{
+		{Disconnected: false, LastFrame: 12},
+		{Disconnected: false, LastFrame: 13},
+	}
+	syncConfig := ggthx.NeweSyncConfig(
+		sessionCallbacks, 8, 2, 4,
+	)
+	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	queue := 1
+	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
+	sync.AddRemoteInput(queue, &input)
+	sync.AddLocalInput(0, &input2)
+	sync.Close()
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic when attempting to use sync after Close")
+		}
+	}()
+
+	sync.AddLocalInput(0, &input2)
+}

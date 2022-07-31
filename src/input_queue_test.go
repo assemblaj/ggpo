@@ -87,3 +87,19 @@ func TestGetInputEmptyQueue(t *testing.T) {
 		t.Errorf("expected nil, got an error %s", err)
 	}
 }
+
+func TestInputQueueNegativeInputSize(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic due to negative input size passed.")
+		}
+	}()
+	ggthx.NewInputQueue(0, -80)
+}
+func TestInputQueueDiscardConfirmedFramesNegative(t *testing.T) {
+	queue := ggthx.NewInputQueue(0, 4)
+	err := queue.DiscardConfirmedFrames(-1)
+	if err == nil {
+		t.Errorf("DiscardConfirmedFrames should throw an error when the frame number passed is negative.")
+	}
+}

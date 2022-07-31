@@ -45,6 +45,18 @@ func NewFakeP2PConnection(remoteHandler ggthx.MessageHandler, localPort int, loc
 	return f
 }
 
+func slice2dEqual(a [][]byte, b [][]byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if !bytes.Equal(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func TestP2PBackendAddPlayer(t *testing.T) {
 	connection := NewFakeConnection()
 	session := NewFakeSession()
@@ -1209,5 +1221,573 @@ func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
 	ggError = err.(ggthx.Error)
 	if ggError.Code != ggthx.ErrorCodePlayerDisconnected {
 		t.Errorf("The player should've been timed out and disconnected already.")
+	}
+}
+func TestP2PBackendNPlayersSynchronize(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+	localPort := 6000
+	remotePort := 6001
+	remoteIp := "127.2.1.1"
+	numPlayers := 3
+	inputSize := 4
+	p2p := ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+
+	session2 := NewFakeSession()
+	sessionCallbacks2 := makeSessionCallBacks(session2)
+	p2p2 := ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+
+	session3 := NewFakeSession()
+	sessionCallbacks3 := makeSessionCallBacks(session3)
+
+	p3port := 6005
+	p2p3 := ggthx.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+
+	connection := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p2, &p2p3}, localPort, remoteIp)
+	connection2 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p3}, remotePort, remoteIp)
+	connection3 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p2}, p3port, remoteIp)
+	//ggthx.EnableLogger()
+	p2p.InitalizeConnection(&connection)
+	p2p2.InitalizeConnection(&connection2)
+	p2p3.InitalizeConnection(&connection3)
+
+	player1 := ggthx.NewLocalPlayer(20, 1)
+	var p1Handle ggthx.PlayerHandle
+	player2 := ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	var p2Handle ggthx.PlayerHandle
+	player3 := ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	var p3Handle ggthx.PlayerHandle
+	p2p.AddPlayer(&player1, &p1Handle)
+	p2p.AddPlayer(&player2, &p2Handle)
+	p2p.AddPlayer(&player3, &p3Handle)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewLocalPlayer(20, 2)
+	player3 = ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	var p2handle1 ggthx.PlayerHandle
+	var p2handle2 ggthx.PlayerHandle
+	var p2handle3 ggthx.PlayerHandle
+	p2p2.AddPlayer(&player1, &p2handle1)
+	p2p2.AddPlayer(&player2, &p2handle2)
+	p2p2.AddPlayer(&player3, &p2handle3)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	player3 = ggthx.NewLocalPlayer(20, 3)
+	var p3handle1 ggthx.PlayerHandle
+	var p3handle2 ggthx.PlayerHandle
+	var p3handle3 ggthx.PlayerHandle
+	p2p3.AddPlayer(&player1, &p3handle1)
+	p2p3.AddPlayer(&player2, &p3handle2)
+	p2p3.AddPlayer(&player3, &p3handle3)
+
+	advance := func() int64 {
+		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
+	}
+	for i := 0; i < ggthx.NumSyncPackets; i++ {
+		p2p.DoPoll(0, advance)
+		p2p2.DoPoll(0, advance)
+		p2p3.DoPoll(0, advance)
+	}
+	input1 := []byte{1, 2, 3, 4}
+	input2 := []byte{5, 6, 7, 8}
+	input3 := []byte{9, 10, 11, 12}
+	err := p2p.AddLocalInput(p1Handle, input1, 4)
+	if err != nil {
+		t.Errorf("Peer 1 of 3 did not synchronize.")
+	}
+	err = p2p2.AddLocalInput(p2handle2, input2, 4)
+	if err != nil {
+		t.Errorf("Peer 2 of 3 did not synchronize.")
+	}
+	err = p2p3.AddLocalInput(p3handle3, input3, 4)
+	if err != nil {
+		t.Errorf("Peer 3 of 3 did not synchronize.")
+	}
+}
+
+func TestP2PBackendNPlayersShareInput(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+	localPort := 6000
+	remotePort := 6001
+	remoteIp := "127.2.1.1"
+	numPlayers := 3
+	inputSize := 4
+	p2p := ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+
+	session2 := NewFakeSession()
+	sessionCallbacks2 := makeSessionCallBacks(session2)
+	p2p2 := ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+
+	session3 := NewFakeSession()
+	sessionCallbacks3 := makeSessionCallBacks(session3)
+
+	p3port := 6005
+	p2p3 := ggthx.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+
+	connection := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p2, &p2p3}, localPort, remoteIp)
+	connection2 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p3}, remotePort, remoteIp)
+	connection3 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p2}, p3port, remoteIp)
+	//ggthx.EnableLogger()
+	p2p.InitalizeConnection(&connection)
+	p2p2.InitalizeConnection(&connection2)
+	p2p3.InitalizeConnection(&connection3)
+
+	player1 := ggthx.NewLocalPlayer(20, 1)
+	var p1Handle ggthx.PlayerHandle
+	player2 := ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	var p2Handle ggthx.PlayerHandle
+	player3 := ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	var p3Handle ggthx.PlayerHandle
+	p2p.AddPlayer(&player1, &p1Handle)
+	p2p.AddPlayer(&player2, &p2Handle)
+	p2p.AddPlayer(&player3, &p3Handle)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewLocalPlayer(20, 2)
+	player3 = ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	var p2handle1 ggthx.PlayerHandle
+	var p2handle2 ggthx.PlayerHandle
+	var p2handle3 ggthx.PlayerHandle
+	p2p2.AddPlayer(&player1, &p2handle1)
+	p2p2.AddPlayer(&player2, &p2handle2)
+	p2p2.AddPlayer(&player3, &p2handle3)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	player3 = ggthx.NewLocalPlayer(20, 3)
+	var p3handle1 ggthx.PlayerHandle
+	var p3handle2 ggthx.PlayerHandle
+	var p3handle3 ggthx.PlayerHandle
+	p2p3.AddPlayer(&player1, &p3handle1)
+	p2p3.AddPlayer(&player2, &p3handle2)
+	p2p3.AddPlayer(&player3, &p3handle3)
+
+	advance := func() int64 {
+		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
+	}
+	for i := 0; i < ggthx.NumSyncPackets; i++ {
+		p2p.DoPoll(0, advance)
+		p2p2.DoPoll(0, advance)
+		p2p3.DoPoll(0, advance)
+	}
+	input1 := []byte{1, 2, 3, 4}
+	input2 := []byte{5, 6, 7, 8}
+	input3 := []byte{9, 10, 11, 12}
+	var err error
+	var ignore int
+
+	for i := 0; i < 2; i++ {
+		p2p.DoPoll(0, advance)
+		err = p2p.AddLocalInput(p1Handle, input1, 4)
+		if err == nil {
+			//	_, err = p2p.SyncInput(&ignore)
+			if err == nil {
+				p2p.IncrementFrame()
+			}
+		}
+		p2p2.DoPoll(0, advance)
+		err = p2p2.AddLocalInput(p2handle2, input2, 4)
+		if err == nil {
+			//	_, err = p2p2.SyncInput(&ignore)
+			if err == nil {
+				p2p2.IncrementFrame()
+			}
+		}
+		p2p3.DoPoll(0, advance)
+		err = p2p3.AddLocalInput(p3handle3, input3, 4)
+		if err == nil {
+			//	_, err = p2p3.SyncInput(&ignore)
+			if err == nil {
+				p2p3.IncrementFrame()
+			}
+		}
+	}
+	val1, _ := p2p.SyncInput(&ignore)
+	val2, _ := p2p2.SyncInput(&ignore)
+	val3, _ := p2p3.SyncInput(&ignore)
+	if !slice2dEqual(val1, val2) || !slice2dEqual(val2, val3) || !slice2dEqual(val1, val3) {
+		t.Errorf("All peers did not recieve the inputs. P1 inputs %v P2 inputs %v P3 inputs %v", val1, val2, val3)
+	}
+}
+
+func TestP2PBackend4PlayerSynchronize(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+	localPort := 6000
+	remotePort := 6001
+	remoteIp := "127.2.1.1"
+	numPlayers := 4
+	inputSize := 4
+	p2p := ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+
+	session2 := NewFakeSession()
+	sessionCallbacks2 := makeSessionCallBacks(session2)
+	p2p2 := ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+
+	session3 := NewFakeSession()
+	sessionCallbacks3 := makeSessionCallBacks(session3)
+
+	p3port := 6005
+	p2p3 := ggthx.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+
+	session4 := NewFakeSession()
+	sessionCallbacks4 := makeSessionCallBacks(session4)
+	p4port := 6006
+	p2p4 := ggthx.NewPeer2PeerBackend(&sessionCallbacks4, "test", p4port, numPlayers, inputSize)
+
+	connection := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p2, &p2p3, &p2p4}, localPort, remoteIp)
+	connection2 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p3, &p2p4}, remotePort, remoteIp)
+	connection3 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p2, &p2p4}, p3port, remoteIp)
+	connection4 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p2, &p2p3}, p4port, remoteIp)
+	//ggthx.EnableLogger()
+	p2p.InitalizeConnection(&connection)
+	p2p2.InitalizeConnection(&connection2)
+	p2p3.InitalizeConnection(&connection3)
+	p2p4.InitalizeConnection(&connection4)
+
+	player1 := ggthx.NewLocalPlayer(20, 1)
+	var p1Handle ggthx.PlayerHandle
+	player2 := ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	var p2Handle ggthx.PlayerHandle
+	player3 := ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	var p3Handle ggthx.PlayerHandle
+	player4 := ggthx.NewRemotePlayer(20, 4, remoteIp, p4port)
+	var p4Handle ggthx.PlayerHandle
+	p2p.AddPlayer(&player1, &p1Handle)
+	p2p.AddPlayer(&player2, &p2Handle)
+	p2p.AddPlayer(&player3, &p3Handle)
+	p2p.AddPlayer(&player4, &p4Handle)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewLocalPlayer(20, 2)
+	player3 = ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	player4 = ggthx.NewRemotePlayer(20, 4, remoteIp, p4port)
+	var p2handle1 ggthx.PlayerHandle
+	var p2handle2 ggthx.PlayerHandle
+	var p2handle3 ggthx.PlayerHandle
+	var p2handle4 ggthx.PlayerHandle
+	p2p2.AddPlayer(&player1, &p2handle1)
+	p2p2.AddPlayer(&player2, &p2handle2)
+	p2p2.AddPlayer(&player3, &p2handle3)
+	p2p2.AddPlayer(&player4, &p2handle4)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	player3 = ggthx.NewLocalPlayer(20, 3)
+	player4 = ggthx.NewRemotePlayer(20, 4, remoteIp, p4port)
+	var p3handle1 ggthx.PlayerHandle
+	var p3handle2 ggthx.PlayerHandle
+	var p3handle3 ggthx.PlayerHandle
+	var p3handle4 ggthx.PlayerHandle
+	p2p3.AddPlayer(&player1, &p3handle1)
+	p2p3.AddPlayer(&player2, &p3handle2)
+	p2p3.AddPlayer(&player3, &p3handle3)
+	p2p3.AddPlayer(&player4, &p3handle4)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	player3 = ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	player4 = ggthx.NewLocalPlayer(20, 4)
+	var p4handle1 ggthx.PlayerHandle
+	var p4handle2 ggthx.PlayerHandle
+	var p4handle3 ggthx.PlayerHandle
+	var p4handle4 ggthx.PlayerHandle
+	p2p4.AddPlayer(&player1, &p4handle1)
+	p2p4.AddPlayer(&player2, &p4handle2)
+	p2p4.AddPlayer(&player3, &p4handle3)
+	p2p4.AddPlayer(&player4, &p4handle4)
+
+	advance := func() int64 {
+		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
+	}
+	for i := 0; i < ggthx.NumSyncPackets; i++ {
+		p2p.DoPoll(0, advance)
+		p2p2.DoPoll(0, advance)
+		p2p3.DoPoll(0, advance)
+		p2p4.DoPoll(0, advance)
+	}
+	var err error
+	var ignore int
+	_, err = p2p.SyncInput(&ignore)
+	if err != nil {
+		t.Errorf("Player 1 didn't synchronize.")
+	}
+	_, err = p2p2.SyncInput(&ignore)
+	if err != nil {
+		t.Errorf("Player 2 didn't synchronize.")
+	}
+
+	_, err = p2p3.SyncInput(&ignore)
+	if err != nil {
+		t.Errorf("Player 3 didn't synchronize.")
+	}
+	_, err = p2p4.SyncInput(&ignore)
+	if err != nil {
+		t.Errorf("Player 4 didn't synchronize.")
+	}
+
+}
+
+func TestP2PBackend4PlayerShareInput(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+	localPort := 6000
+	remotePort := 6001
+	remoteIp := "127.2.1.1"
+	numPlayers := 4
+	inputSize := 4
+	p2p := ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+
+	session2 := NewFakeSession()
+	sessionCallbacks2 := makeSessionCallBacks(session2)
+	p2p2 := ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+
+	session3 := NewFakeSession()
+	sessionCallbacks3 := makeSessionCallBacks(session3)
+
+	p3port := 6005
+	p2p3 := ggthx.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+
+	session4 := NewFakeSession()
+	sessionCallbacks4 := makeSessionCallBacks(session4)
+	p4port := 6006
+	p2p4 := ggthx.NewPeer2PeerBackend(&sessionCallbacks4, "test", p4port, numPlayers, inputSize)
+
+	connection := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p2, &p2p3, &p2p4}, localPort, remoteIp)
+	connection2 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p3, &p2p4}, remotePort, remoteIp)
+	connection3 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p2, &p2p4}, p3port, remoteIp)
+	connection4 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p, &p2p2, &p2p3}, p4port, remoteIp)
+	//ggthx.EnableLogger()
+	p2p.InitalizeConnection(&connection)
+	p2p2.InitalizeConnection(&connection2)
+	p2p3.InitalizeConnection(&connection3)
+	p2p4.InitalizeConnection(&connection4)
+
+	player1 := ggthx.NewLocalPlayer(20, 1)
+	var p1Handle ggthx.PlayerHandle
+	player2 := ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	var p2Handle ggthx.PlayerHandle
+	player3 := ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	var p3Handle ggthx.PlayerHandle
+	player4 := ggthx.NewRemotePlayer(20, 4, remoteIp, p4port)
+	var p4Handle ggthx.PlayerHandle
+	p2p.AddPlayer(&player1, &p1Handle)
+	p2p.AddPlayer(&player2, &p2Handle)
+	p2p.AddPlayer(&player3, &p3Handle)
+	p2p.AddPlayer(&player4, &p4Handle)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewLocalPlayer(20, 2)
+	player3 = ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	player4 = ggthx.NewRemotePlayer(20, 4, remoteIp, p4port)
+	var p2handle1 ggthx.PlayerHandle
+	var p2handle2 ggthx.PlayerHandle
+	var p2handle3 ggthx.PlayerHandle
+	var p2handle4 ggthx.PlayerHandle
+	p2p2.AddPlayer(&player1, &p2handle1)
+	p2p2.AddPlayer(&player2, &p2handle2)
+	p2p2.AddPlayer(&player3, &p2handle3)
+	p2p2.AddPlayer(&player4, &p2handle4)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	player3 = ggthx.NewLocalPlayer(20, 3)
+	player4 = ggthx.NewRemotePlayer(20, 4, remoteIp, p4port)
+	var p3handle1 ggthx.PlayerHandle
+	var p3handle2 ggthx.PlayerHandle
+	var p3handle3 ggthx.PlayerHandle
+	var p3handle4 ggthx.PlayerHandle
+	p2p3.AddPlayer(&player1, &p3handle1)
+	p2p3.AddPlayer(&player2, &p3handle2)
+	p2p3.AddPlayer(&player3, &p3handle3)
+	p2p3.AddPlayer(&player4, &p3handle4)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	player3 = ggthx.NewRemotePlayer(20, 3, remoteIp, p3port)
+	player4 = ggthx.NewLocalPlayer(20, 4)
+	var p4handle1 ggthx.PlayerHandle
+	var p4handle2 ggthx.PlayerHandle
+	var p4handle3 ggthx.PlayerHandle
+	var p4handle4 ggthx.PlayerHandle
+	p2p4.AddPlayer(&player1, &p4handle1)
+	p2p4.AddPlayer(&player2, &p4handle2)
+	p2p4.AddPlayer(&player3, &p4handle3)
+	p2p4.AddPlayer(&player4, &p4handle4)
+
+	advance := func() int64 {
+		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
+	}
+	for i := 0; i < ggthx.NumSyncPackets; i++ {
+		p2p.DoPoll(0, advance)
+		p2p2.DoPoll(0, advance)
+		p2p3.DoPoll(0, advance)
+		p2p4.DoPoll(0, advance)
+	}
+	input1 := []byte{1, 2, 3, 4}
+	input2 := []byte{5, 6, 7, 8}
+	input3 := []byte{9, 10, 11, 12}
+	input4 := []byte{13, 14, 15, 16}
+	var err error
+	var ignore int
+	var p1now, p2now, p1next, p2next, p3next, p3now, p4next, p4now int
+	p1now = int(time.Now().UnixMilli())
+	p1next = p1now
+	p2next = p1now
+	p2now = p1now
+	p3next = p1now
+	p3now = p1now
+	p4next = p1now
+	p4now = p1now
+
+	for i := 0; i < 4; i++ {
+		doPollTimeOuts := int(math.Max(0, float64(p1next-p1now-1)))
+
+		p2p.DoPoll(doPollTimeOuts, advance)
+		if p1next >= p1now {
+			err = p2p.AddLocalInput(p1Handle, input1, 4)
+			if err == nil {
+				//_, err = p2p.SyncInput(&ignore)
+				if err == nil {
+					p2p.IncrementFrame()
+				}
+			}
+			p1next = p1now + 1000/60
+		}
+
+		doPollTimeOuts = int(math.Max(0, float64(p2next-p2now-1)))
+		p2p2.DoPoll(doPollTimeOuts, advance)
+		if p2next >= p2now {
+			err = p2p2.AddLocalInput(p2handle2, input2, 4)
+			if err == nil {
+				//_, err = p2p2.SyncInput(&ignore)
+				if err == nil {
+					p2p2.IncrementFrame()
+				}
+			}
+			p2next = p2now + 1000/60
+		}
+
+		doPollTimeOuts = int(math.Max(0, float64(p3next-p3now-1)))
+		p2p3.DoPoll(doPollTimeOuts, advance)
+		if p3next >= p3now {
+			err = p2p3.AddLocalInput(p3handle3, input3, 4)
+			if err == nil {
+				//_, err = p2p3.SyncInput(&ignore)
+				if err == nil {
+					p2p3.IncrementFrame()
+				}
+			}
+			p3next = p3now + 1000/60
+		}
+
+		doPollTimeOuts = int(math.Max(0, float64(p4next-p4now-1)))
+		p2p4.DoPoll(doPollTimeOuts, advance)
+		if p4next >= p4now {
+			err = p2p4.AddLocalInput(p4handle4, input4, 4)
+			if err == nil {
+				//_, err = p2p4.SyncInput(&ignore)
+				if err == nil {
+					p2p4.IncrementFrame()
+				}
+			}
+			p4next = p4now + 1000/60
+		}
+	}
+
+	val1, _ := p2p.SyncInput(&ignore)
+	val2, _ := p2p2.SyncInput(&ignore)
+	val3, _ := p2p3.SyncInput(&ignore)
+	val4, _ := p2p4.SyncInput(&ignore)
+	if !slice2dEqual(val1, val2) || !slice2dEqual(val2, val3) || !slice2dEqual(val1, val3) ||
+		!slice2dEqual(val2, val4) || !slice2dEqual(val1, val4) || !slice2dEqual(val4, val3) {
+		t.Errorf("All peers did not recieve the inputs. P1 inputs %v P2 inputs %v P3 inputs %v P4 inputs %v", val1, val2, val3, val4)
+	}
+}
+
+func TestP2PBackendGetNetworkStats(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+	localPort := 6000
+	remotePort := 6001
+	remoteIp := "127.2.1.1"
+	numPlayers := 2
+	inputSize := 4
+	p2p := ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+
+	session2 := NewFakeSession()
+	sessionCallbacks2 := makeSessionCallBacks(session2)
+	p2p2 := ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	connection := NewFakeP2PConnection(&p2p2, localPort, remoteIp)
+	connection2 := NewFakeP2PConnection(&p2p, remotePort, remoteIp)
+
+	p2p.InitalizeConnection(&connection)
+	p2p2.InitalizeConnection(&connection2)
+
+	player1 := ggthx.NewLocalPlayer(20, 1)
+	var p1Handle ggthx.PlayerHandle
+	player2 := ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	var p2Handle ggthx.PlayerHandle
+	p2p.AddPlayer(&player1, &p1Handle)
+	p2p.AddPlayer(&player2, &p2Handle)
+
+	player1 = ggthx.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggthx.NewLocalPlayer(20, 2)
+	var p2handle1 ggthx.PlayerHandle
+	var p2handle2 ggthx.PlayerHandle
+	p2p2.AddPlayer(&player1, &p2handle1)
+	p2p2.AddPlayer(&player2, &p2handle2)
+
+	advance := func() int64 {
+		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
+	}
+	for i := 0; i < ggthx.NumSyncPackets; i++ {
+		p2p.DoPoll(0, advance)
+		p2p2.DoPoll(0, advance)
+	}
+	p1stats := make([]ggthx.NetworkStats, numPlayers)
+	for i := 0; i < numPlayers; i++ {
+		p2p.GetNetworkStats(&p1stats[i], ggthx.PlayerHandle(i+1))
+	}
+	p2stats := make([]ggthx.NetworkStats, numPlayers)
+	for i := 0; i < numPlayers; i++ {
+		p2p2.GetNetworkStats(&p2stats[i], ggthx.PlayerHandle(i+1))
+	}
+	if p2stats[0].Timesync.LocalFramesBehind != p1stats[1].Timesync.LocalFramesBehind {
+		t.Errorf("Remote local frames behind for both endpoints should be -1 at this state.")
+	}
+}
+func TestP2PBackendGetNetworkStatsInvalid(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+	localPort := 6000
+	remotePort := 6001
+	remoteIp := "127.2.1.1"
+	numPlayers := 2
+	inputSize := 4
+	p2p := ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+
+	session2 := NewFakeSession()
+	sessionCallbacks2 := makeSessionCallBacks(session2)
+	p2p2 := ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	connection := NewFakeP2PConnection(&p2p2, localPort, remoteIp)
+	connection2 := NewFakeP2PConnection(&p2p, remotePort, remoteIp)
+
+	p2p.InitalizeConnection(&connection)
+	p2p2.InitalizeConnection(&connection2)
+
+	player1 := ggthx.NewLocalPlayer(20, 1)
+	var p1Handle ggthx.PlayerHandle
+	player2 := ggthx.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	var p2Handle ggthx.PlayerHandle
+	p2p.AddPlayer(&player1, &p1Handle)
+	p2p.AddPlayer(&player2, &p2Handle)
+
+	var stats ggthx.NetworkStats
+	err := p2p.GetNetworkStats(&stats, ggthx.PlayerHandle(29))
+	if err == nil {
+		t.Errorf("Trying to create stats for an invalid player handle should return an error.")
 	}
 }

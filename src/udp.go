@@ -52,14 +52,6 @@ type MessageHandler interface {
 	HandleMessage(ipAddress string, port int, msg UDPMessage, len int)
 }
 
-func (u Udp) CreateSocket(ipAddress, port string, retries int) net.Conn {
-	conn, err := net.Dial("udp", ipAddress+":"+port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return conn
-}
-
 func (u Udp) Close() {
 	u.listener.Close()
 }

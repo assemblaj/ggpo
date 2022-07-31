@@ -306,7 +306,7 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc FuncTimeType) bool {
 	case DisconnectedState:
 		if u.shutdownTimeout < now {
 			log.Printf("Shutting down udp connection.\n")
-			u.udp = Udp{}
+			u.udp = nil
 			u.shutdownTimeout = 0
 		}
 	}
