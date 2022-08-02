@@ -7,6 +7,18 @@ import (
 	ggthx "github.com/assemblaj/ggthx/src"
 )
 
+func makeSessionCallBacksBackend(session FakeSessionWithBackend) ggthx.SessionCallbacks {
+	var sessionCallbacks ggthx.SessionCallbacks
+	sessionCallbacks.AdvanceFrame = session.advanceFrame
+	sessionCallbacks.BeginGame = session.beginGame
+	sessionCallbacks.FreeBuffer = session.freeBuffer
+	sessionCallbacks.LoadGameState = session.loadGameState
+	sessionCallbacks.LogGameState = session.logGameState
+	sessionCallbacks.OnEvent = session.onEvent
+	sessionCallbacks.SaveGameState = session.saveGameState
+	return sessionCallbacks
+}
+
 func TestNewSyncTestBackend(t *testing.T) {
 	session := NewFakeSession()
 	sessionCallbacks := makeSessionCallBacks(session)
@@ -164,6 +176,34 @@ func TestSyncTestBackendIncrementFrame(t *testing.T) {
 	stb.IncrementFrame()
 }
 
+/*Again, WIP, I don't know how to test that this is working, but it is. */
+func TestSyncTestBackendChecksumCheck(t *testing.T) {
+	session := NewFakeSessionWithBackend()
+	var stb ggthx.SyncTestBackend
+	session.SetBackend(&stb)
+	sessionCallbacks := makeSessionCallBacksBackend(session)
+	player := ggthx.NewLocalPlayer(20, 1)
+	checkDistance := 8
+	stb = ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+
+	var handle ggthx.PlayerHandle
+	stb.AddPlayer(&player, &handle)
+	inputBytes := []byte{1, 2, 3, 4}
+	var disconnectFlags int
+	var result error
+
+	for i := 0; i < checkDistance+1; i++ {
+		stb.DoPoll(0)
+		result = stb.AddLocalInput(handle, inputBytes, 4)
+		if result == nil {
+			_, result := stb.SyncInput(&disconnectFlags)
+			if result == nil {
+				stb.IncrementFrame()
+			}
+		}
+	}
+}
+
 // Unsupported functions
 func TestSyncTestBackendChatError(t *testing.T) {
 	session := NewFakeSession()
@@ -227,6 +267,17 @@ func TestSyncTestBackendSetDisconnectTimeoutError(t *testing.T) {
 	checkDistance := 8
 	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 	err := stb.SetDisconnectTimeout(20)
+	if err == nil {
+		t.Errorf("The code did not error when using an unsupported Feature.")
+	}
+}
+
+func TestSyncTestBackendSetDisconnectNotifyStartError(t *testing.T) {
+	session := NewFakeSession()
+	sessionCallbacks := makeSessionCallBacks(session)
+	checkDistance := 8
+	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	err := stb.SetDisconnectNotifyStart(20)
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
 	}

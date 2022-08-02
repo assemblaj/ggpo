@@ -51,7 +51,7 @@ func NewSyncTestBackend(cb *SessionCallbacks,
 	return s
 }
 
-func (s *SyncTestBackend) DoPoll(timeout int) error {
+func (s *SyncTestBackend) DoPoll(timeout int, timeFunc ...FuncTimeType) error {
 	if !s.running {
 		var info Event
 		info.Code = EventCodeRunning
