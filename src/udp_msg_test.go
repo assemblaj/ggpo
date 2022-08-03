@@ -188,7 +188,6 @@ func TestEncodeInput(t *testing.T) {
 		LastFrame:    80,
 	}
 	want.Bits = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
-	want.Sizes = []int32{23, 34, 58}
 
 	buf := want.ToBytes()
 
@@ -227,14 +226,6 @@ func TestEncodeInput(t *testing.T) {
 		t.Errorf("expected Bits Slice '%#v' but got '%#v'", want.Bits, got.Bits)
 	}
 
-	if len(got.Sizes) != len(want.Sizes) {
-		t.Errorf("expected Sizes length'%#v' but got '%#v'", len(want.Sizes), len(got.Sizes))
-	}
-	for i := 0; i < len(want.Sizes); i++ {
-		if got.Sizes[i] != want.Sizes[i] {
-			t.Errorf("expected Size at index %d to be'%#v' but got '%#v'", i, want.Sizes[i], got.Sizes[i])
-		}
-	}
 }
 
 /*

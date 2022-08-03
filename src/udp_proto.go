@@ -343,10 +343,6 @@ func (u *UdpProtocol) SendPendingOutput() error {
 				panic(err)
 			}
 			inputMsg.Bits = append(inputMsg.Bits, current.Bits...)
-			if len(current.Sizes) > 0 {
-				inputMsg.Sizes = make([]int32, len(current.Sizes))
-				copy(inputMsg.Sizes, current.Sizes)
-			}
 			last = current // might get rid of this
 			u.lastSentInput = current
 		}
@@ -494,10 +490,6 @@ func (u *UdpProtocol) OnInput(msg UDPMessage, length int) (bool, error) {
 		if useInputs {
 			if currentFrame != uint32(u.lastRecievedInput.Frame)+1 {
 				return false, errors.New("ggthx UdpProtocol OnInput: currentFrame != uint32(u.lastRecievedInput.Frame) +1")
-			}
-			if len(inputMessage.Sizes) > 0 {
-				u.lastRecievedInput.Sizes = make([]int32, len(inputMessage.Sizes))
-				copy(u.lastRecievedInput.Sizes, inputMessage.Sizes)
 			}
 			u.lastRecievedInput.Bits = inputMessage.Bits[offset : offset+int(inputMessage.InputSize)]
 			u.lastRecievedInput.Frame = int(currentFrame)

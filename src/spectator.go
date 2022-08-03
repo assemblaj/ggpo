@@ -22,6 +22,7 @@ type SpectatorBackend struct {
 	hostPort        int
 	framesBehind    int
 	localPort       int
+	currentFrame    int
 }
 
 func NewSpectatorBackend(cb *SessionCallbacks,
@@ -60,7 +61,7 @@ func (s *SpectatorBackend) DoPoll(timeout int, timeFunc ...FuncTimeType) error {
 	s.PollUdpProtocolEvents()
 
 	if s.framesBehind > 0 {
-		for i := 0; i < s.framesBehind; i++ {
+		for s.nextInputToSend < s.currentFrame {
 			s.callbacks.AdvanceFrame(0)
 			log.Printf("In Spectator: skipping frame %d\n", s.nextInputToSend)
 			s.nextInputToSend++
@@ -78,6 +79,7 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	}
 
 	input := s.inputs[s.nextInputToSend%SpectatorFrameBufferSize]
+	s.currentFrame = input.Frame
 	if input.Frame < s.nextInputToSend {
 		// Haved recieved input from the host yet. Wait
 		return nil, Error{Code: ErrorCodePredictionThreshod, Name: "ErrorCodePredictionThreshod"}
@@ -92,11 +94,13 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	//s.framesBehind = 0
 
 	//Assert(size >= s.inputSize*s.numPlayers)
-	values := make([][]byte, len(input.Sizes))
+	values := make([][]byte, s.numPlayers)
 	offset := 0
-	for i, v := range input.Sizes {
-		values[i] = input.Bits[offset : int(v)+offset]
-		offset += int(v)
+	counter := 0
+	for offset < len(input.Bits) {
+		values[counter] = input.Bits[offset : s.inputSize+offset]
+		offset += s.inputSize
+		counter++
 	}
 
 	if disconnectFlags != nil {

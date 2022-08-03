@@ -122,9 +122,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int, timeFunc ...FuncTimeType) error {
 						input.Frame = p.nextSpectatorFrame
 						input.Size = p.inputSize * p.numPlayers
 						inputs, _ = p.sync.GetConfirmedInputs(p.nextSpectatorFrame)
-						input.Sizes = make([]int32, len(inputs))
 						for i, _ := range inputs {
-							input.Sizes[i] = int32(len(inputs[i]))
 							input.Bits = append(input.Bits, inputs[i]...)
 						}
 						for i := 0; i < p.numSpectators; i++ {

@@ -272,7 +272,6 @@ type InputPacket struct {
 	NumBits   uint16
 	InputSize uint8
 	Bits      []byte
-	Sizes     []int32
 }
 
 func (i *InputPacket) Type() UDPMessageType { return InputMsg }
@@ -297,11 +296,7 @@ func (i *InputPacket) PacketSize() int {
 	size += int(unsafe.Sizeof(i.InputSize))
 	size += 1 // will store total
 	size += len(i.Bits)
-	size += 1 // will store total
-	size += len(i.Sizes)
-	for _, s := range i.Sizes {
-		size += int(unsafe.Sizeof(s))
-	}
+	//size += 1 // will store total
 	return size
 }
 func (i *InputPacket) ToBytes() []byte {
@@ -339,12 +334,6 @@ func (i *InputPacket) ToBytes() []byte {
 			copy(buf[offset:offset+len(input)], input)
 			offset += len(input)
 		}*/
-	buf[offset] = byte(len(i.Sizes))
-	offset++
-	for _, s := range i.Sizes {
-		binary.BigEndian.PutUint32(buf[offset:], uint32(s))
-		offset += Int32size
-	}
 	return buf
 }
 
@@ -390,13 +379,6 @@ func (i *InputPacket) FromBytes(buffer []byte) error {
 			offset += curBitsSize
 		}*/
 
-	totalSizes := buffer[offset]
-	offset++
-	i.Sizes = make([]int32, totalSizes)
-	for s := range i.Sizes {
-		i.Sizes[s] = int32(binary.BigEndian.Uint32(buffer[offset : offset+Int32size]))
-		offset += Int32size
-	}
 	return nil
 }
 

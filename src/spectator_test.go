@@ -199,22 +199,34 @@ func TestNewSpectatorBackendInput(t *testing.T) {
 
 /*WIP*/
 func TestNewSpectatorBackendBehind(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+
+	var p2p ggthx.Peer2PeerBackend
+	session := NewFakeSessionWithBackend()
+	session.SetBackend(&p2p)
+	sessionCallbacks := makeSessionCallBacksBackend(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p = ggthx.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
 
-	session2 := NewFakeSession()
-	sessionCallbacks2 := makeSessionCallBacks(session2)
-	p2p2 := ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	var p2p2 ggthx.Peer2PeerBackend
+	session2 := NewFakeSessionWithBackend()
+	session2.SetBackend(&p2p2)
+	sessionCallbacks2 := makeSessionCallBacksBackend(session2)
+
+	p2p2 = ggthx.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+
+	var stb ggthx.SpectatorBackend
+
+	session3 := NewFakeSessionWithBackend()
+	session3.SetBackend(&stb)
+	sessionCallbacks3 := makeSessionCallBacksBackend(session3)
 
 	hostIp := "127.2.1.1"
 	specPort := 6005
-	stb := ggthx.NewSpectatorBackend(&sessionCallbacks, "test", specPort, 2, 4, hostIp, localPort)
+	stb = ggthx.NewSpectatorBackend(&sessionCallbacks3, "test", specPort, 2, 4, hostIp, localPort)
 
 	connection := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p2, &stb}, localPort, remoteIp)
 	connection2 := NewFakeMultiplePeerConnection([]ggthx.MessageHandler{&p2p}, remotePort, remoteIp)
@@ -253,14 +265,14 @@ func TestNewSpectatorBackendBehind(t *testing.T) {
 	inputBytes := []byte{1, 2, 3, 4}
 	inputBytes2 := []byte{5, 6, 7, 8}
 	var ignore int
-	stb.SyncInput(&ignore)
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 10; i++ {
 		p2p2.DoPoll(0)
 		err := p2p2.AddLocalInput(p2Handle, inputBytes2, len(inputBytes2))
 		if err != nil {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		}
+		p2p2.SyncInput(&ignore)
 		p2p2.IncrementFrame()
 
 		p2p.DoPoll(0)
@@ -268,34 +280,19 @@ func TestNewSpectatorBackendBehind(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		}
+		p2p.SyncInput(&ignore)
 		p2p.IncrementFrame()
 
+		if i == 0 {
+			stb.DoPoll(0)
+			stb.SyncInput(&ignore)
+			stb.IncrementFrame()
+		}
 	}
 	stb.DoPoll(0)
-	stb.IncrementFrame()
 	stb.SyncInput(&ignore)
-
-	for i := 0; i < 2; i++ {
-		p2p2.DoPoll(0)
-		err := p2p2.AddLocalInput(p2Handle, inputBytes2, len(inputBytes2))
-		if err != nil {
-			t.Errorf(" Error when adding local input to p2, %s", err)
-		}
-		p2p2.IncrementFrame()
-
-		p2p.DoPoll(0)
-		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
-		if err != nil {
-			t.Errorf("Error when adding local input to p1, %s", err)
-		}
-		p2p.IncrementFrame()
-
-	}
-	stb.IncrementFrame()
-	stb.SyncInput(&ignore)
-	//fmt.Println(vals)
-	//fmt.Println(err)
 }
+
 func TestNewSpectatorBackendCharacterization(t *testing.T) {
 	session := NewFakeSession()
 	sessionCallbacks := makeSessionCallBacks(session)
@@ -499,6 +496,8 @@ func TestNewSpectatorBackendDisconnect(t *testing.T) {
 
 	p2p.SetDisconnectTimeout(3000)
 	p2p2.SetDisconnectTimeout(3000)
+	p2p.SetDisconnectNotifyStart(1000)
+	p2p2.SetDisconnectNotifyStart(1000)
 
 	advance := func() int64 {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
