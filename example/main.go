@@ -11,7 +11,7 @@ import (
 	//	"net/http"
 	//	_ "net/http/pprof"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	ggthx "github.com/assemblaj/ggthx/pkg"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 

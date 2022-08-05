@@ -1,17 +1,18 @@
-package ggthx_test
+package sync_test
 
 import (
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	"github.com/assemblaj/ggthx/internal/input"
+	"github.com/assemblaj/ggthx/internal/sync"
 )
 
 func TestTimeSyncRecommendFrameDuration(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 5
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 8, 9)
 	want := 0
 	got := ts.ReccomendFrameWaitDuration(false)
@@ -20,11 +21,11 @@ func TestTimeSyncRecommendFrameDuration(t *testing.T) {
 	}
 }
 func TestTimeSyncRecommendFrameDurationIdleInput(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 5
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 8, 9)
 	want := 0
 	got := ts.ReccomendFrameWaitDuration(true)
@@ -34,11 +35,11 @@ func TestTimeSyncRecommendFrameDurationIdleInput(t *testing.T) {
 }
 
 func TestTimeSyncHighLocalFrameAdvantage(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 0
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 9, 800)
 	want := 9
 	got := ts.ReccomendFrameWaitDuration(false)
@@ -48,11 +49,11 @@ func TestTimeSyncHighLocalFrameAdvantage(t *testing.T) {
 
 }
 func TestTimeSyncHighLocalFrameAdvantageRequireIdleInputPanic(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 0
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 9, 800)
 	defer func() {
 		if r := recover(); r == nil {
@@ -62,13 +63,13 @@ func TestTimeSyncHighLocalFrameAdvantageRequireIdleInputPanic(t *testing.T) {
 	ts.ReccomendFrameWaitDuration(true)
 }
 func TestTimeSyncHighLocalFrameAdvantageRequireIdleInput(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frameCount := 20
 	for i := 0; i < frameCount; i++ {
 		frame := i
 		bytes := []byte{1, 2, 3, 4}
 		size := 4
-		input, _ := ggthx.NewGameInput(frame, bytes, size)
+		input, _ := input.NewGameInput(frame, bytes, size)
 		ts.AdvanceFrames(&input, 9, 800)
 	}
 	want := 9
@@ -79,11 +80,11 @@ func TestTimeSyncHighLocalFrameAdvantageRequireIdleInput(t *testing.T) {
 }
 
 func TestTimeSyncHighRemoteFrameAdvantage(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 0
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 800, 9)
 	want := 0
 	got := ts.ReccomendFrameWaitDuration(false)
@@ -94,11 +95,11 @@ func TestTimeSyncHighRemoteFrameAdvantage(t *testing.T) {
 }
 
 func TestTimeSyncNoFrameAdvantage(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 0
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 0, 0)
 	want := 0
 	got := ts.ReccomendFrameWaitDuration(false)
@@ -108,11 +109,11 @@ func TestTimeSyncNoFrameAdvantage(t *testing.T) {
 }
 
 func TestTimeSyncNegativeLocalFrameAdvantage(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 0
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, -1, 9)
 	want := 0
 	got := ts.ReccomendFrameWaitDuration(false)
@@ -121,11 +122,11 @@ func TestTimeSyncNegativeLocalFrameAdvantage(t *testing.T) {
 	}
 }
 func TestTimeSyncBothNegativeFrameAdvantage(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	frame := 0
 	bytes := []byte{1, 2, 3, 4}
 	size := 4
-	input, _ := ggthx.NewGameInput(frame, bytes, size)
+	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, -2000, -2000)
 	want := 0
 	got := ts.ReccomendFrameWaitDuration(false)
@@ -135,13 +136,13 @@ func TestTimeSyncBothNegativeFrameAdvantage(t *testing.T) {
 }
 
 func TestTimeSyncAdvanceFramesAndAdvantage(t *testing.T) {
-	ts := ggthx.NewTimeSync()
+	ts := sync.NewTimeSync()
 	totalFrames := 20
 	for i := 0; i < totalFrames; i++ {
 		frame := i
 		bytes := []byte{1, 2, 3, 4}
 		size := 4
-		input, _ := ggthx.NewGameInput(frame, bytes, size)
+		input, _ := input.NewGameInput(frame, bytes, size)
 		ts.AdvanceFrames(&input, 0, i)
 	}
 	want := 0

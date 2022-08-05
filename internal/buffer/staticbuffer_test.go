@@ -1,13 +1,13 @@
-package ggthx_test
+package buffer_test
 
 import (
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	"github.com/assemblaj/ggthx/internal/buffer"
 )
 
 func TestNewStaticBuffer(t *testing.T) {
-	sb := ggthx.NewStaticBuffer[int](16)
+	sb := buffer.NewStaticBuffer[int](16)
 	pushedValue := 88
 	err := sb.PushBack(pushedValue)
 	if err != nil {
@@ -25,7 +25,7 @@ func TestNewStaticBuffer(t *testing.T) {
 }
 
 func TestStaticBufferGetNegativeValue(t *testing.T) {
-	sb := ggthx.NewStaticBuffer[int](16)
+	sb := buffer.NewStaticBuffer[int](16)
 	pushedValue := 88
 	err := sb.PushBack(pushedValue)
 	if err != nil {
@@ -39,7 +39,7 @@ func TestStaticBufferGetNegativeValue(t *testing.T) {
 }
 
 func TestStaticBufferGetEmptyBuffer(t *testing.T) {
-	sb := ggthx.NewStaticBuffer[int](16)
+	sb := buffer.NewStaticBuffer[int](16)
 	_, err := sb.Get(0)
 	if err == nil {
 		t.Errorf("Should have returned error when trying to retrieve from an empty buffer.")
@@ -49,7 +49,7 @@ func TestStaticBufferGetEmptyBuffer(t *testing.T) {
 
 func TestStaticBufferAddOverCapacity(t *testing.T) {
 	capacity := 16
-	sb := ggthx.NewStaticBuffer[int](capacity)
+	sb := buffer.NewStaticBuffer[int](capacity)
 	for i := 0; i < capacity-1; i++ {
 		sb.PushBack(i)
 	}
@@ -62,7 +62,7 @@ func TestStaticBufferAddOverCapacity(t *testing.T) {
 func TestStaticBufferSize(t *testing.T) {
 	capacity := 16
 	toAdd := 5
-	sb := ggthx.NewStaticBuffer[int](capacity)
+	sb := buffer.NewStaticBuffer[int](capacity)
 	for i := 0; i < toAdd; i++ {
 		sb.PushBack(i)
 	}

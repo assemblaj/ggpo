@@ -146,22 +146,6 @@ type freeBuffer func(buffer []byte)
 type advanceFrame func(flags int) bool
 type onEvent func(info *Event) bool
 
-type NetworkStats struct {
-	Network  NetworkNetworkStats
-	Timesync NetworkTimeSyncStats
-}
-
-type NetworkNetworkStats struct {
-	SendQueueLen int
-	RecvQueueLen int
-	Ping         int
-	KbpsSent     int
-}
-type NetworkTimeSyncStats struct {
-	LocalFramesBehind  int
-	RemoteFramesBehind int
-}
-
 type ConnectionType int
 
 const (

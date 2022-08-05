@@ -1,4 +1,4 @@
-package ggthx
+package util
 
 import (
 	"golang.org/x/exp/constraints"

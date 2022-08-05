@@ -3,6 +3,9 @@ package ggthx
 import (
 	"errors"
 	"log"
+
+	"github.com/assemblaj/ggthx/internal/input"
+	"github.com/assemblaj/ggthx/internal/transport"
 )
 
 type Sync struct {
@@ -15,12 +18,12 @@ type Sync struct {
 	frameCount          int
 	maxPredictionFrames int
 
-	inputQueues []InputQueue
+	inputQueues []input.InputQueue
 
-	localConnectStatus []UdpConnectStatus
+	localConnectStatus []transport.UdpConnectStatus
 }
 
-const MAX_PREDICTION_FRAMES int = 8
+//const MaxPredictionFrames int = 8
 
 type SyncConfig struct {
 	callbacks           SessionCallbacks
@@ -45,7 +48,7 @@ type savedState struct {
 	head   int
 }
 
-func NewSync(status []UdpConnectStatus, config *SyncConfig) Sync {
+func NewSync(status []transport.UdpConnectStatus, config *SyncConfig) Sync {
 	s := Sync{
 		config:              *config,
 		callbacks:           config.callbacks,
@@ -55,7 +58,7 @@ func NewSync(status []UdpConnectStatus, config *SyncConfig) Sync {
 		lastConfirmedFrame:  -1,
 		rollingBack:         false,
 		savedState: savedState{
-			frames: make([]savedFrame, MAX_PREDICTION_FRAMES+2)},
+			frames: make([]savedFrame, MaxPredictionFrames+2)},
 	}
 	s.CreateQueues(*config)
 	return s
@@ -96,7 +99,7 @@ func (s *Sync) SetLastConfirmedFrame(frame int) {
 	}
 }
 
-func (s *Sync) AddLocalInput(queue int, input *GameInput) bool {
+func (s *Sync) AddLocalInput(queue int, input *input.GameInput) bool {
 	framesBehind := s.frameCount - s.lastConfirmedFrame
 	if s.frameCount >= s.maxPredictionFrames && framesBehind >= s.maxPredictionFrames {
 		log.Printf("Rejecting input from emulator: reached prediction barrier.\n")
@@ -117,7 +120,7 @@ func (s *Sync) AddLocalInput(queue int, input *GameInput) bool {
 	return true
 }
 
-func (s *Sync) AddRemoteInput(queue int, input *GameInput) {
+func (s *Sync) AddRemoteInput(queue int, input *input.GameInput) {
 
 	err := s.inputQueues[queue].AddInput(input)
 	if err != nil {
@@ -135,7 +138,7 @@ func (s *Sync) GetConfirmedInputs(frame int) ([][]byte, int) {
 	//values := make([]byte, size)
 	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
-		var input GameInput
+		var input input.GameInput
 		if (s.localConnectStatus[i].Disconnected) && (int32(frame) > s.localConnectStatus[i].LastFrame) {
 			disconnectFlags |= (1 << i)
 			input.Erase()
@@ -159,7 +162,7 @@ func (s *Sync) SynchronizeInputs() ([][]byte, int) {
 	//values := make([]byte, size)
 	var values [][]byte
 	for i := 0; i < s.config.numPlayers; i++ {
-		var input GameInput
+		var input input.GameInput
 		if s.localConnectStatus[i].Disconnected && int32(s.frameCount) > s.localConnectStatus[i].LastFrame {
 			disconnectFlags |= (1 << i)
 			input.Erase()
@@ -299,26 +302,26 @@ func (s *Sync) FindSavedFrameIndex(frame int) (int, error) {
 
 func (s *Sync) CreateQueues(config SyncConfig) bool {
 
-	s.inputQueues = make([]InputQueue, s.config.numPlayers)
+	s.inputQueues = make([]input.InputQueue, s.config.numPlayers)
 	for i := 0; i < s.config.numPlayers; i++ {
-		s.inputQueues[i] = NewInputQueue(i, s.config.inputSize)
+		s.inputQueues[i] = input.NewInputQueue(i, s.config.inputSize)
 	}
 	return true
 }
 
 func (s *Sync) CheckSimulationConsistency(seekTo *int) bool {
 
-	firstInorrect := NullFrame
+	firstInorrect := input.NullFrame
 	for i := 0; i < s.config.numPlayers; i++ {
 		incorrect := s.inputQueues[i].FirstIncorrectFrame()
 		log.Printf("considering incorrect frame %d reported by queue %d.\n", incorrect, i)
 
-		if incorrect != NullFrame && (firstInorrect == NullFrame || incorrect < firstInorrect) {
+		if incorrect != input.NullFrame && (firstInorrect == input.NullFrame || incorrect < firstInorrect) {
 			firstInorrect = incorrect
 		}
 	}
 
-	if firstInorrect == NullFrame {
+	if firstInorrect == input.NullFrame {
 		log.Printf("prediction ok.  proceeding.\n")
 		return true
 	}

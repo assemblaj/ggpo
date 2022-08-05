@@ -1,17 +1,17 @@
-package ggthx_test
+package input_test
 
 import (
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	"github.com/assemblaj/ggthx/internal/input"
 )
 
 /*
 	Charecterization Tests
 */
 func TestFirstLastConfirmedFrame(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 50)
-	want := ggthx.NullFrame
+	queue := input.NewInputQueue(0, 50)
+	want := input.NullFrame
 	got := queue.LastConfirmedFrame()
 	if want != got {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
@@ -19,8 +19,8 @@ func TestFirstLastConfirmedFrame(t *testing.T) {
 }
 
 func TestFirstFirstIncorrectFrame(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 50)
-	want := ggthx.NullFrame
+	queue := input.NewInputQueue(0, 50)
+	want := input.NullFrame
 	got := queue.FirstIncorrectFrame()
 	if want != got {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
@@ -29,8 +29,8 @@ func TestFirstFirstIncorrectFrame(t *testing.T) {
 
 // AddInput
 func TestAddFirstInput(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 50)
-	input, _ := ggthx.NewGameInput(0, nil, 50)
+	queue := input.NewInputQueue(0, 50)
+	input, _ := input.NewGameInput(0, nil, 50)
 	queue.AddInput(&input)
 	want := 0
 	got := queue.LastConfirmedFrame()
@@ -40,8 +40,8 @@ func TestAddFirstInput(t *testing.T) {
 }
 
 func TestAddFirstInputLength(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 50)
-	input, _ := ggthx.NewGameInput(0, nil, 50)
+	queue := input.NewInputQueue(0, 50)
+	input, _ := input.NewGameInput(0, nil, 50)
 	queue.AddInput(&input)
 	want := 1
 	got := queue.Length()
@@ -52,9 +52,9 @@ func TestAddFirstInputLength(t *testing.T) {
 }
 
 func TestAddTenInputsDifferentFrame(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 50)
+	queue := input.NewInputQueue(0, 50)
 	for i := 0; i < 10; i++ {
-		input, _ := ggthx.NewGameInput(i, nil, 50)
+		input, _ := input.NewGameInput(i, nil, 50)
 		queue.AddInput(&input)
 	}
 	want := 10
@@ -66,9 +66,9 @@ func TestAddTenInputsDifferentFrame(t *testing.T) {
 }
 
 func TestAddTenInputsSameFrame(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 50)
+	queue := input.NewInputQueue(0, 50)
 	for i := 0; i < 10; i++ {
-		input, _ := ggthx.NewGameInput(0, nil, 50)
+		input, _ := input.NewGameInput(0, nil, 50)
 		queue.AddInput(&input)
 	}
 	want := 1
@@ -80,8 +80,8 @@ func TestAddTenInputsSameFrame(t *testing.T) {
 
 // GetInput
 func TestGetInputEmptyQueue(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 50)
-	var input ggthx.GameInput
+	queue := input.NewInputQueue(0, 50)
+	var input input.GameInput
 	_, err := queue.GetInput(0, &input)
 	if err != nil {
 		t.Errorf("expected nil, got an error %s", err)
@@ -94,10 +94,10 @@ func TestInputQueueNegativeInputSize(t *testing.T) {
 			t.Errorf("The code did not panic due to negative input size passed.")
 		}
 	}()
-	ggthx.NewInputQueue(0, -80)
+	input.NewInputQueue(0, -80)
 }
 func TestInputQueueDiscardConfirmedFramesNegative(t *testing.T) {
-	queue := ggthx.NewInputQueue(0, 4)
+	queue := input.NewInputQueue(0, 4)
 	err := queue.DiscardConfirmedFrames(-1)
 	if err == nil {
 		t.Errorf("DiscardConfirmedFrames should throw an error when the frame number passed is negative.")

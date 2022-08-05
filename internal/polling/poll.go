@@ -1,6 +1,10 @@
-package ggthx
+package polling
 
-import "time"
+import (
+	"time"
+
+	"github.com/assemblaj/ggthx/internal/buffer"
+)
 
 type FuncTimeType func() int64
 
@@ -11,7 +15,7 @@ func DefaultTime() int64 {
 type Poll struct {
 	startTime   int
 	handleCount int
-	loopSinks   StaticBuffer[PollSinkCb]
+	loopSinks   buffer.StaticBuffer[PollSinkCb]
 }
 
 type Poller interface {
@@ -32,7 +36,7 @@ func NewPoll() Poll {
 	return Poll{
 		startTime:   0,
 		handleCount: 0,
-		loopSinks:   NewStaticBuffer[PollSinkCb](16),
+		loopSinks:   buffer.NewStaticBuffer[PollSinkCb](16),
 	}
 }
 

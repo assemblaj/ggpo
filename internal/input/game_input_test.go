@@ -1,21 +1,21 @@
-package ggthx_test
+package input_test
 
 import (
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	"github.com/assemblaj/ggthx/internal/input"
 )
 
 func TestNewGameInput(t *testing.T) {
-	_, err := ggthx.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
+	_, err := input.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
 	if err != nil {
 		t.Errorf("Creating a perfectly valid input return nil.")
 	}
 }
 
 func TestGameInputEqual(t *testing.T) {
-	gi, _ := ggthx.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
-	gi2, _ := ggthx.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
+	gi, _ := input.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
+	gi2, _ := input.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
 	isEqual, err := gi.Equal(&gi2, false)
 	if err != nil {
 		t.Errorf("Checking for equality on inputs created from the exact same data created an error.")
@@ -27,8 +27,8 @@ func TestGameInputEqual(t *testing.T) {
 }
 
 func TestGameInputEqualBitsOnly(t *testing.T) {
-	gi, _ := ggthx.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
-	gi2, _ := ggthx.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
+	gi, _ := input.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
+	gi2, _ := input.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
 	isEqual, err := gi.Equal(&gi2, true)
 	if err != nil {
 		t.Errorf("Checking for equality created an error.")
@@ -40,8 +40,8 @@ func TestGameInputEqualBitsOnly(t *testing.T) {
 }
 
 func TestGameInputEqualDifferentSizes(t *testing.T) {
-	gi, _ := ggthx.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
-	gi2, _ := ggthx.NewGameInput(0, []byte{1, 2, 3, 4, 5, 6}, 6)
+	gi, _ := input.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
+	gi2, _ := input.NewGameInput(0, []byte{1, 2, 3, 4, 5, 6}, 6)
 	isEqual, err := gi.Equal(&gi2, false)
 	if err != nil {
 		t.Errorf("Checking for equality on inputs that are a different size returned an error instead of just being false..")
@@ -52,8 +52,8 @@ func TestGameInputEqualDifferentSizes(t *testing.T) {
 }
 
 func TestGameInputEqualZeroSize(t *testing.T) {
-	gi, _ := ggthx.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
-	gi2 := ggthx.GameInput{}
+	gi, _ := input.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
+	gi2 := input.GameInput{}
 	_, err := gi.Equal(&gi2, false)
 	if err == nil {
 		t.Errorf("Checking for equality on inputs with sizes <= 0 didn't return an error.")
@@ -61,7 +61,7 @@ func TestGameInputEqualZeroSize(t *testing.T) {
 }
 
 func TestGameInputErase(t *testing.T) {
-	gi, _ := ggthx.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
+	gi, _ := input.NewGameInput(1, []byte{1, 2, 3, 4}, 4)
 	gi.Erase()
 	for i := 0; i < len(gi.Bits); i++ {
 		if gi.Bits[0] != 0 {
@@ -71,8 +71,8 @@ func TestGameInputErase(t *testing.T) {
 }
 
 func TestGameInputString(t *testing.T) {
-	gi, _ := ggthx.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
-	gi2, _ := ggthx.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
+	gi, _ := input.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
+	gi2, _ := input.NewGameInput(0, []byte{1, 2, 3, 4}, 4)
 
 	if gi.String() != gi2.String() {
 		t.Errorf("Inputs created from the exact same parameters did not created the same strings.")
@@ -80,7 +80,7 @@ func TestGameInputString(t *testing.T) {
 }
 
 func TestGameZeroSize(t *testing.T) {
-	_, err := ggthx.NewGameInput(0, []byte{1, 2, 3, 4}, 0)
+	_, err := input.NewGameInput(0, []byte{1, 2, 3, 4}, 0)
 
 	if err == nil {
 		t.Errorf("Inputs with sizes <= 0 should create an error.")
@@ -88,7 +88,7 @@ func TestGameZeroSize(t *testing.T) {
 }
 
 func TestGameInputIsNull(t *testing.T) {
-	input, _ := ggthx.NewGameInput(ggthx.NullFrame, []byte{1, 2, 3, 4}, 4)
+	input, _ := input.NewGameInput(input.NullFrame, []byte{1, 2, 3, 4}, 4)
 	want := true
 	got := input.IsNull()
 	if want != got {

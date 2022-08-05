@@ -3,6 +3,12 @@ package ggthx
 import (
 	"log"
 	"os"
+
+	"github.com/assemblaj/ggthx/internal/buffer"
+	"github.com/assemblaj/ggthx/internal/input"
+	"github.com/assemblaj/ggthx/internal/polling"
+	"github.com/assemblaj/ggthx/internal/protocol"
+	"github.com/assemblaj/ggthx/internal/transport"
 )
 
 type SyncTestBackend struct {
@@ -16,9 +22,9 @@ type SyncTestBackend struct {
 	logFp         os.File
 	game          string
 
-	currentInput GameInput
-	lastInput    GameInput
-	savedFrames  RingBuffer[savedInfo]
+	currentInput input.GameInput
+	lastInput    input.GameInput
+	savedFrames  buffer.RingBuffer[savedInfo]
 }
 
 type savedInfo struct {
@@ -26,7 +32,7 @@ type savedInfo struct {
 	checksum int
 	buf      []byte
 	cbuf     int
-	input    GameInput
+	input    input.GameInput
 }
 
 func NewSyncTestBackend(cb *SessionCallbacks,
@@ -37,13 +43,13 @@ func NewSyncTestBackend(cb *SessionCallbacks,
 		callbacks:     *cb,
 		numPlayers:    numPlayers,
 		checkDistance: frames,
-		savedFrames:   NewRingBuffer[savedInfo](32)}
+		savedFrames:   buffer.NewRingBuffer[savedInfo](32)}
 	s.currentInput.Erase()
-	s.currentInput.Bits = make([]byte, GameInputMaxBytes*GameInputMaxPlayers)
+	s.currentInput.Bits = make([]byte, input.GameInputMaxBytes*input.GameInputMaxPlayers)
 	s.currentInput.Size = inputSize
 	var config SyncConfig
 	config.callbacks = s.callbacks
-	config.numPredictionFrames = MAX_PREDICTION_FRAMES
+	config.numPredictionFrames = MaxPredictionFrames
 	config.inputSize = inputSize
 	s.sync = NewSync(nil, &config)
 
@@ -51,7 +57,7 @@ func NewSyncTestBackend(cb *SessionCallbacks,
 	return s
 }
 
-func (s *SyncTestBackend) DoPoll(timeout int, timeFunc ...FuncTimeType) error {
+func (s *SyncTestBackend) DoPoll(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if !s.running {
 		var info Event
 		info.Code = EventCodeRunning
@@ -187,7 +193,7 @@ func (s *SyncTestBackend) Chat(text string) error {
 func (s *SyncTestBackend) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) GetNetworkStats(stats *NetworkStats, handle PlayerHandle) error {
+func (s *SyncTestBackend) GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SyncTestBackend) Logv(format string, args ...int) error {
@@ -208,6 +214,6 @@ func (s *SyncTestBackend) Close() error {
 
 func (s *SyncTestBackend) Start() {}
 
-func (s *SyncTestBackend) InitalizeConnection(c ...Connection) error {
+func (s *SyncTestBackend) InitalizeConnection(c ...transport.Connection) error {
 	return nil
 }

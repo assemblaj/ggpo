@@ -1,69 +1,26 @@
-package ggthx_test
+package protocol_test
 
 import (
 	"strconv"
 	"testing"
 	"time"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	"github.com/assemblaj/ggthx/internal/input"
+	"github.com/assemblaj/ggthx/internal/mocks"
+	"github.com/assemblaj/ggthx/internal/polling"
+	"github.com/assemblaj/ggthx/internal/protocol"
+	"github.com/assemblaj/ggthx/internal/transport"
 )
 
-type FakeConnection struct {
-	sendMap         map[string][]ggthx.UDPMessage
-	lastSentMessage ggthx.UDPMessage
-}
-
-func NewFakeConnection() FakeConnection {
-	return FakeConnection{
-		sendMap: make(map[string][]ggthx.UDPMessage),
-	}
-}
-func (f *FakeConnection) SendTo(msg ggthx.UDPMessage, remoteIp string, remotePort int) {
-	portStr := strconv.Itoa(remotePort)
-	addresssStr := remoteIp + ":" + portStr
-	sendSlice, ok := f.sendMap[addresssStr]
-	if !ok {
-		sendSlice := make([]ggthx.UDPMessage, 2)
-		f.sendMap[addresssStr] = sendSlice
-	}
-	sendSlice = append(sendSlice, msg)
-	f.sendMap[addresssStr] = sendSlice
-	f.lastSentMessage = msg
-}
-
-func (f *FakeConnection) Read() {
-
-}
-
-func (f *FakeConnection) Close() {
-
-}
-
-type FakeMessageHandler struct {
-	endpoint *ggthx.UdpProtocol
-}
-
-func (f *FakeMessageHandler) HandleMessage(ipAddress string, port int, msg ggthx.UDPMessage, length int) {
-	if f.endpoint.HandlesMsg(ipAddress, port) {
-		f.endpoint.OnMsg(msg, length)
-	}
-}
-
-func NewFakeMessageHandler(endpoint *ggthx.UdpProtocol) FakeMessageHandler {
-	f := FakeMessageHandler{}
-	f.endpoint = endpoint
-	return f
-}
-
 func TestMakeUDPProtocol(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	if !endpoint.IsInitialized() {
 		t.Errorf("The fake connection wasn't properly saved.")
 	}
@@ -76,22 +33,22 @@ func TestMakeUDPProtocol(t *testing.T) {
 	Characterization dunno why it works this way
 */
 func TestUDPProtocolSendInput(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	input := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	endpoint.SendInput(&input)
 	portStr := strconv.Itoa(peerPort)
-	messages, ok := connection.sendMap[peerAdress+":"+portStr]
+	messages, ok := connection.SendMap[peerAdress+":"+portStr]
 	if ok != true {
 		t.Errorf("The message was never sent. ")
 	}
-	inputPacket := messages[0].(*ggthx.InputPacket)
+	inputPacket := messages[0].(*transport.InputPacket)
 	got := inputPacket.Bits
 	if got != nil {
 		t.Errorf("expected '%#v' but got '%#v'", nil, got)
@@ -99,21 +56,21 @@ func TestUDPProtocolSendInput(t *testing.T) {
 }
 
 func TestUDPProtocolSendMultipleInput(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	input := ggthx.GameInput{Size: 4, Bits: []byte{1, 2, 3, 4}}
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	input := input.GameInput{Size: 4, Bits: []byte{1, 2, 3, 4}}
 	numInputs := 8
 	for i := 0; i < numInputs; i++ {
 		endpoint.SendInput(&input)
 	}
 	portStr := strconv.Itoa(peerPort)
-	messages, ok := connection.sendMap[peerAdress+":"+portStr]
+	messages, ok := connection.SendMap[peerAdress+":"+portStr]
 	if ok != true {
 		t.Errorf("The messages were never sent. ")
 	}
@@ -125,110 +82,110 @@ func TestUDPProtocolSendMultipleInput(t *testing.T) {
 }
 
 func TestUDPProtocolSynchronize(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	endpoint.Synchronize()
 	portStr := strconv.Itoa(peerPort)
-	messages, ok := connection.sendMap[peerAdress+":"+portStr]
+	messages, ok := connection.SendMap[peerAdress+":"+portStr]
 	if ok != true {
 		t.Errorf("The message was not sent. ")
 	}
 
-	syncPacket := messages[0].(*ggthx.SyncRequestPacket)
-	if syncPacket.Header().HeaderType != uint8(ggthx.SyncRequestMsg) {
+	syncPacket := messages[0].(*transport.SyncRequestPacket)
+	if syncPacket.Header().HeaderType != uint8(transport.SyncRequestMsg) {
 		t.Errorf("The message that was sent/recieved wsa not a SyncRequestMessage. ")
 	}
 }
 
 func TestUDPProtocolSendInputAck(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	endpoint.SendInputAck()
 	portStr := strconv.Itoa(peerPort)
-	messages, ok := connection.sendMap[peerAdress+":"+portStr]
+	messages, ok := connection.SendMap[peerAdress+":"+portStr]
 	if ok != true {
 		t.Errorf("The message was not sent. ")
 	}
 
-	inputAckMessage := messages[0].(*ggthx.InputAckPacket)
-	if inputAckMessage.Header().HeaderType != uint8(ggthx.InputAckMsg) {
+	inputAckMessage := messages[0].(*transport.InputAckPacket)
+	if inputAckMessage.Header().HeaderType != uint8(transport.InputAckMsg) {
 		t.Errorf("The message that was sent/recieved wsa not a SyncRequestMessage. ")
 	}
 }
 
 func TestUDPProtocolOnQualityReport(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	portStr := strconv.Itoa(peerPort)
-	msg := ggthx.NewUDPMessage(ggthx.QualityReportMsg)
-	qualityReportPacket := msg.(*ggthx.QualityReportPacket)
+	msg := transport.NewUDPMessage(transport.QualityReportMsg)
+	qualityReportPacket := msg.(*transport.QualityReportPacket)
 	qualityReportPacket.FrameAdvantage = 6
 	qualityReportPacket.Ping = 50
 	endpoint.OnQualityReport(qualityReportPacket, qualityReportPacket.PacketSize())
-	messages, ok := connection.sendMap[peerAdress+":"+portStr]
+	messages, ok := connection.SendMap[peerAdress+":"+portStr]
 	if ok != true {
 		t.Errorf("The message was not sent. ")
 	}
 
-	qualityReplyPacket := messages[0].(*ggthx.QualityReplyPacket)
-	if qualityReplyPacket.Header().HeaderType != uint8(ggthx.QualityReplyMsg) {
+	qualityReplyPacket := messages[0].(*transport.QualityReplyPacket)
+	if qualityReplyPacket.Header().HeaderType != uint8(transport.QualityReplyMsg) {
 		t.Errorf("The message that was sent/recieved wsa not a SyncRequestMessage. ")
 	}
 }
 
 func TestUDPProtocolOnSyncRequest(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	portStr := strconv.Itoa(peerPort)
-	msg := ggthx.NewUDPMessage(ggthx.SyncRequestMsg)
-	syncRequestPacket := msg.(*ggthx.SyncRequestPacket)
+	msg := transport.NewUDPMessage(transport.SyncRequestMsg)
+	syncRequestPacket := msg.(*transport.SyncRequestPacket)
 
 	endpoint.OnSyncRequest(syncRequestPacket, syncRequestPacket.PacketSize())
 
-	messages, ok := connection.sendMap[peerAdress+":"+portStr]
+	messages, ok := connection.SendMap[peerAdress+":"+portStr]
 	if ok != true {
 		t.Errorf("The message was not sent. ")
 	}
 
-	syncReplyPacket := messages[0].(*ggthx.SyncReplyPacket)
-	if syncReplyPacket.Header().HeaderType != uint8(ggthx.SyncReplyMsg) {
+	syncReplyPacket := messages[0].(*transport.SyncReplyPacket)
+	if syncReplyPacket.Header().HeaderType != uint8(transport.SyncReplyMsg) {
 		t.Errorf("The message that was sent/recieved wsa not a SyncRequestMessage. ")
 	}
 }
 
 func TestUDPProtocolGetPeerConnectStatus(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	var frame int32
 	want := true
 	got := endpoint.GetPeerConnectStatus(0, &frame)
@@ -237,7 +194,7 @@ func TestUDPProtocolGetPeerConnectStatus(t *testing.T) {
 		t.Errorf("expected '%t' but got '%t'", want, got)
 	}
 
-	wantFrame := int32(ggthx.NullFrame)
+	wantFrame := int32(input.NullFrame)
 	gotFrame := frame
 	if wantFrame != gotFrame {
 		t.Errorf("expected '%d' but got '%d'", wantFrame, gotFrame)
@@ -246,14 +203,14 @@ func TestUDPProtocolGetPeerConnectStatus(t *testing.T) {
 }
 
 func TestUDPProtocolHandlesMessage(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	want := true
 	got := endpoint.HandlesMsg(peerAdress, peerPort)
@@ -264,14 +221,14 @@ func TestUDPProtocolHandlesMessage(t *testing.T) {
 }
 
 func TestUDPProtocolHandlesMessageFalse(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	want := false
 	got := endpoint.HandlesMsg("1.2.3.4", 0)
@@ -282,17 +239,17 @@ func TestUDPProtocolHandlesMessageFalse(t *testing.T) {
 }
 
 func TestUDPProtocolSetLocalFrameNumber(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.SetLocalFrameNumber(8)
-	var stats ggthx.NetworkStats
+	var stats protocol.NetworkStats
 	endpoint.GetNetworkStats(&stats)
 	want := -9 //
 	got := stats.Timesync.LocalFramesBehind
@@ -302,21 +259,21 @@ func TestUDPProtocolSetLocalFrameNumber(t *testing.T) {
 }
 
 func TestUDPProtocolOnQualityReply(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	msg := ggthx.NewUDPMessage(ggthx.QualityReplyMsg)
-	qualityReplyPacket := msg.(*ggthx.QualityReplyPacket)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	msg := transport.NewUDPMessage(transport.QualityReplyMsg)
+	qualityReplyPacket := msg.(*transport.QualityReplyPacket)
 	qualityReplyPacket.Pong = 0
 	checkInterval := 60
 	endpoint.OnQualityReply(qualityReplyPacket, qualityReplyPacket.PacketSize())
 
-	var stats ggthx.NetworkStats
+	var stats protocol.NetworkStats
 	endpoint.GetNetworkStats(&stats)
 	want := -9 //
 	got := stats.Timesync.LocalFramesBehind
@@ -327,15 +284,15 @@ func TestUDPProtocolOnQualityReply(t *testing.T) {
 }
 
 func TestUDPProtocolQueEventPanic(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	event := ggthx.UdpProtocolEvent{}
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	event := protocol.UdpProtocolEvent{}
 	capcity := 64
 	defer func() {
 		if r := recover(); r == nil {
@@ -348,14 +305,14 @@ func TestUDPProtocolQueEventPanic(t *testing.T) {
 }
 
 func TestUDPProtocolGetEventError(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	_, err := endpoint.GetEvent()
 	if err == nil {
 		t.Errorf("The program did not return an error when trying to get an event from an empty event queue.")
@@ -363,15 +320,15 @@ func TestUDPProtocolGetEventError(t *testing.T) {
 }
 
 func TestUDPProtocolGetEvent(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	want := ggthx.UdpProtocolEvent{}
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	want := protocol.UdpProtocolEvent{}
 	endpoint.QueueEvent(&want)
 	got, _ := endpoint.GetEvent()
 	if want.String() != got.String() {
@@ -380,25 +337,25 @@ func TestUDPProtocolGetEvent(t *testing.T) {
 }
 
 func TestUDPProtocolSyncchronize(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.Synchronize()
-	recvMessage := connection.lastSentMessage
-	syncRequest := recvMessage.(*ggthx.SyncRequestPacket)
+	recvMessage := connection.LastSentMessage
+	syncRequest := recvMessage.(*transport.SyncRequestPacket)
 
-	msg := ggthx.NewUDPMessage(ggthx.SyncReplyMsg)
-	syncReply := msg.(*ggthx.SyncReplyPacket)
+	msg := transport.NewUDPMessage(transport.SyncReplyMsg)
+	syncReply := msg.(*transport.SyncReplyPacket)
 	syncReply.RandomReply = syncRequest.RandomRequest
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		endpoint.OnSyncReply(syncReply, syncReply.PacketSize())
-		syncRequest = connection.lastSentMessage.(*ggthx.SyncRequestPacket)
+		syncRequest = connection.LastSentMessage.(*transport.SyncRequestPacket)
 		syncReply.RandomReply = syncRequest.RandomRequest
 	}
 
@@ -407,20 +364,20 @@ func TestUDPProtocolSyncchronize(t *testing.T) {
 		t.Errorf("Got an error when should be recievving events")
 	}
 
-	if evt.Type() != ggthx.ConnectedEvent {
+	if evt.Type() != protocol.ConnectedEvent {
 		t.Errorf("First popped event should be connected.")
 	}
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		evt, err := endpoint.GetEvent()
 		if err != nil {
 			t.Errorf("Got an error when should be recievving events")
 		}
-		if i >= 0 && i < ggthx.NumSyncPackets-1 {
-			if evt.Type() != ggthx.SynchronizingEvent {
+		if i >= 0 && i < protocol.NumSyncPackets-1 {
+			if evt.Type() != protocol.SynchronizingEvent {
 				t.Errorf("These should be Synchronizing Events.")
 			}
-		} else if i == ggthx.NumSyncPackets-1 {
-			if evt.Type() != ggthx.SynchronziedEvent {
+		} else if i == protocol.NumSyncPackets-1 {
+			if evt.Type() != protocol.SynchronziedEvent {
 				t.Errorf("This should be a Synchronized Event")
 			}
 		}
@@ -429,111 +386,111 @@ func TestUDPProtocolSyncchronize(t *testing.T) {
 }
 
 func TestUDPProtocolOnLoopPoll(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.Synchronize()
-	recvMessage := connection.lastSentMessage
-	syncRequest := recvMessage.(*ggthx.SyncRequestPacket)
+	recvMessage := connection.LastSentMessage
+	syncRequest := recvMessage.(*transport.SyncRequestPacket)
 
-	msg := ggthx.NewUDPMessage(ggthx.SyncReplyMsg)
-	syncReply := msg.(*ggthx.SyncReplyPacket)
+	msg := transport.NewUDPMessage(transport.SyncReplyMsg)
+	syncReply := msg.(*transport.SyncReplyPacket)
 	syncReply.RandomReply = syncRequest.RandomRequest
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		endpoint.OnSyncReply(syncReply, syncReply.PacketSize())
-		syncRequest = connection.lastSentMessage.(*ggthx.SyncRequestPacket)
+		syncRequest = connection.LastSentMessage.(*transport.SyncRequestPacket)
 		syncReply.RandomReply = syncRequest.RandomRequest
 	}
 
-	for i := 0; i < ggthx.NumSyncPackets+1; i++ {
+	for i := 0; i < protocol.NumSyncPackets+1; i++ {
 		endpoint.GetEvent()
 	}
-	endpoint.OnLoopPoll(ggthx.DefaultTime)
-	if connection.lastSentMessage.Type() != ggthx.QualityReportMsg {
+	endpoint.OnLoopPoll(polling.DefaultTime)
+	if connection.LastSentMessage.Type() != transport.QualityReportMsg {
 		t.Errorf("This expected the OnLoopPoll to send a quality report message")
 	}
 
 }
 
 func TestUDPProtocolHeartbeatGameInput(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.Synchronize()
-	recvMessage := connection.lastSentMessage
-	syncRequest := recvMessage.(*ggthx.SyncRequestPacket)
+	recvMessage := connection.LastSentMessage
+	syncRequest := recvMessage.(*transport.SyncRequestPacket)
 
-	msg := ggthx.NewUDPMessage(ggthx.SyncReplyMsg)
-	syncReply := msg.(*ggthx.SyncReplyPacket)
+	msg := transport.NewUDPMessage(transport.SyncReplyMsg)
+	syncReply := msg.(*transport.SyncReplyPacket)
 	syncReply.RandomReply = syncRequest.RandomRequest
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		endpoint.OnSyncReply(syncReply, syncReply.PacketSize())
-		syncRequest = connection.lastSentMessage.(*ggthx.SyncRequestPacket)
+		syncRequest = connection.LastSentMessage.(*transport.SyncRequestPacket)
 		syncReply.RandomReply = syncRequest.RandomRequest
 	}
 
-	for i := 0; i < ggthx.NumSyncPackets+1; i++ {
+	for i := 0; i < protocol.NumSyncPackets+1; i++ {
 		endpoint.GetEvent()
 	}
 	heartbeatTriggerInterval := 2
 	for i := 0; i < heartbeatTriggerInterval; i++ {
-		endpoint.OnLoopPoll(ggthx.DefaultTime)
+		endpoint.OnLoopPoll(polling.DefaultTime)
 	}
 
-	if connection.lastSentMessage.Type() != ggthx.InputMsg {
+	if connection.LastSentMessage.Type() != transport.InputMsg {
 		t.Errorf("This expected the OnLoopPoll to send a heartbeat game input")
 	}
 
 }
 
 func TestUDPProtocolOnInputDefaultPanic(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.Synchronize()
-	recvMessage := connection.lastSentMessage
-	syncRequest := recvMessage.(*ggthx.SyncRequestPacket)
+	recvMessage := connection.LastSentMessage
+	syncRequest := recvMessage.(*transport.SyncRequestPacket)
 
-	msg := ggthx.NewUDPMessage(ggthx.SyncReplyMsg)
-	syncReply := msg.(*ggthx.SyncReplyPacket)
+	msg := transport.NewUDPMessage(transport.SyncReplyMsg)
+	syncReply := msg.(*transport.SyncReplyPacket)
 	syncReply.RandomReply = syncRequest.RandomRequest
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		endpoint.OnSyncReply(syncReply, syncReply.PacketSize())
-		syncRequest = connection.lastSentMessage.(*ggthx.SyncRequestPacket)
+		syncRequest = connection.LastSentMessage.(*transport.SyncRequestPacket)
 		syncReply.RandomReply = syncRequest.RandomRequest
 	}
 
-	for i := 0; i < ggthx.NumSyncPackets+1; i++ {
+	for i := 0; i < protocol.NumSyncPackets+1; i++ {
 		endpoint.GetEvent()
 	}
 	heartbeatTriggerInterval := 2
 	for i := 0; i < heartbeatTriggerInterval; i++ {
-		endpoint.OnLoopPoll(ggthx.DefaultTime)
+		endpoint.OnLoopPoll(polling.DefaultTime)
 	}
 
-	if connection.lastSentMessage.Type() != ggthx.InputMsg {
+	if connection.LastSentMessage.Type() != transport.InputMsg {
 		t.Errorf("This expected the OnLoopPoll to send a heartbeat game input")
 	}
-	msg = ggthx.NewUDPMessage(ggthx.InputMsg)
-	inputPacket := msg.(*ggthx.InputPacket)
+	msg = transport.NewUDPMessage(transport.InputMsg)
+	inputPacket := msg.(*transport.InputPacket)
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("The code did not panic when OnInput recieved a completely empty input packet.")
@@ -543,41 +500,41 @@ func TestUDPProtocolOnInputDefaultPanic(t *testing.T) {
 }
 
 func TestUDPProtocolOnInputPanicWithNonEqualConnectStatus(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.Synchronize()
-	recvMessage := connection.lastSentMessage
-	syncRequest := recvMessage.(*ggthx.SyncRequestPacket)
+	recvMessage := connection.LastSentMessage
+	syncRequest := recvMessage.(*transport.SyncRequestPacket)
 
-	msg := ggthx.NewUDPMessage(ggthx.SyncReplyMsg)
-	syncReply := msg.(*ggthx.SyncReplyPacket)
+	msg := transport.NewUDPMessage(transport.SyncReplyMsg)
+	syncReply := msg.(*transport.SyncReplyPacket)
 	syncReply.RandomReply = syncRequest.RandomRequest
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		endpoint.OnSyncReply(syncReply, syncReply.PacketSize())
-		syncRequest = connection.lastSentMessage.(*ggthx.SyncRequestPacket)
+		syncRequest = connection.LastSentMessage.(*transport.SyncRequestPacket)
 		syncReply.RandomReply = syncRequest.RandomRequest
 	}
 
-	for i := 0; i < ggthx.NumSyncPackets+1; i++ {
+	for i := 0; i < protocol.NumSyncPackets+1; i++ {
 		endpoint.GetEvent()
 	}
 	heartbeatTriggerInterval := 2
 	for i := 0; i < heartbeatTriggerInterval; i++ {
-		endpoint.OnLoopPoll(ggthx.DefaultTime)
+		endpoint.OnLoopPoll(polling.DefaultTime)
 	}
 
-	if connection.lastSentMessage.Type() != ggthx.InputMsg {
+	if connection.LastSentMessage.Type() != transport.InputMsg {
 		t.Errorf("This expected the OnLoopPoll to send a heartbeat game input")
 	}
-	msg = ggthx.NewUDPMessage(ggthx.InputMsg)
-	inputPacket := msg.(*ggthx.InputPacket)
+	msg = transport.NewUDPMessage(transport.InputMsg)
+	inputPacket := msg.(*transport.InputPacket)
 	inputPacket.PeerConnectStatus = connectStatus
 	defer func() {
 		if r := recover(); r == nil {
@@ -588,42 +545,42 @@ func TestUDPProtocolOnInputPanicWithNonEqualConnectStatus(t *testing.T) {
 }
 
 func TestUDPProtocolOnInputAfterSynchronizeCharacterization(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.Synchronize()
-	recvMessage := connection.lastSentMessage
-	syncRequest := recvMessage.(*ggthx.SyncRequestPacket)
+	recvMessage := connection.LastSentMessage
+	syncRequest := recvMessage.(*transport.SyncRequestPacket)
 
-	msg := ggthx.NewUDPMessage(ggthx.SyncReplyMsg)
-	syncReply := msg.(*ggthx.SyncReplyPacket)
+	msg := transport.NewUDPMessage(transport.SyncReplyMsg)
+	syncReply := msg.(*transport.SyncReplyPacket)
 	syncReply.RandomReply = syncRequest.RandomRequest
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		endpoint.OnSyncReply(syncReply, syncReply.PacketSize())
-		syncRequest = connection.lastSentMessage.(*ggthx.SyncRequestPacket)
+		syncRequest = connection.LastSentMessage.(*transport.SyncRequestPacket)
 		syncReply.RandomReply = syncRequest.RandomRequest
 	}
 
-	for i := 0; i < ggthx.NumSyncPackets+1; i++ {
+	for i := 0; i < protocol.NumSyncPackets+1; i++ {
 		endpoint.GetEvent()
 	}
 	heartbeatTriggerInterval := 2
 	for i := 0; i < heartbeatTriggerInterval; i++ {
-		endpoint.OnLoopPoll(ggthx.DefaultTime)
+		endpoint.OnLoopPoll(polling.DefaultTime)
 	}
 
-	if connection.lastSentMessage.Type() != ggthx.InputMsg {
+	if connection.LastSentMessage.Type() != transport.InputMsg {
 		t.Errorf("This expected the OnLoopPoll to send a heartbeat game input")
 	}
-	msg = ggthx.NewUDPMessage(ggthx.InputMsg)
-	inputPacket := msg.(*ggthx.InputPacket)
-	inputPacket.PeerConnectStatus = make([]ggthx.UdpConnectStatus, 4)
+	msg = transport.NewUDPMessage(transport.InputMsg)
+	inputPacket := msg.(*transport.InputPacket)
+	inputPacket.PeerConnectStatus = make([]transport.UdpConnectStatus, 4)
 	inputPacket.Bits = []byte{1, 2, 3, 4}
 	defer func() {
 		if r := recover(); r == nil {
@@ -634,42 +591,42 @@ func TestUDPProtocolOnInputAfterSynchronizeCharacterization(t *testing.T) {
 }
 
 func TestUDPProtocolOnInputAfterSynchronize(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.Synchronize()
-	recvMessage := connection.lastSentMessage
-	syncRequest := recvMessage.(*ggthx.SyncRequestPacket)
+	recvMessage := connection.LastSentMessage
+	syncRequest := recvMessage.(*transport.SyncRequestPacket)
 
-	msg := ggthx.NewUDPMessage(ggthx.SyncReplyMsg)
-	syncReply := msg.(*ggthx.SyncReplyPacket)
+	msg := transport.NewUDPMessage(transport.SyncReplyMsg)
+	syncReply := msg.(*transport.SyncReplyPacket)
 	syncReply.RandomReply = syncRequest.RandomRequest
-	for i := 0; i < ggthx.NumSyncPackets; i++ {
+	for i := 0; i < protocol.NumSyncPackets; i++ {
 		endpoint.OnSyncReply(syncReply, syncReply.PacketSize())
-		syncRequest = connection.lastSentMessage.(*ggthx.SyncRequestPacket)
+		syncRequest = connection.LastSentMessage.(*transport.SyncRequestPacket)
 		syncReply.RandomReply = syncRequest.RandomRequest
 	}
 
-	for i := 0; i < ggthx.NumSyncPackets+1; i++ {
+	for i := 0; i < protocol.NumSyncPackets+1; i++ {
 		endpoint.GetEvent()
 	}
 	heartbeatTriggerInterval := 2
 	for i := 0; i < heartbeatTriggerInterval; i++ {
-		endpoint.OnLoopPoll(ggthx.DefaultTime)
+		endpoint.OnLoopPoll(polling.DefaultTime)
 	}
 
-	if connection.lastSentMessage.Type() != ggthx.InputMsg {
+	if connection.LastSentMessage.Type() != transport.InputMsg {
 		t.Errorf("This expected the OnLoopPoll to send a heartbeat game input")
 	}
-	msg = ggthx.NewUDPMessage(ggthx.InputMsg)
-	inputPacket := msg.(*ggthx.InputPacket)
-	inputPacket.PeerConnectStatus = make([]ggthx.UdpConnectStatus, 4)
+	msg = transport.NewUDPMessage(transport.InputMsg)
+	inputPacket := msg.(*transport.InputPacket)
+	inputPacket.PeerConnectStatus = make([]transport.UdpConnectStatus, 4)
 	inputPacket.Bits = []byte{1, 2, 3, 4}
 	inputPacket.InputSize = 4
 	endpoint.OnInput(inputPacket, inputPacket.PacketSize())
@@ -677,28 +634,28 @@ func TestUDPProtocolOnInputAfterSynchronize(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected there to be game input event, not error.")
 	}
-	if evt.Type() != ggthx.InputEvent {
+	if evt.Type() != protocol.InputEvent {
 		t.Errorf("Expected the event to be InputEvent, not %s", evt)
 	}
 }
 
 func TestUDPProtocolFakeP2PandMessageHandler(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
 	port2 := 7000
-	f := FakeMessageHandler{}
-	f2 := FakeMessageHandler{}
-	connection := NewFakeP2PConnection(&f, peerPort, peerAdress)
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
+	f := mocks.FakeMessageHandler{}
+	f2 := mocks.FakeMessageHandler{}
+	connection := mocks.NewFakeP2PConnection(&f, peerPort, peerAdress)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
 
-	connection2 := NewFakeP2PConnection(&f2, port2, peerAdress)
-	endpoint2 := ggthx.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
-	f2.endpoint = &endpoint
-	f.endpoint = &endpoint2
+	connection2 := mocks.NewFakeP2PConnection(&f2, port2, peerAdress)
+	endpoint2 := protocol.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
+	f2.Endpoint = &endpoint
+	f.Endpoint = &endpoint2
 
 	//ggthx.EnableLogger()
 	endpoint.Synchronize()
@@ -721,14 +678,14 @@ func TestUDPProtocolFakeP2PandMessageHandler(t *testing.T) {
 }
 
 func TestUDPProtocolDiscconect(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	endpoint.Disconnect()
 	if endpoint.IsRunning() {
 		t.Errorf("The endpoint should be disconnected after running the disconnect method.")
@@ -736,14 +693,14 @@ func TestUDPProtocolDiscconect(t *testing.T) {
 }
 
 func TestUDPProtocolDiscconectOnLoopPoll(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	endpoint.Disconnect()
 	advance := func() int64 {
 		return time.Now().Add(time.Millisecond * 8000).UnixMilli()
@@ -756,53 +713,53 @@ func TestUDPProtocolDiscconectOnLoopPoll(t *testing.T) {
 }
 
 func TestUDPProtocolOnInputDisconnectedRequest(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	/*
 		advance := func() int64 {
 			return time.Now().Add(time.Millisecond * 8000).UnixMilli()
 		}*/
-	msg := ggthx.NewUDPMessage(ggthx.InputMsg)
-	inputPacket := msg.(*ggthx.InputPacket)
+	msg := transport.NewUDPMessage(transport.InputMsg)
+	inputPacket := msg.(*transport.InputPacket)
 	inputPacket.DisconectRequested = true
 	endpoint.OnInput(inputPacket, inputPacket.PacketSize())
 	evt, _ := endpoint.GetEvent()
-	if evt.Type() != ggthx.DisconnectedEvent {
+	if evt.Type() != protocol.DisconnectedEvent {
 		t.Errorf("Recieving an input with DisconnectRequested = true should create a DisconnectedEvent")
 	}
 }
 
 func TestUDPProtocolIsInitalized(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(nil, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(nil, 0, peerAdress, peerPort, &connectStatus)
 	if endpoint.IsInitialized() {
 		t.Errorf("The endpoint should not be initialized if connection is nil.")
 	}
 }
 func TestUDPProtocolOnInvalid(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	invalidMessageType := 88
-	msg := ggthx.NewUDPMessage(ggthx.UDPMessageType(invalidMessageType))
+	msg := transport.NewUDPMessage(transport.UDPMessageType(invalidMessageType))
 	endpoint.OnMsg(msg, msg.PacketSize())
 	handled, err := endpoint.OnInvalid(msg, msg.PacketSize())
 	if handled == true {
@@ -814,17 +771,17 @@ func TestUDPProtocolOnInvalid(t *testing.T) {
 }
 
 func TestUDPProtocolSendPendingOutputDefault(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 	endpoint.SendPendingOutput()
-	msg := connection.lastSentMessage
-	inputPacket := msg.(*ggthx.InputPacket)
+	msg := connection.LastSentMessage
+	inputPacket := msg.(*transport.InputPacket)
 	if inputPacket.StartFrame != 0 {
 		t.Errorf("Inputs sent when there's no pending output should have startframe 0 ")
 	}
@@ -833,56 +790,56 @@ func TestUDPProtocolSendPendingOutputDefault(t *testing.T) {
 	}
 }
 func TestUDPProtocolMagicNumberReject(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	msg := ggthx.NewUDPMessage(ggthx.QualityReportMsg)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	msg := transport.NewUDPMessage(transport.QualityReportMsg)
 	msg.SetHeader(3, 0)
 	endpoint.OnMsg(msg, msg.PacketSize())
-	if connection.lastSentMessage != nil {
+	if connection.LastSentMessage != nil {
 		t.Errorf("No messages should have been sent in response to the quality report message because the magic number doesn't match the default magic number (0)")
 	}
 }
 
 func TestUDPProtocolSequenceNumberReject(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
-	connection := NewFakeConnection()
+	connection := mocks.NewFakeConnection()
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	msg := ggthx.NewUDPMessage(ggthx.QualityReportMsg)
-	msg.SetHeader(0, ggthx.MaxSeqDistance+1)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
+	msg := transport.NewUDPMessage(transport.QualityReportMsg)
+	msg.SetHeader(0, protocol.MaxSeqDistance+1)
 	endpoint.OnMsg(msg, msg.PacketSize())
-	if connection.lastSentMessage != nil {
+	if connection.LastSentMessage != nil {
 		t.Errorf("No messages should have been sent in response to the quality report message because of the sequence number. ")
 	}
 }
 
 func TestUDPProtocolKeepAlive(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
 	port2 := 7000
-	f := FakeMessageHandler{}
-	f2 := FakeMessageHandler{}
-	connection := NewFakeP2PConnection(&f, peerPort, peerAdress)
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
+	f := mocks.FakeMessageHandler{}
+	f2 := mocks.FakeMessageHandler{}
+	connection := mocks.NewFakeP2PConnection(&f, peerPort, peerAdress)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
 
-	connection2 := NewFakeP2PConnection(&f2, port2, peerAdress)
-	endpoint2 := ggthx.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
-	f2.endpoint = &endpoint
-	f.endpoint = &endpoint2
+	connection2 := mocks.NewFakeP2PConnection(&f2, port2, peerAdress)
+	endpoint2 := protocol.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
+	f2.Endpoint = &endpoint
+	f.Endpoint = &endpoint2
 
 	//ggthx.EnableLogger()
 	endpoint.Synchronize()
@@ -897,28 +854,28 @@ func TestUDPProtocolKeepAlive(t *testing.T) {
 
 	endpoint.OnLoopPoll(advance)
 	endpoint.OnLoopPoll(advance)
-	if connection.lastSentMessage.Header().HeaderType != uint8(ggthx.KeepAliveMsg) {
+	if connection.LastSentMessage.Header().HeaderType != uint8(transport.KeepAliveMsg) {
 		t.Errorf("Endpoint should've sent keep alive packet.")
 	}
 }
 
 func TestUDPProtocolHeartBeatCharacterization(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 	}
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
 	port2 := 7000
-	f := FakeMessageHandler{}
-	f2 := FakeMessageHandler{}
-	connection := NewFakeP2PConnection(&f, peerPort, peerAdress)
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
+	f := mocks.FakeMessageHandler{}
+	f2 := mocks.FakeMessageHandler{}
+	connection := mocks.NewFakeP2PConnection(&f, peerPort, peerAdress)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
 
-	connection2 := NewFakeP2PConnection(&f2, port2, peerAdress)
-	endpoint2 := ggthx.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
-	f2.endpoint = &endpoint
-	f.endpoint = &endpoint2
+	connection2 := mocks.NewFakeP2PConnection(&f2, port2, peerAdress)
+	endpoint2 := protocol.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
+	f2.Endpoint = &endpoint
+	f.Endpoint = &endpoint2
 
 	//ggthx.EnableLogger()
 	endpoint.Synchronize()
@@ -943,7 +900,7 @@ func TestUDPProtocolHeartBeatCharacterization(t *testing.T) {
 }
 
 func TestUDPProtocolHeartBeat(t *testing.T) {
-	connectStatus := []ggthx.UdpConnectStatus{
+	connectStatus := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 20},
 		{Disconnected: false, LastFrame: 22},
 		{Disconnected: false, LastFrame: 20},
@@ -952,15 +909,15 @@ func TestUDPProtocolHeartBeat(t *testing.T) {
 	peerAdress := "127.2.1.1"
 	peerPort := 7001
 	port2 := 7000
-	f := FakeMessageHandler{}
-	f2 := FakeMessageHandler{}
-	connection := NewFakeP2PConnection(&f, peerPort, peerAdress)
-	endpoint := ggthx.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
+	f := mocks.FakeMessageHandler{}
+	f2 := mocks.FakeMessageHandler{}
+	connection := mocks.NewFakeP2PConnection(&f, peerPort, peerAdress)
+	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, port2, &connectStatus)
 
-	connection2 := NewFakeP2PConnection(&f2, port2, peerAdress)
-	endpoint2 := ggthx.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
-	f2.endpoint = &endpoint
-	f.endpoint = &endpoint2
+	connection2 := mocks.NewFakeP2PConnection(&f2, port2, peerAdress)
+	endpoint2 := protocol.NewUdpProtocol(&connection2, 0, peerAdress, peerPort, &connectStatus)
+	f2.Endpoint = &endpoint
+	f.Endpoint = &endpoint2
 
 	//ggthx.EnableLogger()
 	endpoint.Synchronize()
@@ -977,23 +934,23 @@ func TestUDPProtocolHeartBeat(t *testing.T) {
 		endpoint2.OnLoopPoll(advance)
 		endpoint.OnLoopPoll(advance)
 	}
-	e1k := connection.messageHistory[len(connection.messageHistory)-1]
-	e1i := connection.messageHistory[len(connection.messageHistory)-2]
-	e2k := connection2.messageHistory[len(connection2.messageHistory)-1]
-	e2i := connection2.messageHistory[len(connection2.messageHistory)-2]
-	if e1k.Header().HeaderType != uint8(ggthx.KeepAliveMsg) {
+	e1k := connection.MessageHistory[len(connection.MessageHistory)-1]
+	e1i := connection.MessageHistory[len(connection.MessageHistory)-2]
+	e2k := connection2.MessageHistory[len(connection2.MessageHistory)-1]
+	e2i := connection2.MessageHistory[len(connection2.MessageHistory)-2]
+	if e1k.Header().HeaderType != uint8(transport.KeepAliveMsg) {
 		t.Errorf("Endpoint 1 should've sent a keep alive msg")
 	}
 
-	if e1i.Header().HeaderType != uint8(ggthx.InputMsg) {
+	if e1i.Header().HeaderType != uint8(transport.InputMsg) {
 		t.Errorf("Endpoint 1 should've sent a heartbeat input prior to the keep alive message")
 	}
 
-	if e2k.Header().HeaderType != uint8(ggthx.KeepAliveMsg) {
+	if e2k.Header().HeaderType != uint8(transport.KeepAliveMsg) {
 		t.Errorf("Endpoint 2 should've sent a keep alive msg")
 	}
 
-	if e2i.Header().HeaderType != uint8(ggthx.InputMsg) {
+	if e2i.Header().HeaderType != uint8(transport.InputMsg) {
 		t.Errorf("Endpoint 2 should've sent a heartbeat input prior to the keep alive message")
 	}
 

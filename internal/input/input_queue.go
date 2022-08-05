@@ -1,8 +1,10 @@
-package ggthx
+package input
 
 import (
 	"errors"
 	"log"
+
+	"github.com/assemblaj/ggthx/internal/util"
 )
 
 const (
@@ -69,7 +71,7 @@ func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
 	}
 
 	if i.lastFrameRequested != NullFrame {
-		frame = Min(frame, i.lastFrameRequested)
+		frame = util.Min(frame, i.lastFrameRequested)
 	}
 	log.Printf("discarding confirmed frames up to %d (last_added:%d length:%d [head:%d tail:%d]).\n",
 		frame, i.lastAddedFrame, i.length, i.head, i.tail)

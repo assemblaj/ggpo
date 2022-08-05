@@ -2,6 +2,11 @@ package ggthx
 
 import (
 	"log"
+
+	"github.com/assemblaj/ggthx/internal/input"
+	"github.com/assemblaj/ggthx/internal/polling"
+	"github.com/assemblaj/ggthx/internal/protocol"
+	"github.com/assemblaj/ggthx/internal/transport"
 )
 
 const SpectatorFrameBufferSize int = 32
@@ -10,14 +15,14 @@ const DefaultCatchupSpeed int = 1
 
 type SpectatorBackend struct {
 	callbacks       SessionCallbacks
-	poll            Poller
-	udp             Connection
-	host            UdpProtocol
+	poll            polling.Poller
+	udp             transport.Connection
+	host            protocol.UdpProtocol
 	synchonizing    bool
 	inputSize       int
 	numPlayers      int
 	nextInputToSend int
-	inputs          []GameInput
+	inputs          []input.GameInput
 	hostIp          string
 	hostPort        int
 	framesBehind    int
@@ -35,7 +40,7 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	s.callbacks = *cb
 	s.synchonizing = true
 
-	inputs := make([]GameInput, SpectatorFrameBufferSize)
+	inputs := make([]input.GameInput, SpectatorFrameBufferSize)
 	for _, i := range inputs {
 		i.Frame = -1
 	}
@@ -45,14 +50,14 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	s.hostIp = hostIp
 	s.hostPort = hostPort
 	s.localPort = localPort
-	var poll Poll = NewPoll()
+	var poll polling.Poll = polling.NewPoll()
 	s.poll = &poll
 	s.callbacks.BeginGame(gameName)
 	//go s.udp.Read()
 	return s
 }
 
-func (s *SpectatorBackend) DoPoll(timeout int, timeFunc ...FuncTimeType) error {
+func (s *SpectatorBackend) DoPoll(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if len(timeFunc) == 0 {
 		s.poll.Pump()
 	} else {
@@ -129,22 +134,22 @@ func (s *SpectatorBackend) PollUdpProtocolEvents() {
 	}
 }
 
-func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
+func (s *SpectatorBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 	var info Event
-	switch evt.eventType {
-	case ConnectedEvent:
+	switch evt.Type() {
+	case protocol.ConnectedEvent:
 		info.Code = EventCodeConnectedToPeer
 		info.player = 0
 		s.callbacks.OnEvent(&info)
 
-	case SynchronizingEvent:
+	case protocol.SynchronizingEvent:
 		info.Code = EventCodeSynchronizingWithPeer
 		info.player = 0
-		info.count = evt.count
-		info.total = evt.total
+		info.count = evt.Count
+		info.total = evt.Total
 		s.callbacks.OnEvent(&info)
 
-	case SynchronziedEvent:
+	case protocol.SynchronziedEvent:
 		if s.synchonizing {
 			info.Code = EventCodeSynchronizedWithPeer
 			info.player = 0
@@ -155,24 +160,24 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 			s.synchonizing = false
 		}
 
-	case NetworkInterruptedEvent:
+	case protocol.NetworkInterruptedEvent:
 		info.Code = EventCodeConnectionInterrupted
 		info.player = 0
-		info.disconnectTimeout = evt.disconnectTimeout
+		info.disconnectTimeout = evt.DisconnectTimeout
 		s.callbacks.OnEvent(&info)
 
-	case NetworkResumedEvent:
+	case protocol.NetworkResumedEvent:
 		info.Code = EventCodeConnectionResumed
 		info.player = 0
 		s.callbacks.OnEvent(&info)
 
-	case DisconnectedEvent:
+	case protocol.DisconnectedEvent:
 		info.Code = EventCodeDisconnectedFromPeer
 		info.player = 0
 		s.callbacks.OnEvent(&info)
 
-	case InputEvent:
-		input := evt.input
+	case protocol.InputEvent:
+		input := evt.Input
 
 		s.host.SetLocalFrameNumber(input.Frame)
 		s.host.SendInputAck()
@@ -180,7 +185,7 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *UdpProtocolEvent) {
 	}
 }
 
-func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg UDPMessage, len int) {
+func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg transport.UDPMessage, len int) {
 	if s.host.HandlesMsg(ipAddress, port) {
 		s.host.OnMsg(msg, len)
 	}
@@ -201,7 +206,7 @@ func (s *SpectatorBackend) Chat(text string) error {
 func (s *SpectatorBackend) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) GetNetworkStats(stats *NetworkStats, handle PlayerHandle) error {
+func (s *SpectatorBackend) GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SpectatorBackend) Logv(format string, args ...int) error {
@@ -219,9 +224,9 @@ func (s *SpectatorBackend) SetDisconnectNotifyStart(timeout int) error {
 func (s *SpectatorBackend) Close() error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) InitalizeConnection(c ...Connection) error {
+func (s *SpectatorBackend) InitalizeConnection(c ...transport.Connection) error {
 	if len(c) == 0 {
-		s.udp = NewUdp(s, s.localPort)
+		s.udp = transport.NewUdp(s, s.localPort)
 		return nil
 	}
 	s.udp = c[0]
@@ -232,7 +237,7 @@ func (s *SpectatorBackend) Start() {
 	//s.udp.messageHandler = s
 	go s.udp.Read()
 
-	s.host = NewUdpProtocol(s.udp, 0, s.hostIp, s.hostPort, nil)
+	s.host = protocol.NewUdpProtocol(s.udp, 0, s.hostIp, s.hostPort, nil)
 	s.poll.RegisterLoop(&s.host, nil)
 	s.host.Synchronize()
 

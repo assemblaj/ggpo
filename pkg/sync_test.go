@@ -4,20 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	"github.com/assemblaj/ggthx/internal/input"
+	"github.com/assemblaj/ggthx/internal/mocks"
+	"github.com/assemblaj/ggthx/internal/transport"
+	ggthx "github.com/assemblaj/ggthx/pkg"
 )
-
-func makeSessionCallBacks(session FakeSession) ggthx.SessionCallbacks {
-	var sessionCallbacks ggthx.SessionCallbacks
-	sessionCallbacks.AdvanceFrame = session.advanceFrame
-	sessionCallbacks.BeginGame = session.beginGame
-	sessionCallbacks.FreeBuffer = session.freeBuffer
-	sessionCallbacks.LoadGameState = session.loadGameState
-	sessionCallbacks.LogGameState = session.logGameState
-	sessionCallbacks.OnEvent = session.onEvent
-	sessionCallbacks.SaveGameState = session.saveGameState
-	return sessionCallbacks
-}
 
 /*
 
@@ -25,10 +16,10 @@ func makeSessionCallBacks(session FakeSession) ggthx.SessionCallbacks {
 
 */
 func TestNewSync(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -45,10 +36,10 @@ func TestNewSync(t *testing.T) {
 
 // Using Trying to load a frame when it hasn't been saved
 func TestSyncLoadFrameCharacterization(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -65,10 +56,10 @@ func TestSyncLoadFrameCharacterization(t *testing.T) {
 
 }
 func TestSyncIncrementFrame(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -85,10 +76,10 @@ func TestSyncIncrementFrame(t *testing.T) {
 	}
 }
 func TestSyncAdustSimulationPanicIfSeekToUnsavedFrame(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -105,10 +96,10 @@ func TestSyncAdustSimulationPanicIfSeekToUnsavedFrame(t *testing.T) {
 
 }
 func TestSyncAjdustSimulationError(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -128,10 +119,10 @@ func TestSyncAjdustSimulationError(t *testing.T) {
 }
 
 func TestSyncAdjustSimulationSucess(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -151,10 +142,10 @@ func TestSyncAdjustSimulationSucess(t *testing.T) {
 }
 
 func TestSyncAddLocalInput(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -163,7 +154,7 @@ func TestSyncAddLocalInput(t *testing.T) {
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
 	queue := 0
-	input := ggthx.GameInput{}
+	input := input.GameInput{}
 	success := sync.AddLocalInput(queue, &input)
 	want := 0
 	got := input.Frame
@@ -175,10 +166,10 @@ func TestSyncAddLocalInput(t *testing.T) {
 	}
 }
 func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -192,7 +183,7 @@ func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
 	}
 
 	queue := 0
-	input := ggthx.GameInput{}
+	input := input.GameInput{}
 	success := sync.AddLocalInput(queue, &input)
 	want := 2
 	got := input.Frame
@@ -204,10 +195,10 @@ func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
 	}
 }
 func TestSyncSynchronizeInputsNoInput(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -234,10 +225,10 @@ func TestSyncSynchronizeInputsNoInput(t *testing.T) {
 }
 
 func TestSyncSynchronizeInputsWithLocalInputs(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -246,7 +237,7 @@ func TestSyncSynchronizeInputsWithLocalInputs(t *testing.T) {
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
 	queue := 0
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	sync.AddLocalInput(queue, &input)
 
 	inputs, disconnectFlags := sync.SynchronizeInputs()
@@ -267,10 +258,10 @@ func TestSyncSynchronizeInputsWithLocalInputs(t *testing.T) {
 }
 
 func TestSyncSynchronizeInputsWithRemoteInputs(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -279,7 +270,7 @@ func TestSyncSynchronizeInputsWithRemoteInputs(t *testing.T) {
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
 	queue := 1
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	sync.AddRemoteInput(queue, &input)
 
 	inputs, _ := sync.SynchronizeInputs()
@@ -295,10 +286,10 @@ func TestSyncSynchronizeInputsWithRemoteInputs(t *testing.T) {
 }
 
 func TestSyncSynchronizeInputsWithBothInputs(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -307,9 +298,9 @@ func TestSyncSynchronizeInputsWithBothInputs(t *testing.T) {
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
 	queue := 1
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
-	sync.AddRemoteInput(queue, &input)
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
+	sync.AddRemoteInput(queue, &input1)
 	sync.AddLocalInput(0, &input2)
 
 	inputs, _ := sync.SynchronizeInputs()
@@ -329,10 +320,10 @@ func TestSyncSynchronizeInputsWithBothInputs(t *testing.T) {
 }
 
 func TestSyncGetConfirmedInputs(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -341,9 +332,9 @@ func TestSyncGetConfirmedInputs(t *testing.T) {
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
 	queue := 1
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
-	sync.AddRemoteInput(queue, &input)
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
+	sync.AddRemoteInput(queue, &input1)
 	sync.AddLocalInput(0, &input2)
 
 	inputs, _ := sync.GetConfirmedInputs(0)
@@ -364,10 +355,10 @@ func TestSyncGetConfirmedInputs(t *testing.T) {
 
 // Characterization Test
 func TestSyncAddLocalInputPanic(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -376,9 +367,9 @@ func TestSyncAddLocalInputPanic(t *testing.T) {
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
 	queue := 1
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
-	sync.AddRemoteInput(queue, &input)
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
+	sync.AddRemoteInput(queue, &input1)
 	sync.AddLocalInput(0, &input2)
 	//sync.SetLastConfirmedFrame(8)
 	defer func() {
@@ -391,10 +382,10 @@ func TestSyncAddLocalInputPanic(t *testing.T) {
 }
 
 func TestSyncAddLocalInputNoPanic(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -402,19 +393,19 @@ func TestSyncAddLocalInputNoPanic(t *testing.T) {
 		sessionCallbacks, 8, 2, 4,
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 
-	sync.AddLocalInput(0, &input)
+	sync.AddLocalInput(0, &input1)
 	sync.IncrementFrame()
 	sync.AddLocalInput(0, &input2)
 }
 
 func TestSyncAddRemoteInputPanic(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -422,23 +413,23 @@ func TestSyncAddRemoteInputPanic(t *testing.T) {
 		sessionCallbacks, 8, 2, 4,
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 	sync.AddRemoteInput(1, &input2)
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("The code did not panic when AddRemoteInput attempted to add an input even when the frame hadn't been incremented.")
 		}
 	}()
-	sync.AddRemoteInput(1, &input)
+	sync.AddRemoteInput(1, &input1)
 }
 
-// Characterization test. No idea why this works and the above doesn't.
+// Characterization mocks. No idea why this works and the above doesn't.
 func TestSyncAddRemoteInputNoPanic(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -446,19 +437,19 @@ func TestSyncAddRemoteInputNoPanic(t *testing.T) {
 		sessionCallbacks, 8, 2, 4,
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 	sync.AddRemoteInput(1, &input2)
-	sync.AddLocalInput(0, &input)
+	sync.AddLocalInput(0, &input1)
 	sync.IncrementFrame()
-	sync.AddLocalInput(0, &input)
-	sync.AddRemoteInput(1, &input)
+	sync.AddLocalInput(0, &input1)
+	sync.AddRemoteInput(1, &input1)
 }
 func TestSyncAddFrameDelay(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -466,15 +457,15 @@ func TestSyncAddFrameDelay(t *testing.T) {
 		sessionCallbacks, 8, 2, 4,
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 	frameDelay := 5
 	sync.SetFrameDelay(0, 5)
 
 	want := sync.FrameCount() + frameDelay
 	sync.AddRemoteInput(1, &input2)
-	sync.AddLocalInput(0, &input)
-	got := input.Frame
+	sync.AddLocalInput(0, &input1)
+	got := input1.Frame
 
 	if want != got {
 		t.Errorf("The Input delay was not applied correctly, expected input to be at frame %d but got %d", want, got)
@@ -486,10 +477,10 @@ func TestSyncAddFrameDelay(t *testing.T) {
 	*/
 }
 func TestSyncUseAfterClose(t *testing.T) {
-	session := NewFakeSession()
-	sessionCallbacks := makeSessionCallBacks(session)
+	session := mocks.NewFakeSession()
+	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
-	peerConnection := []ggthx.UdpConnectStatus{
+	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
@@ -498,9 +489,9 @@ func TestSyncUseAfterClose(t *testing.T) {
 	)
 	sync := ggthx.NewSync(peerConnection, &syncConfig)
 	queue := 1
-	input := ggthx.GameInput{Bits: []byte{1, 2, 3, 4}}
-	input2 := ggthx.GameInput{Bits: []byte{5, 6, 7, 8}}
-	sync.AddRemoteInput(queue, &input)
+	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
+	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
+	sync.AddRemoteInput(queue, &input1)
 	sync.AddLocalInput(0, &input2)
 	sync.Close()
 	defer func() {

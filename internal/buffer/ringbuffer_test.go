@@ -1,13 +1,13 @@
-package ggthx_test
+package buffer_test
 
 import (
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	"github.com/assemblaj/ggthx/internal/buffer"
 )
 
 func TestRingBufferSizeZero(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](0)
+	rb := buffer.NewRingBuffer[int](0)
 	rbSize := rb.Size()
 	if rbSize != 0 {
 		t.Errorf("Expected Size 0, got %d", rbSize)
@@ -15,7 +15,7 @@ func TestRingBufferSizeZero(t *testing.T) {
 
 }
 func TestRingBufferIsEmpty(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](1)
+	rb := buffer.NewRingBuffer[int](1)
 
 	if !rb.Empty() {
 		t.Errorf("Expected to be empty, instead not empty")
@@ -24,7 +24,7 @@ func TestRingBufferIsEmpty(t *testing.T) {
 }
 
 func TestRingBufferPush(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](2)
+	rb := buffer.NewRingBuffer[int](2)
 	rb.Push(1)
 	if rb.Empty() {
 		t.Errorf("Expected to have value, instead was empty")
@@ -33,7 +33,7 @@ func TestRingBufferPush(t *testing.T) {
 }
 
 func TestRingBufferPop(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](2)
+	rb := buffer.NewRingBuffer[int](2)
 	rb.Push(1)
 	rb.Pop()
 	if !rb.Empty() {
@@ -43,7 +43,7 @@ func TestRingBufferPop(t *testing.T) {
 }
 
 func TestRingBufferItem(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](3)
+	rb := buffer.NewRingBuffer[int](3)
 	rb.Push(1)
 	rb.Push(2)
 	var val int
@@ -60,7 +60,7 @@ func TestRingBufferItem(t *testing.T) {
 }
 
 func TestRingBufferFront(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](3)
+	rb := buffer.NewRingBuffer[int](3)
 	rb.Push(1)
 	rb.Push(2)
 	var val int
@@ -78,7 +78,7 @@ func TestRingBufferFront(t *testing.T) {
 }
 
 func TestRingBufferPushOverMaxError(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](3)
+	rb := buffer.NewRingBuffer[int](3)
 	rb.Push(1)
 	rb.Push(1)
 	rb.Push(1)
@@ -89,7 +89,7 @@ func TestRingBufferPushOverMaxError(t *testing.T) {
 }
 
 func TestRingBufferItemError(t *testing.T) {
-	rb := ggthx.NewRingBuffer[int](3)
+	rb := buffer.NewRingBuffer[int](3)
 	_, err := rb.Item(1232)
 	if err == nil {
 		t.Errorf("Trying to get an item larger than the size of the buffer should be an error.")

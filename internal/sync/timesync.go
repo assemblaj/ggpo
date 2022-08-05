@@ -1,7 +1,10 @@
-package ggthx
+package sync
 
 import (
 	"log"
+
+	"github.com/assemblaj/ggthx/internal/input"
+	"github.com/assemblaj/ggthx/internal/util"
 )
 
 const (
@@ -14,7 +17,7 @@ const (
 type TimeSync struct {
 	local          []int
 	remote         []int
-	lastInputs     []*GameInput
+	lastInputs     []*input.GameInput
 	nextPrediction int
 }
 
@@ -22,12 +25,12 @@ func NewTimeSync() TimeSync {
 	return TimeSync{
 		local:          make([]int, FrameWindowSize),
 		remote:         make([]int, FrameWindowSize),
-		lastInputs:     make([]*GameInput, MinUniqueFrames),
+		lastInputs:     make([]*input.GameInput, MinUniqueFrames),
 		nextPrediction: FrameWindowSize * 3,
 	}
 }
 
-func (t *TimeSync) AdvanceFrames(input *GameInput, advantage int, radvantage int) {
+func (t *TimeSync) AdvanceFrames(input *input.GameInput, advantage int, radvantage int) {
 	// Remember the last frame and frame advantage
 	t.lastInputs[input.Frame%len(t.lastInputs)] = input
 	t.local[input.Frame%len(t.local)] = advantage
@@ -90,5 +93,5 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) int {
 	}
 
 	// Success!!! Recommend the number of frames to sleep and adjust
-	return Min(sleepFrames, MaxFrameAdvantage)
+	return util.Min(sleepFrames, MaxFrameAdvantage)
 }

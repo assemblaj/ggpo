@@ -10,7 +10,7 @@ import (
 	"math"
 	"time"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	ggthx "github.com/assemblaj/ggthx/pkg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )

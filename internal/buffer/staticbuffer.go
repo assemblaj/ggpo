@@ -1,4 +1,4 @@
-package ggthx
+package buffer
 
 import "errors"
 
