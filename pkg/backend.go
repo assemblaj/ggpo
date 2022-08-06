@@ -9,12 +9,12 @@ import (
 /*
 	Remember to
 */
-type Session interface {
-	DoPoll(timeout int, timeFunc ...polling.FuncTimeType) error
+type Backend interface {
+	Idle(timeout int, timeFunc ...polling.FuncTimeType) error
 	AddPlayer(player *Player, handle *PlayerHandle) error
 	AddLocalInput(player PlayerHandle, values []byte, size int) error
-	SyncInput(disconnect_flags *int) ([][]byte, error)
-	IncrementFrame() error
+	SyncInput(disconnectFlags *int) ([][]byte, error)
+	AdvanceFrame() error
 	DisconnectPlayer(handle PlayerHandle) error
 	GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error
 	SetFrameDelay(player PlayerHandle, delay int) error

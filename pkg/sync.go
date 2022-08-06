@@ -188,7 +188,7 @@ func (s *Sync) CheckSimulation(timeout int) {
 	}
 }
 
-func (s *Sync) IncrementFrame() {
+func (s *Sync) AdvanceFrame() {
 	s.frameCount++
 
 	s.SaveCurrentFrame()

@@ -67,7 +67,7 @@ func TestSyncIncrementFrame(t *testing.T) {
 		sessionCallbacks, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
-	sync.IncrementFrame()
+	sync.AdvanceFrame()
 	sync.LoadFrame(0)
 	want := 1
 	got := sync.FrameCount()
@@ -109,7 +109,7 @@ func TestSyncAjdustSimulationError(t *testing.T) {
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
 	for i := 0; i < frameCount; i++ {
-		sync.IncrementFrame()
+		sync.AdvanceFrame()
 	}
 
 	err := sync.AdjustSimulation(1)
@@ -132,7 +132,7 @@ func TestSyncAdjustSimulationSucess(t *testing.T) {
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
 	for i := 0; i < frameCount; i++ {
-		sync.IncrementFrame()
+		sync.AdvanceFrame()
 	}
 
 	err := sync.AdjustSimulation(frameCount)
@@ -179,7 +179,7 @@ func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
 	for i := 0; i < frameCount; i++ {
-		sync.IncrementFrame()
+		sync.AdvanceFrame()
 	}
 
 	queue := 0
@@ -397,7 +397,7 @@ func TestSyncAddLocalInputNoPanic(t *testing.T) {
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 
 	sync.AddLocalInput(0, &input1)
-	sync.IncrementFrame()
+	sync.AdvanceFrame()
 	sync.AddLocalInput(0, &input2)
 }
 
@@ -441,7 +441,7 @@ func TestSyncAddRemoteInputNoPanic(t *testing.T) {
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 	sync.AddRemoteInput(1, &input2)
 	sync.AddLocalInput(0, &input1)
-	sync.IncrementFrame()
+	sync.AdvanceFrame()
 	sync.AddLocalInput(0, &input1)
 	sync.AddRemoteInput(1, &input1)
 }
@@ -471,7 +471,7 @@ func TestSyncAddFrameDelay(t *testing.T) {
 		t.Errorf("The Input delay was not applied correctly, expected input to be at frame %d but got %d", want, got)
 	}
 	/*
-		sync.IncrementFrame()
+		sync.AdvanceFrame()
 		sync.AddLocalInput(0, &input)
 		sync.AddRemoteInput(1, &input)
 	*/

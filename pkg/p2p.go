@@ -89,7 +89,7 @@ func (p *Peer2PeerBackend) Close() error {
 	}
 	return nil
 }
-func (p *Peer2PeerBackend) DoPoll(timeout int, timeFunc ...polling.FuncTimeType) error {
+func (p *Peer2PeerBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if !p.sync.InRollback() {
 		if len(timeFunc) == 0 {
 			p.poll.Pump()
@@ -174,7 +174,7 @@ func (p *Peer2PeerBackend) DoPoll(timeout int, timeFunc ...polling.FuncTimeType)
 // If by chance the user sent a disconnect request and we haven't disconnected them yet,
 // We disconnect them.
 // The value returned by this function (the total minimum confirmed frame across all the inputs)
-// is used in DoPoll to set the last confirmed frame in the sync backend, which tells
+// is used in Idle to set the last confirmed frame in the sync backend, which tells
 // the input queue to discard the frame before that.
 func (p *Peer2PeerBackend) Poll2Players(currentFrame int) int {
 	totalMinConfirmed := int32(math.MaxInt32)
@@ -259,7 +259,7 @@ func (p *Peer2PeerBackend) AddRemotePlayer(ip string, port int, queue int) {
 	// that we've initiated.
 	p.poll.RegisterLoop(&(p.endpoints[queue]), nil)
 
-	// actually this DoPoll wouldn't run at all if it wasn't called from here.
+	// actually this Idle wouldn't run at all if it wasn't called from here.
 	//p.poll.RegisterLoop(&udp, nil)
 	p.endpoints[queue].SetDisconnectTimeout(p.disconnectTimeout)
 	p.endpoints[queue].SetDisconnectNotifyStart(p.disconnectNotifyStart)
@@ -379,10 +379,10 @@ func (p *Peer2PeerBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 // current state via user provided callback
 // Do Poll Not only runs everything in the system that's registered to poll
 // it... well does everything. I'll get ti it when I get to it.
-func (p *Peer2PeerBackend) IncrementFrame() error {
+func (p *Peer2PeerBackend) AdvanceFrame() error {
 	log.Printf("End of frame (%d)...\n", p.sync.FrameCount())
-	p.sync.IncrementFrame()
-	err := p.DoPoll(0)
+	p.sync.AdvanceFrame()
+	err := p.Idle(0)
 	if err != nil {
 		panic(err)
 	}
@@ -449,7 +449,7 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *protocol.UdpProtocolEvent
 	return nil
 }
 
-// Every DoPoll, every endpoint and spectator goes through its event queue
+// Every Idle, every endpoint and spectator goes through its event queue
 // handles each event and pops it from the queue.  Though most of the logic
 // for handling these events is the same (see: OnUdpProtocolEvent ), spectators
 // and peers handle certain events differently
@@ -470,7 +470,7 @@ func (p *Peer2PeerBackend) OnUdpProtocolSpectatorEvent(evt *protocol.UdpProtocol
 
 // Logic for parsing UdpProtocol events and sending them up to the user via callbacks.
 // In P2P Backend, called by OnUdpProtocolSpectatorEvent and OnUdpProtocolPeerEvent,
-// which themselves are called by PollUdpProtocolEvents, which happens every DoPoll
+// which themselves are called by PollUdpProtocolEvents, which happens every Idle
 func (p *Peer2PeerBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent, handle PlayerHandle) {
 	var info Event
 

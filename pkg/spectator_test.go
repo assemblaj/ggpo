@@ -61,9 +61,9 @@ func TestNewSpectatorBackendSession(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		stb.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		stb.Idle(0, advance)
 	}
 	inputBytes := []byte{1, 2, 3, 4}
 	err := p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
@@ -130,30 +130,30 @@ func TestNewSpectatorBackendInput(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		stb.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		stb.Idle(0, advance)
 	}
 	inputBytes := []byte{1, 2, 3, 4}
 	inputBytes2 := []byte{5, 6, 7, 8}
 
 	for i := 0; i < 2; i++ {
-		p2p2.DoPoll(0)
+		p2p2.Idle(0)
 		err := p2p2.AddLocalInput(p2Handle, inputBytes2, len(inputBytes2))
 		if err != nil {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		}
-		p2p2.IncrementFrame()
+		p2p2.AdvanceFrame()
 
-		p2p.DoPoll(0)
+		p2p.Idle(0)
 		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
 		if err != nil {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		}
-		p2p.IncrementFrame()
+		p2p.AdvanceFrame()
 
-		stb.DoPoll(0)
-		stb.IncrementFrame()
+		stb.Idle(0)
+		stb.AdvanceFrame()
 	}
 	var ignore int
 	vals, err := stb.SyncInput(&ignore)
@@ -230,38 +230,38 @@ func TestNewSpectatorBackendBehind(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		stb.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		stb.Idle(0, advance)
 	}
 	inputBytes := []byte{1, 2, 3, 4}
 	inputBytes2 := []byte{5, 6, 7, 8}
 	var ignore int
 
 	for i := 0; i < 10; i++ {
-		p2p2.DoPoll(0)
+		p2p2.Idle(0)
 		err := p2p2.AddLocalInput(p2Handle, inputBytes2, len(inputBytes2))
 		if err != nil {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		}
 		p2p2.SyncInput(&ignore)
-		p2p2.IncrementFrame()
+		p2p2.AdvanceFrame()
 
-		p2p.DoPoll(0)
+		p2p.Idle(0)
 		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
 		if err != nil {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		}
 		p2p.SyncInput(&ignore)
-		p2p.IncrementFrame()
+		p2p.AdvanceFrame()
 
 		if i == 0 {
-			stb.DoPoll(0)
+			stb.Idle(0)
 			stb.SyncInput(&ignore)
-			stb.IncrementFrame()
+			stb.AdvanceFrame()
 		}
 	}
-	stb.DoPoll(0)
+	stb.Idle(0)
 	stb.SyncInput(&ignore)
 }
 
@@ -313,9 +313,9 @@ func TestNewSpectatorBackendCharacterization(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		stb.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		stb.Idle(0, advance)
 	}
 	inputBytes := []byte{1, 2, 3, 4}
 	inputBytes2 := []byte{5, 6, 7, 8}
@@ -327,32 +327,32 @@ func TestNewSpectatorBackendCharacterization(t *testing.T) {
 	}()
 
 	for i := 0; i < 2; i++ {
-		p2p2.DoPoll(0, advance)
+		p2p2.Idle(0, advance)
 		err := p2p2.AddLocalInput(p2Handle, inputBytes2, len(inputBytes2))
 		if err != nil {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		} else {
 			_, err = p2p2.SyncInput(&ignore)
 			if err == nil {
-				p2p2.IncrementFrame()
+				p2p2.AdvanceFrame()
 			}
 		}
 
-		p2p.DoPoll(0, advance)
+		p2p.Idle(0, advance)
 		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
 		if err != nil {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		} else {
 			_, err = p2p.SyncInput(&ignore)
 			if err == nil {
-				p2p.IncrementFrame()
+				p2p.AdvanceFrame()
 			}
 		}
 
-		stb.DoPoll(0, advance)
+		stb.Idle(0, advance)
 		_, err = stb.SyncInput(&ignore)
 		if err == nil {
-			stb.IncrementFrame()
+			stb.AdvanceFrame()
 		}
 	}
 }
@@ -405,14 +405,14 @@ func TestNewSpectatorBackendNoInputYet(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		stb.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		stb.Idle(0, advance)
 	}
 
 	var ignore int
 	stb.SyncInput(&ignore)
-	stb.DoPoll(0)
+	stb.Idle(0)
 	_, err := stb.SyncInput(&ignore)
 	ggErr := err.(ggpo.Error)
 	if ggErr.Code != ggpo.ErrorCodePredictionThreshod {
@@ -475,9 +475,9 @@ func TestNewSpectatorBackendDisconnect(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		stb.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		stb.Idle(0, advance)
 	}
 	timeout := func() int64 {
 		return time.Now().Add(time.Millisecond * 9500).UnixMilli()
@@ -495,26 +495,26 @@ func TestNewSpectatorBackendDisconnect(t *testing.T) {
 	currentTime = advance
 	for i := 0; i < ggpo.MaxPredictionFrames; i++ {
 		doPollTimeOuts = int(math.Max(0, float64(p1next-p1now-1)))
-		p2p.DoPoll(doPollTimeOuts, currentTime)
+		p2p.Idle(doPollTimeOuts, currentTime)
 		if p1now >= p1next {
 			err := p2p.AddLocalInput(p1Handle, input1, 4)
 			if err == nil {
 				//_, err = p2p.SyncInput(&ignore)
 				if err == nil {
-					p2p.IncrementFrame()
+					p2p.AdvanceFrame()
 				}
 			}
 			p1next = p1now + 1000/60
 		}
 
 		doPollTimeOuts = int(math.Max(0, float64(p2next-p2now-1)))
-		p2p2.DoPoll(doPollTimeOuts, currentTime)
+		p2p2.Idle(doPollTimeOuts, currentTime)
 		if p2now >= p2next {
 			err := p2p2.AddLocalInput(p2handle2, input2, 4)
 			if err == nil {
 				//_, err = p2p2.SyncInput(&ignore)
 				if err == nil {
-					p2p2.IncrementFrame()
+					p2p2.AdvanceFrame()
 				}
 			}
 			p2next = p2now + 1000/60
@@ -575,8 +575,8 @@ func TestNoAddingSpectatorAfterSynchronization(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 
 	err := p2p.AddPlayer(&spectator, &specHandle)

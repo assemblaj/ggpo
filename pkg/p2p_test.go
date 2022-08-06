@@ -134,7 +134,7 @@ func TestP2PBackendIncrementFrame(t *testing.T) {
 	if err != nil {
 		t.Errorf("There was an error when adding player 2.")
 	}
-	err = p2p.IncrementFrame()
+	err = p2p.AdvanceFrame()
 	if err != nil {
 		t.Errorf("There was an error when incrementing the frame.")
 	}
@@ -173,8 +173,8 @@ func TestP2PBackendSynchronizeInputs(t *testing.T) {
 	p2p2.AddPlayer(&player1, &p2handle1)
 	p2p2.AddPlayer(&player2, &p2handle2)
 	inputBytes := []byte{1, 2, 3, 4}
-	p2p.DoPoll(0)
-	p2p2.DoPoll(0)
+	p2p.Idle(0)
+	p2p2.Idle(0)
 
 	err := p2p2.AddLocalInput(p2Handle, inputBytes, len(inputBytes))
 	if err != nil {
@@ -225,11 +225,11 @@ func TestP2PBackendCharacterizationAddLocalInput(t *testing.T) {
 	p2p2.AddPlayer(&player1, &p2handle1)
 	p2p2.AddPlayer(&player2, &p2handle2)
 	inputBytes := []byte{1, 2, 3, 4}
-	p2p.DoPoll(0)
+	p2p.Idle(0)
 
-	p2p2.DoPoll(0)
+	p2p2.Idle(0)
 	p2p2.AddLocalInput(p2Handle, inputBytes, len(inputBytes))
-	p2p2.DoPoll(0)
+	p2p2.Idle(0)
 
 	defer func() {
 		if r := recover(); r == nil {
@@ -330,8 +330,8 @@ func TestP2PBackendAddLocalInputMultiple(t *testing.T) {
 	cycles := 20
 	inputBytes := []byte{1, 2, 3, 4}
 	for i := 0; i < cycles; i++ {
-		p2p2.DoPoll(0)
-		p2p2.IncrementFrame()
+		p2p2.Idle(0)
+		p2p2.AdvanceFrame()
 		p2p2.AddLocalInput(p2handle2, inputBytes, len(inputBytes))
 	}
 	var discconectFlags int
@@ -379,8 +379,8 @@ func TestP2PBackendSynchronize(t *testing.T) {
 	p2p2.AddPlayer(&player1, &p2handle1)
 	p2p2.AddPlayer(&player2, &p2handle2)
 	inputBytes := []byte{1, 2, 3, 4}
-	p2p.DoPoll(0)
-	p2p2.DoPoll(0)
+	p2p.Idle(0)
+	p2p2.Idle(0)
 
 	err := p2p2.AddLocalInput(p2Handle, inputBytes, len(inputBytes))
 	if err != nil {
@@ -427,24 +427,24 @@ func TestP2PBackendFullSession(t *testing.T) {
 	}
 
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 
 	for i := 0; i < 20; i++ {
-		p2p2.DoPoll(0)
+		p2p2.Idle(0)
 		err := p2p2.AddLocalInput(p2Handle, inputBytes, len(inputBytes))
 		if err != nil {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		}
-		p2p2.IncrementFrame()
+		p2p2.AdvanceFrame()
 
-		p2p.DoPoll(0)
+		p2p.Idle(0)
 		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
 		if err != nil {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		}
-		p2p.IncrementFrame()
+		p2p.AdvanceFrame()
 	}
 	var disconnectFlags int
 	vals, err := p2p.SyncInput(&disconnectFlags)
@@ -613,8 +613,8 @@ func TestP2PBackendMockSynchronize(t *testing.T) {
 
 	for i := 0; i < protocol.NumSyncPackets; i++ {
 		var disconnectFlags int
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 		_, err1 = p2p.SyncInput(&disconnectFlags)
 		if err1 != nil {
 			continue
@@ -671,8 +671,8 @@ func TestP2PBackendMoockInputExchangeCharacterization(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 	input1 := []byte{1, 2, 3, 4}
 	input2 := []byte{5, 6, 7, 8}
@@ -683,15 +683,15 @@ func TestP2PBackendMoockInputExchangeCharacterization(t *testing.T) {
 	}()
 
 	for i := 0; i < 8; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
 		var disconnectFlags int
 		p2p2.SyncInput(&disconnectFlags)
 		p2p.SyncInput(&disconnectFlags)
-		p2p.IncrementFrame()
-		p2p2.IncrementFrame()
+		p2p.AdvanceFrame()
+		p2p2.AdvanceFrame()
 	}
 
 }
@@ -732,19 +732,19 @@ func TestP2PBackendMoockInputExchange(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 	input1 := []byte{1, 2, 3, 4}
 	input2 := []byte{5, 6, 7, 8}
 
 	for i := 0; i < 8; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.IncrementFrame()
-		p2p2.IncrementFrame()
+		p2p.AdvanceFrame()
+		p2p2.AdvanceFrame()
 	}
 	var disconnectFlags int
 	vals, _ := p2p2.SyncInput(&disconnectFlags)
@@ -796,19 +796,19 @@ func TestP2PBackendMoockInputExchangeWithTimeout(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 	input1 := []byte{1, 2, 3, 4}
 	input2 := []byte{5, 6, 7, 8}
 	doPollTimeOuts := 90
 	for i := 0; i < 8; i++ {
-		p2p.DoPoll(doPollTimeOuts, advance)
-		p2p2.DoPoll(doPollTimeOuts, advance)
+		p2p.Idle(doPollTimeOuts, advance)
+		p2p2.Idle(doPollTimeOuts, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.IncrementFrame()
-		p2p2.IncrementFrame()
+		p2p.AdvanceFrame()
+		p2p2.AdvanceFrame()
 	}
 	var disconnectFlags int
 	vals, _ := p2p2.SyncInput(&disconnectFlags)
@@ -860,19 +860,19 @@ func TestP2PBackendMoockInputExchangePol2Players(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 	input1 := []byte{1, 2, 3, 4}
 	input2 := []byte{5, 6, 7, 8}
 	doPollTimeOuts := 90
 	for i := 0; i < 8; i++ {
-		p2p.DoPoll(doPollTimeOuts, advance)
-		p2p2.DoPoll(doPollTimeOuts, advance)
+		p2p.Idle(doPollTimeOuts, advance)
+		p2p2.Idle(doPollTimeOuts, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.IncrementFrame()
-		p2p2.IncrementFrame()
+		p2p.AdvanceFrame()
+		p2p2.AdvanceFrame()
 	}
 	want := 7
 	got := p2p2.Poll2Players(8)
@@ -924,8 +924,8 @@ func TestP2PBackendMoockInputDelay(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 
 	p2p.SetFrameDelay(p1Handle, 2)
@@ -942,12 +942,12 @@ func TestP2PBackendMoockInputDelay(t *testing.T) {
 	doPollTimeOuts := 90
 	iterations := 6
 	for i := 0; i < iterations; i++ {
-		p2p.DoPoll(doPollTimeOuts, advance)
-		p2p2.DoPoll(doPollTimeOuts, advance)
+		p2p.Idle(doPollTimeOuts, advance)
+		p2p2.Idle(doPollTimeOuts, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.IncrementFrame()
-		p2p2.IncrementFrame()
+		p2p.AdvanceFrame()
+		p2p2.AdvanceFrame()
 	}
 	got := p2p.Poll2Players(iterations)
 	want := iterations + 1
@@ -994,8 +994,8 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 
 	timeout := func() int64 {
@@ -1015,12 +1015,12 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization(t *testing.T) {
 		}
 	}()
 	for i := 0; i < iterations; i++ {
-		p2p.DoPoll(doPollTimeOuts, timeout)
-		p2p2.DoPoll(doPollTimeOuts, timeout)
+		p2p.Idle(doPollTimeOuts, timeout)
+		p2p2.Idle(doPollTimeOuts, timeout)
 		//p2p.AddLocalInput(p1Handle, input1, 4)
 		//p2p2.AddLocalInput(p2handle2, input2, 4)
-		//p2p.IncrementFrame()
-		//p2p2.IncrementFrame()
+		//p2p.AdvanceFrame()
+		//p2p2.AdvanceFrame()
 	}
 
 }
@@ -1061,8 +1061,8 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization2(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 
 	timeout := func() int64 {
@@ -1080,12 +1080,12 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization2(t *testing.T) {
 	}()
 	for i := 0; i < iterations; i++ {
 
-		p2p.DoPoll(doPollTimeOuts, timeout)
-		p2p2.DoPoll(doPollTimeOuts, timeout)
+		p2p.Idle(doPollTimeOuts, timeout)
+		p2p2.Idle(doPollTimeOuts, timeout)
 		//p2p.AddLocalInput(p1Handle, input1, 4)
 		//p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.IncrementFrame()
-		p2p2.IncrementFrame()
+		p2p.AdvanceFrame()
+		p2p2.AdvanceFrame()
 	}
 }
 func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
@@ -1125,8 +1125,8 @@ func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 
 	timeout := func() int64 {
@@ -1149,26 +1149,26 @@ func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
 
 	for i := 0; i < ggpo.MaxPredictionFrames; i++ {
 		doPollTimeOuts = int(math.Max(0, float64(p1next-p1now-1)))
-		p2p.DoPoll(doPollTimeOuts, currentTime)
+		p2p.Idle(doPollTimeOuts, currentTime)
 		if p1now >= p1next {
 			err := p2p.AddLocalInput(p1Handle, input1, 4)
 			if err == nil {
 				//_, err = p2p.SyncInput(&ignore)
 				if err == nil {
-					p2p.IncrementFrame()
+					p2p.AdvanceFrame()
 				}
 			}
 			p1next = p1now + 1000/60
 		}
 
 		doPollTimeOuts = int(math.Max(0, float64(p2next-p2now-1)))
-		p2p2.DoPoll(doPollTimeOuts, currentTime)
+		p2p2.Idle(doPollTimeOuts, currentTime)
 		if p2now >= p2next {
 			err := p2p2.AddLocalInput(p2handle2, input2, 4)
 			if err == nil {
 				//_, err = p2p2.SyncInput(&ignore)
 				if err == nil {
-					p2p2.IncrementFrame()
+					p2p2.AdvanceFrame()
 				}
 			}
 			p2next = p2now + 1000/60
@@ -1253,9 +1253,9 @@ func TestP2PBackendNPlayersSynchronize(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		p2p3.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		p2p3.Idle(0, advance)
 	}
 	input1 := []byte{1, 2, 3, 4}
 	input2 := []byte{5, 6, 7, 8}
@@ -1336,9 +1336,9 @@ func TestP2PBackendNPlayersShareInput(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		p2p3.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		p2p3.Idle(0, advance)
 	}
 	input1 := []byte{1, 2, 3, 4}
 	input2 := []byte{5, 6, 7, 8}
@@ -1347,28 +1347,28 @@ func TestP2PBackendNPlayersShareInput(t *testing.T) {
 	var ignore int
 
 	for i := 0; i < 2; i++ {
-		p2p.DoPoll(0, advance)
+		p2p.Idle(0, advance)
 		err = p2p.AddLocalInput(p1Handle, input1, 4)
 		if err == nil {
 			//	_, err = p2p.SyncInput(&ignore)
 			if err == nil {
-				p2p.IncrementFrame()
+				p2p.AdvanceFrame()
 			}
 		}
-		p2p2.DoPoll(0, advance)
+		p2p2.Idle(0, advance)
 		err = p2p2.AddLocalInput(p2handle2, input2, 4)
 		if err == nil {
 			//	_, err = p2p2.SyncInput(&ignore)
 			if err == nil {
-				p2p2.IncrementFrame()
+				p2p2.AdvanceFrame()
 			}
 		}
-		p2p3.DoPoll(0, advance)
+		p2p3.Idle(0, advance)
 		err = p2p3.AddLocalInput(p3handle3, input3, 4)
 		if err == nil {
 			//	_, err = p2p3.SyncInput(&ignore)
 			if err == nil {
-				p2p3.IncrementFrame()
+				p2p3.AdvanceFrame()
 			}
 		}
 	}
@@ -1471,10 +1471,10 @@ func TestP2PBackend4PlayerSynchronize(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		p2p3.DoPoll(0, advance)
-		p2p4.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		p2p3.Idle(0, advance)
+		p2p4.Idle(0, advance)
 	}
 	var err error
 	var ignore int
@@ -1589,10 +1589,10 @@ func TestP2PBackend4PlayerShareInput(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
-		p2p3.DoPoll(0, advance)
-		p2p4.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		p2p3.Idle(0, advance)
+		p2p4.Idle(0, advance)
 	}
 	input1 := []byte{1, 2, 3, 4}
 	input2 := []byte{5, 6, 7, 8}
@@ -1613,52 +1613,52 @@ func TestP2PBackend4PlayerShareInput(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		doPollTimeOuts := int(math.Max(0, float64(p1next-p1now-1)))
 
-		p2p.DoPoll(doPollTimeOuts, advance)
+		p2p.Idle(doPollTimeOuts, advance)
 		if p1next >= p1now {
 			err = p2p.AddLocalInput(p1Handle, input1, 4)
 			if err == nil {
 				//_, err = p2p.SyncInput(&ignore)
 				if err == nil {
-					p2p.IncrementFrame()
+					p2p.AdvanceFrame()
 				}
 			}
 			p1next = p1now + 1000/60
 		}
 
 		doPollTimeOuts = int(math.Max(0, float64(p2next-p2now-1)))
-		p2p2.DoPoll(doPollTimeOuts, advance)
+		p2p2.Idle(doPollTimeOuts, advance)
 		if p2next >= p2now {
 			err = p2p2.AddLocalInput(p2handle2, input2, 4)
 			if err == nil {
 				//_, err = p2p2.SyncInput(&ignore)
 				if err == nil {
-					p2p2.IncrementFrame()
+					p2p2.AdvanceFrame()
 				}
 			}
 			p2next = p2now + 1000/60
 		}
 
 		doPollTimeOuts = int(math.Max(0, float64(p3next-p3now-1)))
-		p2p3.DoPoll(doPollTimeOuts, advance)
+		p2p3.Idle(doPollTimeOuts, advance)
 		if p3next >= p3now {
 			err = p2p3.AddLocalInput(p3handle3, input3, 4)
 			if err == nil {
 				//_, err = p2p3.SyncInput(&ignore)
 				if err == nil {
-					p2p3.IncrementFrame()
+					p2p3.AdvanceFrame()
 				}
 			}
 			p3next = p3now + 1000/60
 		}
 
 		doPollTimeOuts = int(math.Max(0, float64(p4next-p4now-1)))
-		p2p4.DoPoll(doPollTimeOuts, advance)
+		p2p4.Idle(doPollTimeOuts, advance)
 		if p4next >= p4now {
 			err = p2p4.AddLocalInput(p4handle4, input4, 4)
 			if err == nil {
 				//_, err = p2p4.SyncInput(&ignore)
 				if err == nil {
-					p2p4.IncrementFrame()
+					p2p4.AdvanceFrame()
 				}
 			}
 			p4next = p4now + 1000/60
@@ -1712,8 +1712,8 @@ func TestP2PBackendGetNetworkStats(t *testing.T) {
 		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
 	}
 	for i := 0; i < protocol.NumSyncPackets; i++ {
-		p2p.DoPoll(0, advance)
-		p2p2.DoPoll(0, advance)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
 	}
 	p1stats := make([]protocol.NetworkStats, numPlayers)
 	for i := 0; i < numPlayers; i++ {

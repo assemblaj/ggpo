@@ -64,7 +64,7 @@ func TestSyncTestBackendAddLocalInput(t *testing.T) {
 	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
 	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
-	stb.DoPoll(0)
+	stb.Idle(0)
 	err := stb.AddLocalInput(handle, []byte{1, 2, 3, 4}, 4)
 	if err != nil {
 		t.Errorf("There shouldn't be an error, adding local input should be successful.")
@@ -78,7 +78,7 @@ func TestSyncTestBackendSyncInput(t *testing.T) {
 	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
 	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
-	stb.DoPoll(0)
+	stb.Idle(0)
 	inputBytes := []byte{1, 2, 3, 4}
 	stb.AddLocalInput(handle, []byte{1, 2, 3, 4}, 4)
 	var disconnectFlags int
@@ -104,7 +104,7 @@ func TestSyncTestBackendIncrementFramePanic(t *testing.T) {
 		}
 	}()
 	for i := 0; i < checkDistance; i++ {
-		stb.IncrementFrame()
+		stb.AdvanceFrame()
 	}
 }
 
@@ -116,13 +116,13 @@ func TestSyncTestBackendIncrementFrameCharacterization(t *testing.T) {
 	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
-	stb.DoPoll(0)
+	stb.Idle(0)
 	inputBytes := []byte{1, 2, 3, 4}
 	var disconnectFlags int
 	for i := 0; i < checkDistance-1; i++ {
 		stb.AddLocalInput(handle, inputBytes, 4)
 		stb.SyncInput(&disconnectFlags)
-		stb.IncrementFrame()
+		stb.AdvanceFrame()
 	}
 
 	defer func() {
@@ -130,7 +130,7 @@ func TestSyncTestBackendIncrementFrameCharacterization(t *testing.T) {
 			t.Errorf("The code did not panic due to a SyncError")
 		}
 	}()
-	stb.IncrementFrame()
+	stb.AdvanceFrame()
 
 }
 
@@ -149,12 +149,12 @@ func TestSyncTestBackendIncrementFrame(t *testing.T) {
 	var disconnectFlags int
 	var result error
 	for i := 0; i < checkDistance-1; i++ {
-		stb.DoPoll(0)
+		stb.Idle(0)
 		result = stb.AddLocalInput(handle, inputBytes, 4)
 		if result == nil {
 			_, result = stb.SyncInput(&disconnectFlags)
 			if result == nil {
-				stb.IncrementFrame()
+				stb.AdvanceFrame()
 			}
 		}
 	}
@@ -164,7 +164,7 @@ func TestSyncTestBackendIncrementFrame(t *testing.T) {
 			t.Errorf("The code did not panic due to a SyncError")
 		}
 	}()
-	stb.IncrementFrame()
+	stb.AdvanceFrame()
 }
 
 /*Again, WIP, I don't know how to test that this is working, but it is. */
@@ -184,12 +184,12 @@ func TestSyncTestBackendChecksumCheck(t *testing.T) {
 	var result error
 
 	for i := 0; i < checkDistance+1; i++ {
-		stb.DoPoll(0)
+		stb.Idle(0)
 		result = stb.AddLocalInput(handle, inputBytes, 4)
 		if result == nil {
 			_, result := stb.SyncInput(&disconnectFlags)
 			if result == nil {
-				stb.IncrementFrame()
+				stb.AdvanceFrame()
 			}
 		}
 	}

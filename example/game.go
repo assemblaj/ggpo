@@ -16,7 +16,7 @@ import (
 )
 
 //var session *ggpo.SyncTestBackend
-var session ggpo.Session
+var session ggpo.Backend
 var player1 Player
 var player2 Player
 var game *Game
@@ -65,7 +65,7 @@ func (g *Game) Update() error {
 	now = int(time.Now().UnixMilli())
 	//ggpo.Idle(session, int(math.Max(0, float64(next-now-1))))
 	fmt.Println("Idling ")
-	err := session.DoPoll(int(math.Max(0, float64(next-now-1))))
+	err := session.Idle(int(math.Max(0, float64(next-now-1))))
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +110,7 @@ func (g *Game) RunFrame() {
 func (g *Game) AdvanceFrame(inputs []InputBits, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
 	//err := ggpo.AdvanceFrame(session)
-	err := session.IncrementFrame()
+	err := session.AdvanceFrame()
 	if err != nil {
 		panic(err)
 	}

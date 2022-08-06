@@ -100,7 +100,7 @@ func (s *FakeSession) advanceFrame(flags int) bool {
 }
 
 type FakeSessionWithBackend struct {
-	backend    ggpo.Session
+	backend    ggpo.Backend
 	game       FakeGame
 	saveStates map[int]*FakeGame
 }
@@ -112,7 +112,7 @@ func NewFakeSessionWithBackend() FakeSessionWithBackend {
 	}
 }
 
-func (f *FakeSessionWithBackend) SetBackend(backend ggpo.Session) {
+func (f *FakeSessionWithBackend) SetBackend(backend ggpo.Backend) {
 	f.backend = backend
 }
 
@@ -175,7 +175,7 @@ func (f *FakeSessionWithBackend) advanceFrame(flags int) bool {
 	//inputs, result := ggpo.SynchronizeInput(session, &discconectFlags)
 	_, result := f.backend.SyncInput(&discconectFlags)
 	if result == nil {
-		f.backend.IncrementFrame()
+		f.backend.AdvanceFrame()
 	}
 
 	return true

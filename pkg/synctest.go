@@ -57,7 +57,7 @@ func NewSyncTestBackend(cb *SessionCallbacks,
 	return s
 }
 
-func (s *SyncTestBackend) DoPoll(timeout int, timeFunc ...polling.FuncTimeType) error {
+func (s *SyncTestBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if !s.running {
 		var info Event
 		info.Code = EventCodeRunning
@@ -113,8 +113,8 @@ func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, error) {
 	return [][]byte{values}, nil
 }
 
-func (s *SyncTestBackend) IncrementFrame() error {
-	s.sync.IncrementFrame()
+func (s *SyncTestBackend) AdvanceFrame() error {
+	s.sync.AdvanceFrame()
 	s.currentInput.Erase()
 
 	log.Printf("End of frame(%d)...\n", s.sync.FrameCount())

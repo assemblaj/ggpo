@@ -57,7 +57,7 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	return s
 }
 
-func (s *SpectatorBackend) DoPoll(timeout int, timeFunc ...polling.FuncTimeType) error {
+func (s *SpectatorBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if len(timeFunc) == 0 {
 		s.poll.Pump()
 	} else {
@@ -115,9 +115,9 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	return values, nil
 }
 
-func (s *SpectatorBackend) IncrementFrame() error {
+func (s *SpectatorBackend) AdvanceFrame() error {
 	log.Printf("End of frame (%d)...\n", s.nextInputToSend-1)
-	s.DoPoll(0)
+	s.Idle(0)
 	s.PollUdpProtocolEvents()
 
 	return nil
