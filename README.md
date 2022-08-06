@@ -1,5 +1,5 @@
-# GGTHX - GGPO Port Into Go
-GGTHX is a near line by line port of the GGPO rollback netcode library into Go. Currently unfinished. 
+# GGPO-Go - GGPO Port Into Go
+GGPO-Go is a port of the GGPO rollback netcode library into Go. Currently unfinished. 
 
 ## Usage 
 General usage would be best explained by looking at the code in the example folder.
