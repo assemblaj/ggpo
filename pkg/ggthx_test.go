@@ -5,7 +5,7 @@ import (
 	"encoding/gob"
 	"log"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	ggthx "github.com/assemblaj/ggthx/pkg"
 )
 
 type FakeGame struct {

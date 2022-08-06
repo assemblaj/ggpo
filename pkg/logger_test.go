@@ -1,9 +1,9 @@
-package temp_test
+package ggthx_test
 
 import (
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/src"
+	ggthx "github.com/assemblaj/ggthx/pkg"
 )
 
 type FakeWriter struct{}
