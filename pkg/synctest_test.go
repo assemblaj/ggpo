@@ -196,17 +196,6 @@ func TestSyncTestBackendChecksumCheck(t *testing.T) {
 }
 
 // Unsupported functions
-func TestSyncTestBackendChatError(t *testing.T) {
-	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
-	err := stb.Chat("test")
-	if err == nil {
-		t.Errorf("The code did not error when using an unsupported Feature.")
-	}
-}
-
 func TestSyncTestBackendDissconnectPlayerError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
@@ -225,17 +214,6 @@ func TestSyncTestBackendGetNetworkStatsError(t *testing.T) {
 	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 	var status protocol.NetworkStats
 	err := stb.GetNetworkStats(&status, ggthx.PlayerHandle(1))
-	if err == nil {
-		t.Errorf("The code did not error when using an unsupported Feature.")
-	}
-}
-
-func TestSyncTestBackendLogvError(t *testing.T) {
-	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
-	err := stb.Logv("test")
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
 	}

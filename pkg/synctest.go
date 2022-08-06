@@ -187,16 +187,10 @@ func (s *SyncTestBackend) LogGameStates(info savedInfo) {
 }
 
 // We must 'impliment' these for this to be a true Session
-func (s *SyncTestBackend) Chat(text string) error {
-	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
-}
 func (s *SyncTestBackend) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SyncTestBackend) GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error {
-	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
-}
-func (s *SyncTestBackend) Logv(format string, args ...int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SyncTestBackend) SetFrameDelay(player PlayerHandle, delay int) error {
@@ -214,6 +208,6 @@ func (s *SyncTestBackend) Close() error {
 
 func (s *SyncTestBackend) Start() {}
 
-func (s *SyncTestBackend) InitalizeConnection(c ...transport.Connection) error {
+func (s *SyncTestBackend) InitializeConnection(c ...transport.Connection) error {
 	return nil
 }

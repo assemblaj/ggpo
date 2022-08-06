@@ -732,15 +732,7 @@ func (p *Peer2PeerBackend) CheckInitialSync() {
 	}
 }
 
-func (p *Peer2PeerBackend) Chat(text string) error {
-	return nil
-}
-
-func (p *Peer2PeerBackend) Logv(format string, args ...int) error {
-	return nil
-}
-
-func (p *Peer2PeerBackend) InitalizeConnection(t ...transport.Connection) error {
+func (p *Peer2PeerBackend) InitializeConnection(t ...transport.Connection) error {
 	if len(t) == 0 {
 		p.connection = transport.NewUdp(p, p.localPort)
 		return nil

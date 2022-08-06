@@ -200,16 +200,10 @@ func (s *SpectatorBackend) AddPlayer(player *Player, handle *PlayerHandle) error
 }
 
 // We must 'impliment' these for this to be a true Session
-func (s *SpectatorBackend) Chat(text string) error {
-	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
-}
 func (s *SpectatorBackend) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SpectatorBackend) GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error {
-	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
-}
-func (s *SpectatorBackend) Logv(format string, args ...int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SpectatorBackend) SetFrameDelay(player PlayerHandle, delay int) error {
@@ -224,7 +218,7 @@ func (s *SpectatorBackend) SetDisconnectNotifyStart(timeout int) error {
 func (s *SpectatorBackend) Close() error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) InitalizeConnection(c ...transport.Connection) error {
+func (s *SpectatorBackend) InitializeConnection(c ...transport.Connection) error {
 	if len(c) == 0 {
 		s.connection = transport.NewUdp(s, s.localPort)
 		return nil

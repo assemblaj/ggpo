@@ -15,14 +15,12 @@ type Session interface {
 	AddLocalInput(player PlayerHandle, values []byte, size int) error
 	SyncInput(disconnect_flags *int) ([][]byte, error)
 	IncrementFrame() error
-	Chat(text string) error
 	DisconnectPlayer(handle PlayerHandle) error
 	GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error
-	Logv(format string, args ...int) error
 	SetFrameDelay(player PlayerHandle, delay int) error
 	SetDisconnectTimeout(timeout int) error
 	SetDisconnectNotifyStart(timeout int) error
 	Close() error
 	Start()
-	InitalizeConnection(c ...transport.Connection) error
+	InitializeConnection(c ...transport.Connection) error
 }
