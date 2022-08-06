@@ -42,16 +42,6 @@ func getPeerAddress(address net.Addr) peerAddress {
 	return peerAddress{}
 }
 
-type Connection interface {
-	SendTo(msg UDPMessage, remoteIp string, remotePort int)
-	Read()
-	Close()
-}
-
-type MessageHandler interface {
-	HandleMessage(ipAddress string, port int, msg UDPMessage, len int)
-}
-
 func (u Udp) Close() {
 	u.listener.Close()
 }
