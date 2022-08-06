@@ -24,7 +24,7 @@ type Peer2PeerBackend struct {
 	callbacks     SessionCallbacks
 	poll          polling.Poller
 	sync          Sync
-	udp           transport.Connection
+	connection    transport.Connection
 	endpoints     []protocol.UdpProtocol
 	spectators    []protocol.UdpProtocol
 	numSpectators int
@@ -254,7 +254,7 @@ func (p *Peer2PeerBackend) PollNPlayers(currentFrame int) int {
 */
 func (p *Peer2PeerBackend) AddRemotePlayer(ip string, port int, queue int) {
 	p.synchronizing = true
-	p.endpoints[queue] = protocol.NewUdpProtocol(p.udp, queue, ip, port, &p.localConnectStatus)
+	p.endpoints[queue] = protocol.NewUdpProtocol(p.connection, queue, ip, port, &p.localConnectStatus)
 	// have to reqgister the loop from here or else the Poll won't see changed state
 	// that we've initiated.
 	p.poll.RegisterLoop(&(p.endpoints[queue]), nil)
@@ -276,7 +276,7 @@ func (p *Peer2PeerBackend) AddSpectator(ip string, port int) error {
 	}
 	queue := p.numSpectators
 	p.numSpectators++
-	p.spectators[queue] = protocol.NewUdpProtocol(p.udp, queue+1000, ip, port, &p.localConnectStatus)
+	p.spectators[queue] = protocol.NewUdpProtocol(p.connection, queue+1000, ip, port, &p.localConnectStatus)
 	p.poll.RegisterLoop(&(p.spectators[queue]), nil)
 	p.spectators[queue].SetDisconnectTimeout(p.disconnectTimeout)
 	p.spectators[queue].SetDisconnectNotifyStart(p.disconnectNotifyStart)
@@ -742,10 +742,10 @@ func (p *Peer2PeerBackend) Logv(format string, args ...int) error {
 
 func (p *Peer2PeerBackend) InitalizeConnection(t ...transport.Connection) error {
 	if len(t) == 0 {
-		p.udp = transport.NewUdp(p, p.localPort)
+		p.connection = transport.NewUdp(p, p.localPort)
 		return nil
 	}
-	p.udp = t[0]
+	p.connection = t[0]
 	return nil
 }
 
@@ -754,6 +754,6 @@ func (p *Peer2PeerBackend) Start() {
 	//go p.udp.ReadMsg(messages)
 	//go p.OnMsg(messages)
 	//p.udp.messageHandler = p
-	fmt.Printf("In peer2peerbackend start udp: %v\n", p.udp)
-	go p.udp.Read()
+	fmt.Printf("In peer2peerbackend start udp: %v\n", p.connection)
+	go p.connection.Read()
 }

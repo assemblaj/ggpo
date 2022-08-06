@@ -34,7 +34,7 @@ type UdpProtocol struct {
 	event UdpProtocolEvent //
 
 	// Network transmission information
-	udp               transport.Connection
+	connection        transport.Connection
 	peerAddress       string
 	peerPort          int
 	magicNumber       uint16
@@ -212,7 +212,7 @@ type OoPacket struct {
 	msg      transport.UDPMessage
 }
 
-func NewUdpProtocol(udp transport.Connection, queue int, ip string, port int, status *[]transport.UdpConnectStatus) UdpProtocol {
+func NewUdpProtocol(connection transport.Connection, queue int, ip string, port int, status *[]transport.UdpConnectStatus) UdpProtocol {
 	var magicNumber uint16
 	for {
 		magicNumber = uint16(rand.Int())
@@ -229,7 +229,7 @@ func NewUdpProtocol(udp transport.Connection, queue int, ip string, port int, st
 	lastAckedInput, _ := input.NewGameInput(-1, nil, 1)
 
 	protocol := UdpProtocol{
-		udp:                udp,
+		connection:         connection,
 		queue:              queue,
 		localConnectStatus: status,
 		peerConnectStatus:  peerConnectStatus,
@@ -250,7 +250,7 @@ func NewUdpProtocol(udp transport.Connection, queue int, ip string, port int, st
 func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 
 	// originally was if !udp
-	if u.udp == nil {
+	if u.connection == nil {
 		return true
 	}
 	now := uint(timeFunc())
@@ -329,7 +329,7 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 	case DisconnectedState:
 		if u.shutdownTimeout < now {
 			log.Printf("Shutting down udp connection.\n")
-			u.udp = nil
+			u.connection = nil
 			u.shutdownTimeout = 0
 		}
 	}
@@ -651,7 +651,7 @@ func (u *UdpProtocol) PumpSendQueue() error {
 			if entry.destIp == "" {
 				return errors.New("ggthx UdpProtocol PumpSendQueue: entry.destIp == \"\"")
 			}
-			u.udp.SendTo(entry.msg, entry.destIp, entry.destPort)
+			u.connection.SendTo(entry.msg, entry.destIp, entry.destPort)
 			// would delete the udpmsg here
 		}
 		err := u.sendQueue.Pop()
@@ -661,7 +661,7 @@ func (u *UdpProtocol) PumpSendQueue() error {
 	}
 	if u.ooPacket.msg != nil && u.ooPacket.sendTime < int(time.Now().UnixMilli()) {
 		log.Printf("sending rogue oop!")
-		u.udp.SendTo(u.ooPacket.msg, u.peerAddress, u.peerPort)
+		u.connection.SendTo(u.ooPacket.msg, u.peerAddress, u.peerPort)
 		u.ooPacket.msg = nil
 	}
 	return nil
@@ -680,18 +680,18 @@ func (u *UdpProtocol) ClearSendQueue() {
 // going to call deletes close
 func (u *UdpProtocol) Close() {
 	u.ClearSendQueue()
-	u.udp.Close()
+	u.connection.Close()
 }
 
 func (u *UdpProtocol) HandlesMsg(ipAddress string, port int) bool {
-	if u.udp == nil {
+	if u.connection == nil {
 		return false
 	}
 	return u.peerAddress == ipAddress && u.peerPort == port
 }
 
 func (u *UdpProtocol) SendInput(input *input.GameInput) {
-	if u.udp != nil {
+	if u.connection != nil {
 		if u.currentState == RunningState {
 			// check to see if this is a good time to adjust for the rift
 			u.timesync.AdvanceFrames(input, u.localFrameAdvantage, u.remoteFrameAdvantage)
@@ -733,7 +733,7 @@ func (u *UdpProtocol) UpdateNetworkStats() {
 }
 
 func (u *UdpProtocol) Synchronize() {
-	if u.udp != nil {
+	if u.connection != nil {
 		u.currentState = SyncingState
 		u.state.roundTripRemaining = uint32(NumSyncPackets)
 		u.SendSyncRequest()
@@ -864,7 +864,7 @@ func (u *UdpProtocol) OnSyncReply(msg transport.UDPMessage, length int) (bool, e
 }
 
 func (u *UdpProtocol) IsInitialized() bool {
-	return u.udp != nil
+	return u.connection != nil
 }
 
 func (u *UdpProtocol) IsSynchronized() bool {

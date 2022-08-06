@@ -16,7 +16,7 @@ const DefaultCatchupSpeed int = 1
 type SpectatorBackend struct {
 	callbacks       SessionCallbacks
 	poll            polling.Poller
-	udp             transport.Connection
+	connection      transport.Connection
 	host            protocol.UdpProtocol
 	synchonizing    bool
 	inputSize       int
@@ -226,18 +226,18 @@ func (s *SpectatorBackend) Close() error {
 }
 func (s *SpectatorBackend) InitalizeConnection(c ...transport.Connection) error {
 	if len(c) == 0 {
-		s.udp = transport.NewUdp(s, s.localPort)
+		s.connection = transport.NewUdp(s, s.localPort)
 		return nil
 	}
-	s.udp = c[0]
+	s.connection = c[0]
 	return nil
 }
 
 func (s *SpectatorBackend) Start() {
 	//s.udp.messageHandler = s
-	go s.udp.Read()
+	go s.connection.Read()
 
-	s.host = protocol.NewUdpProtocol(s.udp, 0, s.hostIp, s.hostPort, nil)
+	s.host = protocol.NewUdpProtocol(s.connection, 0, s.hostIp, s.hostPort, nil)
 	s.poll.RegisterLoop(&s.host, nil)
 	s.host.Synchronize()
 
