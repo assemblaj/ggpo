@@ -1,21 +1,21 @@
-package ggthx_test
+package ggpo_test
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/assemblaj/ggthx/internal/mocks"
-	"github.com/assemblaj/ggthx/internal/protocol"
+	"github.com/assemblaj/GGPO-Go/internal/mocks"
+	"github.com/assemblaj/GGPO-Go/internal/protocol"
 
-	ggthx "github.com/assemblaj/ggthx/pkg"
+	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 )
 
 func TestNewSyncTestBackend(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 1)
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
-	var handle ggthx.PlayerHandle
+	player := ggpo.NewLocalPlayer(20, 1)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 
 }
@@ -23,9 +23,9 @@ func TestNewSyncTestBackend(t *testing.T) {
 func TestSyncTestBackendAddPlayerOver(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 2)
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
-	var handle ggthx.PlayerHandle
+	player := ggpo.NewLocalPlayer(20, 2)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
+	var handle ggpo.PlayerHandle
 	err := stb.AddPlayer(&player, &handle)
 	if err == nil {
 		t.Errorf("There should be an error for adding a player greater than the total num Players.")
@@ -35,9 +35,9 @@ func TestSyncTestBackendAddPlayerOver(t *testing.T) {
 func TestSyncTestBackendAddPlayerNegative(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, -1)
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
-	var handle ggthx.PlayerHandle
+	player := ggpo.NewLocalPlayer(20, -1)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
+	var handle ggpo.PlayerHandle
 	err := stb.AddPlayer(&player, &handle)
 	if err == nil {
 		t.Errorf("There should be an error for adding a player with a negative number")
@@ -47,9 +47,9 @@ func TestSyncTestBackendAddPlayerNegative(t *testing.T) {
 func TestSyncTestBackendAddLocalInputError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 1)
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
-	var handle ggthx.PlayerHandle
+	player := ggpo.NewLocalPlayer(20, 1)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 	err := stb.AddLocalInput(handle, []byte{1, 2, 3, 4}, 4)
 	if err == nil {
@@ -60,9 +60,9 @@ func TestSyncTestBackendAddLocalInputError(t *testing.T) {
 func TestSyncTestBackendAddLocalInput(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 1)
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
-	var handle ggthx.PlayerHandle
+	player := ggpo.NewLocalPlayer(20, 1)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 	stb.DoPoll(0)
 	err := stb.AddLocalInput(handle, []byte{1, 2, 3, 4}, 4)
@@ -74,9 +74,9 @@ func TestSyncTestBackendAddLocalInput(t *testing.T) {
 func TestSyncTestBackendSyncInput(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 1)
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
-	var handle ggthx.PlayerHandle
+	player := ggpo.NewLocalPlayer(20, 1)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, 8, 4)
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 	stb.DoPoll(0)
 	inputBytes := []byte{1, 2, 3, 4}
@@ -93,10 +93,10 @@ func TestSyncTestBackendSyncInput(t *testing.T) {
 func TestSyncTestBackendIncrementFramePanic(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 1)
+	player := ggpo.NewLocalPlayer(20, 1)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
-	var handle ggthx.PlayerHandle
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 	defer func() {
 		if r := recover(); r == nil {
@@ -111,10 +111,10 @@ func TestSyncTestBackendIncrementFramePanic(t *testing.T) {
 func TestSyncTestBackendIncrementFrameCharacterization(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 1)
+	player := ggpo.NewLocalPlayer(20, 1)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
-	var handle ggthx.PlayerHandle
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 	stb.DoPoll(0)
 	inputBytes := []byte{1, 2, 3, 4}
@@ -140,10 +140,10 @@ func TestSyncTestBackendIncrementFrameCharacterization(t *testing.T) {
 func TestSyncTestBackendIncrementFrame(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
-	player := ggthx.NewLocalPlayer(20, 1)
+	player := ggpo.NewLocalPlayer(20, 1)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
-	var handle ggthx.PlayerHandle
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 	inputBytes := []byte{1, 2, 3, 4}
 	var disconnectFlags int
@@ -170,14 +170,14 @@ func TestSyncTestBackendIncrementFrame(t *testing.T) {
 /*Again, WIP, I don't know how to test that this is working, but it is. */
 func TestSyncTestBackendChecksumCheck(t *testing.T) {
 	session := mocks.NewFakeSessionWithBackend()
-	var stb ggthx.SyncTestBackend
+	var stb ggpo.SyncTestBackend
 	session.SetBackend(&stb)
 	sessionCallbacks := mocks.MakeSessionCallBacksBackend(session)
-	player := ggthx.NewLocalPlayer(20, 1)
+	player := ggpo.NewLocalPlayer(20, 1)
 	checkDistance := 8
-	stb = ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	stb = ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 
-	var handle ggthx.PlayerHandle
+	var handle ggpo.PlayerHandle
 	stb.AddPlayer(&player, &handle)
 	inputBytes := []byte{1, 2, 3, 4}
 	var disconnectFlags int
@@ -200,8 +200,8 @@ func TestSyncTestBackendDissconnectPlayerError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
-	err := stb.DisconnectPlayer(ggthx.PlayerHandle(1))
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	err := stb.DisconnectPlayer(ggpo.PlayerHandle(1))
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
 	}
@@ -211,9 +211,9 @@ func TestSyncTestBackendGetNetworkStatsError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 	var status protocol.NetworkStats
-	err := stb.GetNetworkStats(&status, ggthx.PlayerHandle(1))
+	err := stb.GetNetworkStats(&status, ggpo.PlayerHandle(1))
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
 	}
@@ -223,8 +223,8 @@ func TestSyncTestBackendSetFrameDelayError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
-	err := stb.SetFrameDelay(ggthx.PlayerHandle(1), 20)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	err := stb.SetFrameDelay(ggpo.PlayerHandle(1), 20)
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
 	}
@@ -234,7 +234,7 @@ func TestSyncTestBackendSetDisconnectTimeoutError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 	err := stb.SetDisconnectTimeout(20)
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
@@ -245,7 +245,7 @@ func TestSyncTestBackendSetDisconnectNotifyStartError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 	err := stb.SetDisconnectNotifyStart(20)
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
@@ -256,7 +256,7 @@ func TestSyncTestBackendCloseError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	checkDistance := 8
-	stb := ggthx.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
+	stb := ggpo.NewSyncTestBackend(&sessionCallbacks, "test", 1, checkDistance, 4)
 	err := stb.Close()
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")

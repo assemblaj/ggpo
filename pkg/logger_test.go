@@ -1,9 +1,9 @@
-package ggthx_test
+package ggpo_test
 
 import (
 	"testing"
 
-	ggthx "github.com/assemblaj/ggthx/pkg"
+	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 )
 
 type FakeWriter struct{}
@@ -13,26 +13,26 @@ func (f *FakeWriter) Write(p []byte) (n int, err error) {
 }
 
 func TestDisableLogger(t *testing.T) {
-	ggthx.DisableLogger()
-	err := ggthx.SetLoggerOutput(nil)
+	ggpo.DisableLogger()
+	err := ggpo.SetLoggerOutput(nil)
 	if err == nil {
 		t.Errorf("SetLoggerOutput did not return an error when trying to be used when the logger is disabled.")
 	}
 }
 func TestEnabledLoggerNilInput(t *testing.T) {
-	ggthx.EnableLogger()
-	err := ggthx.SetLoggerOutput(nil)
+	ggpo.EnableLogger()
+	err := ggpo.SetLoggerOutput(nil)
 	if err == nil {
 		t.Errorf("SetLoggerOutput did not return an error when trying to be used with a nil io.Writer.")
 	}
-	ggthx.DisableLogger()
+	ggpo.DisableLogger()
 }
 
 func TestSetLoggerOutputValid(t *testing.T) {
-	ggthx.EnableLogger()
-	err := ggthx.SetLoggerOutput(&FakeWriter{})
+	ggpo.EnableLogger()
+	err := ggpo.SetLoggerOutput(&FakeWriter{})
 	if err != nil {
 		t.Errorf("SetLoggerOutput returned an error when trying to be used with a valid writer.")
 	}
-	ggthx.DisableLogger()
+	ggpo.DisableLogger()
 }

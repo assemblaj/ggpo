@@ -1,11 +1,11 @@
-package ggthx
+package ggpo
 
 import (
 	"errors"
 	"log"
 
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
 )
 
 type Sync struct {
@@ -208,7 +208,7 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	}
 
 	if s.frameCount != seekTo {
-		return errors.New("ggthx Sync AdjustSimulation: s.frameCount != seekTo")
+		return errors.New("ggpo Sync AdjustSimulation: s.frameCount != seekTo")
 	}
 
 	// Advance frame by frame (stuffing notifications back to
@@ -219,7 +219,7 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	}
 
 	if s.frameCount != frameCount {
-		return errors.New("ggthx Sync AdjustSimulation: s.frameCount != frameCount")
+		return errors.New("ggpo Sync AdjustSimulation: s.frameCount != frameCount")
 	}
 	s.rollingBack = false
 
@@ -243,7 +243,7 @@ func (s *Sync) LoadFrame(frame int) error {
 	log.Printf("=== Loading frame info %d (size: %d  checksum: %08x).\n",
 		state.frame, state.cbuf, state.checksum)
 	if state.buf == nil || state.cbuf <= 0 {
-		return errors.New("ggthx Sync LoadFrame: state.buf == nil || state.cbuf <= 0 ")
+		return errors.New("ggpo Sync LoadFrame: state.buf == nil || state.cbuf <= 0 ")
 	}
 	//s.callbacks.LoadGameState(state.buf, state.cbuf)
 	s.callbacks.LoadGameState(s.savedState.head)
@@ -295,7 +295,7 @@ func (s *Sync) FindSavedFrameIndex(frame int) (int, error) {
 		}
 	}
 	if i == count {
-		return 0, errors.New("ggthx Sync FindSavedFrameIndex: i == count")
+		return 0, errors.New("ggpo Sync FindSavedFrameIndex: i == count")
 	}
 	return i, nil
 }

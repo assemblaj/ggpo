@@ -1,13 +1,13 @@
-package ggthx_test
+package ggpo_test
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/mocks"
-	"github.com/assemblaj/ggthx/internal/transport"
-	ggthx "github.com/assemblaj/ggthx/pkg"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/mocks"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
+	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 )
 
 /*
@@ -23,10 +23,10 @@ func TestNewSync(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	want := 0
 	got := sync.FrameCount()
 	if want != got {
@@ -43,10 +43,10 @@ func TestSyncLoadFrameCharacterization(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("The code did not panic when load frame tried to load an unsaved frame")
@@ -63,10 +63,10 @@ func TestSyncIncrementFrame(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	sync.IncrementFrame()
 	sync.LoadFrame(0)
 	want := 1
@@ -83,10 +83,10 @@ func TestSyncAdustSimulationPanicIfSeekToUnsavedFrame(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	defer func() {
 		if r := recover(); r == nil {
 			t.Errorf("The code did not panic when AdjustSimulation attempted to load an unsaved frame.")
@@ -103,10 +103,10 @@ func TestSyncAjdustSimulationError(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
 	for i := 0; i < frameCount; i++ {
 		sync.IncrementFrame()
@@ -126,10 +126,10 @@ func TestSyncAdjustSimulationSucess(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
 	for i := 0; i < frameCount; i++ {
 		sync.IncrementFrame()
@@ -149,10 +149,10 @@ func TestSyncAddLocalInput(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 0
 	input := input.GameInput{}
 	success := sync.AddLocalInput(queue, &input)
@@ -173,10 +173,10 @@ func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
 	for i := 0; i < frameCount; i++ {
 		sync.IncrementFrame()
@@ -202,10 +202,10 @@ func TestSyncSynchronizeInputsNoInput(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	inputs, disconnectFlags := sync.SynchronizeInputs()
 	want := 2
 	got := len(inputs)
@@ -232,10 +232,10 @@ func TestSyncSynchronizeInputsWithLocalInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 0
 	input := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	sync.AddLocalInput(queue, &input)
@@ -265,10 +265,10 @@ func TestSyncSynchronizeInputsWithRemoteInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
 	input := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	sync.AddRemoteInput(queue, &input)
@@ -293,10 +293,10 @@ func TestSyncSynchronizeInputsWithBothInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
@@ -327,10 +327,10 @@ func TestSyncGetConfirmedInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
@@ -362,10 +362,10 @@ func TestSyncAddLocalInputPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
@@ -389,10 +389,10 @@ func TestSyncAddLocalInputNoPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 
@@ -409,10 +409,10 @@ func TestSyncAddRemoteInputPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 	sync.AddRemoteInput(1, &input2)
@@ -433,10 +433,10 @@ func TestSyncAddRemoteInputNoPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 	sync.AddRemoteInput(1, &input2)
@@ -453,10 +453,10 @@ func TestSyncAddFrameDelay(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}
 	frameDelay := 5
@@ -484,10 +484,10 @@ func TestSyncUseAfterClose(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggthx.NeweSyncConfig(
+	syncConfig := ggpo.NeweSyncConfig(
 		sessionCallbacks, 8, 2, 4,
 	)
-	sync := ggthx.NewSync(peerConnection, &syncConfig)
+	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
 	input2 := input.GameInput{Bits: []byte{5, 6, 7, 8}}

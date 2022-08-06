@@ -1,11 +1,11 @@
-package ggthx_test
+package ggpo_test
 
 import (
 	"bytes"
 	"encoding/gob"
 	"log"
 
-	ggthx "github.com/assemblaj/ggthx/pkg"
+	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 )
 
 type FakeGame struct {
@@ -60,23 +60,23 @@ func (s *FakeSession) freeBuffer(buffer []byte) {
 
 }
 
-func (s *FakeSession) onEvent(info *ggthx.Event) bool {
+func (s *FakeSession) onEvent(info *ggpo.Event) bool {
 	switch info.Code {
-	case ggthx.EventCodeConnectedToPeer:
+	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
-	case ggthx.EventCodeSynchronizingWithPeer:
+	case ggpo.EventCodeSynchronizingWithPeer:
 		log.Println("EventCodeSynchronizingWithPeer")
-	case ggthx.EventCodeSynchronizedWithPeer:
+	case ggpo.EventCodeSynchronizedWithPeer:
 		log.Println("EventCodeSynchronizedWithPeer")
-	case ggthx.EventCodeRunning:
+	case ggpo.EventCodeRunning:
 		log.Println("EventCodeRunning")
-	case ggthx.EventCodeDisconnectedFromPeer:
+	case ggpo.EventCodeDisconnectedFromPeer:
 		log.Println("EventCodeDisconnectedFromPeer")
-	case ggthx.EventCodeTimeSync:
+	case ggpo.EventCodeTimeSync:
 		log.Println("EventCodeTimeSync")
-	case ggthx.EventCodeConnectionInterrupted:
+	case ggpo.EventCodeConnectionInterrupted:
 		log.Println("EventCodeconnectionInterrupted")
-	case ggthx.EventCodeConnectionResumed:
+	case ggpo.EventCodeConnectionResumed:
 		log.Println("EventCodeconnectionInterrupted")
 	}
 	return true
@@ -88,7 +88,7 @@ func (s *FakeSession) advanceFrame(flags int) bool {
 
 		// Make sure we fetch the inputs from GGPO and use these to update
 		// the game state instead of reading from the keyboard.
-		//inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
+		//inputs, result := ggpo.SynchronizeInput(session, &discconectFlags)
 		inputs, result := session.SyncInput(&discconectFlags)
 		if result == nil {
 			//log.Fatal("Error from GGTHXSynchronizeInput")
@@ -100,7 +100,7 @@ func (s *FakeSession) advanceFrame(flags int) bool {
 }
 
 type FakeSessionWithBackend struct {
-	backend    ggthx.Session
+	backend    ggpo.Session
 	game       FakeGame
 	saveStates map[int]*FakeGame
 }
@@ -112,7 +112,7 @@ func NewFakeSessionWithBackend() FakeSessionWithBackend {
 	}
 }
 
-func (f *FakeSessionWithBackend) SetBackend(backend ggthx.Session) {
+func (f *FakeSessionWithBackend) SetBackend(backend ggpo.Session) {
 	f.backend = backend
 }
 
@@ -147,23 +147,23 @@ func (f *FakeSessionWithBackend) freeBuffer(buffer []byte) {
 
 }
 
-func (f *FakeSessionWithBackend) onEvent(info *ggthx.Event) bool {
+func (f *FakeSessionWithBackend) onEvent(info *ggpo.Event) bool {
 	switch info.Code {
-	case ggthx.EventCodeConnectedToPeer:
+	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
-	case ggthx.EventCodeSynchronizingWithPeer:
+	case ggpo.EventCodeSynchronizingWithPeer:
 		log.Println("EventCodeSynchronizingWithPeer")
-	case ggthx.EventCodeSynchronizedWithPeer:
+	case ggpo.EventCodeSynchronizedWithPeer:
 		log.Println("EventCodeSynchronizedWithPeer")
-	case ggthx.EventCodeRunning:
+	case ggpo.EventCodeRunning:
 		log.Println("EventCodeRunning")
-	case ggthx.EventCodeDisconnectedFromPeer:
+	case ggpo.EventCodeDisconnectedFromPeer:
 		log.Println("EventCodeDisconnectedFromPeer")
-	case ggthx.EventCodeTimeSync:
+	case ggpo.EventCodeTimeSync:
 		log.Println("EventCodeTimeSync")
-	case ggthx.EventCodeConnectionInterrupted:
+	case ggpo.EventCodeConnectionInterrupted:
 		log.Println("EventCodeconnectionInterrupted")
-	case ggthx.EventCodeConnectionResumed:
+	case ggpo.EventCodeConnectionResumed:
 		log.Println("EventCodeconnectionInterrupted")
 	}
 	return true
@@ -172,7 +172,7 @@ func (f *FakeSessionWithBackend) advanceFrame(flags int) bool {
 	var discconectFlags int
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
-	//inputs, result := ggthx.SynchronizeInput(session, &discconectFlags)
+	//inputs, result := ggpo.SynchronizeInput(session, &discconectFlags)
 	_, result := f.backend.SyncInput(&discconectFlags)
 	if result == nil {
 		f.backend.IncrementFrame()
@@ -183,7 +183,7 @@ func (f *FakeSessionWithBackend) advanceFrame(flags int) bool {
 
 /*
 func init() {
-	var callbacks ggthx.SessionCallbacks
+	var callbacks ggpo.SessionCallbacks
 
 	session := NewFakeSession()
 	callbacks.AdvanceFrame = session.advanceFrame

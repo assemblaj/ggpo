@@ -1,4 +1,4 @@
-module github.com/assemblaj/ggthx
+module github.com/assemblaj/GGPO-Go
 
 go 1.18
 

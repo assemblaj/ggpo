@@ -1,4 +1,4 @@
-package ggthx
+package ggpo
 
 import "fmt"
 
@@ -68,7 +68,7 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	return fmt.Sprintf("ggthx: %s:%d", e.Name, e.Code)
+	return fmt.Sprintf("ggpo: %s:%d", e.Name, e.Code)
 }
 
 type ErrorCode int

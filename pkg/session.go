@@ -1,9 +1,9 @@
-package ggthx
+package ggpo
 
 import (
-	"github.com/assemblaj/ggthx/internal/polling"
-	"github.com/assemblaj/ggthx/internal/protocol"
-	"github.com/assemblaj/ggthx/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/polling"
+	"github.com/assemblaj/GGPO-Go/internal/protocol"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
 )
 
 /*

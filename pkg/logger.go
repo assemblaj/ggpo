@@ -1,4 +1,4 @@
-package ggthx
+package ggpo
 
 import (
 	"errors"

@@ -1,14 +1,14 @@
-package ggthx
+package ggpo
 
 import (
 	"log"
 	"os"
 
-	"github.com/assemblaj/ggthx/internal/buffer"
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/polling"
-	"github.com/assemblaj/ggthx/internal/protocol"
-	"github.com/assemblaj/ggthx/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/buffer"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/polling"
+	"github.com/assemblaj/GGPO-Go/internal/protocol"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
 )
 
 type SyncTestBackend struct {

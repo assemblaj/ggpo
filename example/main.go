@@ -11,7 +11,7 @@ import (
 	//	"net/http"
 	//	_ "net/http/pprof"
 
-	ggthx "github.com/assemblaj/ggthx/pkg"
+	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -73,8 +73,8 @@ func main() {
 		// don't forget to close it
 		defer f.Close()
 
-		ggthx.EnableLogger()
-		ggthx.SetLoggerOutput(f)*/
+		ggpo.EnableLogger()
+		ggpo.SetLoggerOutput(f)*/
 
 	if argsWithoutProg[2] == "spectate" {
 		hostIp := argsWithoutProg[3]
@@ -88,14 +88,14 @@ func main() {
 			panic("Please enter integer currentPlayer")
 		}
 
-		players := make([]ggthx.Player, ggthx.MaxPlayers+ggthx.MaxSpectators)
+		players := make([]ggpo.Player, ggpo.MaxPlayers+ggpo.MaxSpectators)
 		var i int
 		for i = 0; i < numPlayers; i++ {
 			if ipAddress[i] == "local" {
-				players[i] = ggthx.NewLocalPlayer(20, i+1)
+				players[i] = ggpo.NewLocalPlayer(20, i+1)
 			} else {
 				remoteAddress := getPeerAddress(ipAddress[i])
-				players[i] = ggthx.NewRemotePlayer(20, i+1, remoteAddress.ip, remoteAddress.port)
+				players[i] = ggpo.NewRemotePlayer(20, i+1, remoteAddress.ip, remoteAddress.port)
 			}
 		}
 
@@ -103,7 +103,7 @@ func main() {
 		numSpectators := 0
 		for offset < len(argsWithoutProg) {
 			remoteAddress := getPeerAddress(argsWithoutProg[offset])
-			players[i] = ggthx.NewSpectator(20, remoteAddress.ip, remoteAddress.port)
+			players[i] = ggpo.NewSpectator(20, remoteAddress.ip, remoteAddress.port)
 			numSpectators++
 			i++
 			offset++

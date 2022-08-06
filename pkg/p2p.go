@@ -1,4 +1,4 @@
-package ggthx
+package ggpo
 
 import (
 	"errors"
@@ -7,11 +7,11 @@ import (
 	"math"
 	"time"
 
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/polling"
-	"github.com/assemblaj/ggthx/internal/protocol"
-	"github.com/assemblaj/ggthx/internal/transport"
-	"github.com/assemblaj/ggthx/internal/util"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/polling"
+	"github.com/assemblaj/GGPO-Go/internal/protocol"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/util"
 )
 
 const (
@@ -431,7 +431,7 @@ func (p *Peer2PeerBackend) OnUdpProtocolPeerEvent(evt *protocol.UdpProtocolEvent
 			currentRemoteFrame := p.localConnectStatus[queue].LastFrame
 			newRemoteFrame := evt.Input.Frame
 			if !(currentRemoteFrame == -1 || int32(newRemoteFrame) == (currentRemoteFrame+1)) {
-				return errors.New("ggthx Peer2PeerBackend OnUdpProtocolPeerEvent : !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) ")
+				return errors.New("ggpo Peer2PeerBackend OnUdpProtocolPeerEvent : !(currentRemoteFrame == -1 || newRemoteFrame == (currentRemoteFrame+1)) ")
 			}
 
 			p.sync.AddRemoteInput(queue, &evt.Input)
