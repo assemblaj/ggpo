@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/assemblaj/ggthx/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
 )
 
 func TestEncodeDecodeUDPMessage(t *testing.T) {

@@ -3,8 +3,8 @@ package sync
 import (
 	"log"
 
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/util"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/util"
 )
 
 const (

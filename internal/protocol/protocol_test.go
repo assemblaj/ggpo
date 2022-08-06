@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/mocks"
-	"github.com/assemblaj/ggthx/internal/polling"
-	"github.com/assemblaj/ggthx/internal/protocol"
-	"github.com/assemblaj/ggthx/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/mocks"
+	"github.com/assemblaj/GGPO-Go/internal/polling"
+	"github.com/assemblaj/GGPO-Go/internal/protocol"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
 )
 
 func TestMakeUDPProtocol(t *testing.T) {
@@ -657,7 +657,7 @@ func TestUDPProtocolFakeP2PandMessageHandler(t *testing.T) {
 	f2.Endpoint = &endpoint
 	f.Endpoint = &endpoint2
 
-	//ggthx.EnableLogger()
+	//ggpo.EnableLogger()
 	endpoint.Synchronize()
 	endpoint2.Synchronize()
 
@@ -841,7 +841,7 @@ func TestUDPProtocolKeepAlive(t *testing.T) {
 	f2.Endpoint = &endpoint
 	f.Endpoint = &endpoint2
 
-	//ggthx.EnableLogger()
+	//ggpo.EnableLogger()
 	endpoint.Synchronize()
 	endpoint2.Synchronize()
 
@@ -877,7 +877,7 @@ func TestUDPProtocolHeartBeatCharacterization(t *testing.T) {
 	f2.Endpoint = &endpoint
 	f.Endpoint = &endpoint2
 
-	//ggthx.EnableLogger()
+	//ggpo.EnableLogger()
 	endpoint.Synchronize()
 	endpoint2.Synchronize()
 
@@ -919,7 +919,7 @@ func TestUDPProtocolHeartBeat(t *testing.T) {
 	f2.Endpoint = &endpoint
 	f.Endpoint = &endpoint2
 
-	//ggthx.EnableLogger()
+	//ggpo.EnableLogger()
 	endpoint.Synchronize()
 	endpoint2.Synchronize()
 

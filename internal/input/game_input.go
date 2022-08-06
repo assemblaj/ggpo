@@ -24,7 +24,7 @@ type GameInput struct {
 // Will come back to this if the needing the offset becomes a thing
 func NewGameInput(frame int, bits []byte, size int, offset ...int) (GameInput, error) {
 	if size <= 0 {
-		return GameInput{}, errors.New("ggthx: newGameInput: size must be greater than 0")
+		return GameInput{}, errors.New("ggpo: newGameInput: size must be greater than 0")
 	}
 	/* Not useful for our purposes
 	if len(offset) == 0 {
@@ -87,7 +87,7 @@ func (g *GameInput) Equal(other *GameInput, bitsonly bool) (bool, error) {
 		log.Printf("bits don't match\n")
 	}
 	if !(g.Size > 0 && other.Size > 0) {
-		return false, errors.New("ggthx: GameInput Equal : !(g.Size > 0 && other.Size > 0)")
+		return false, errors.New("ggpo: GameInput Equal : !(g.Size > 0 && other.Size > 0)")
 	}
 	return (bitsonly || g.Frame == other.Frame) &&
 		g.Size == other.Size &&

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/assemblaj/ggthx/internal/util"
+	"github.com/assemblaj/GGPO-Go/internal/util"
 )
 
 const (
@@ -67,7 +67,7 @@ func (i *InputQueue) FirstIncorrectFrame() int {
 
 func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
 	if frame < 0 {
-		return errors.New("ggthx: InputQueue discardConfirmedFrames: frames <= 0")
+		return errors.New("ggpo: InputQueue discardConfirmedFrames: frames <= 0")
 	}
 
 	if i.lastFrameRequested != NullFrame {
@@ -82,7 +82,7 @@ func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
 
 		log.Printf("difference of %d frames.\n", offset)
 		if offset < 0 {
-			return errors.New("ggthx: InputQueue discardConfirmedFrames: offet < 0")
+			return errors.New("ggpo: InputQueue discardConfirmedFrames: offet < 0")
 		}
 
 		i.tail = (i.tail + offset) % InputQueueLength
@@ -91,7 +91,7 @@ func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
 
 	log.Printf("after discarding, new tail is %d (frame:%d).\n", i.tail, i.inputs[i.tail].Frame)
 	if i.length < 0 {
-		return errors.New("ggthx: InputQueue discardConfirmedFrames: i.length < 0 ")
+		return errors.New("ggpo: InputQueue discardConfirmedFrames: i.length < 0 ")
 	}
 
 	return nil
@@ -99,7 +99,7 @@ func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
 
 func (i *InputQueue) ResetPrediction(frame int) error {
 	if !(i.firstIncorrectFrame == NullFrame || frame <= i.firstIncorrectFrame) {
-		return errors.New("ggthx: InputQueue ResetPrediction: i.firstIncorrentFrame != NullFrame && frame > i.firstIncorrectFrame")
+		return errors.New("ggpo: InputQueue ResetPrediction: i.firstIncorrentFrame != NullFrame && frame > i.firstIncorrectFrame")
 	}
 	log.Printf("resetting all prediction errors back to frame %d.\n", frame)
 
@@ -111,7 +111,7 @@ func (i *InputQueue) ResetPrediction(frame int) error {
 
 func (i *InputQueue) GetConfirmedInput(requestedFrame int, input *GameInput) (bool, error) {
 	if !(i.firstIncorrectFrame == NullFrame || requestedFrame < i.firstIncorrectFrame) {
-		return false, errors.New("ggthx: InputQueue GetConfirmedInput : i.firstIncorrectFrame != NullFrame && requestedFrame >")
+		return false, errors.New("ggpo: InputQueue GetConfirmedInput : i.firstIncorrectFrame != NullFrame && requestedFrame >")
 	}
 
 	offset := requestedFrame % InputQueueLength
@@ -125,13 +125,13 @@ func (i *InputQueue) GetConfirmedInput(requestedFrame int, input *GameInput) (bo
 func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error) {
 	log.Printf("requesting input frame %d.\n", requestedFrame)
 	if i.firstIncorrectFrame != NullFrame {
-		return false, errors.New("ggthx: InputQueue GetInput : i.firstIncorrectFrame != NullFrame")
+		return false, errors.New("ggpo: InputQueue GetInput : i.firstIncorrectFrame != NullFrame")
 	}
 
 	i.lastFrameRequested = requestedFrame
 
 	if requestedFrame < i.inputs[i.tail].Frame {
-		return false, errors.New("ggthx: InputQueue GetInput : requestedFrame < i.inputs[i.tail].Frame")
+		return false, errors.New("ggpo: InputQueue GetInput : requestedFrame < i.inputs[i.tail].Frame")
 	}
 	if i.prediction.Frame == NullFrame {
 		offset := requestedFrame - i.inputs[i.tail].Frame
@@ -139,7 +139,7 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error
 		if offset < i.length {
 			offset = (offset + i.tail) % InputQueueLength
 			if i.inputs[offset].Frame != requestedFrame {
-				return false, errors.New("ggthx: InputQueue GetInput : i.inputs[offset].Frame != requestedFrame")
+				return false, errors.New("ggpo: InputQueue GetInput : i.inputs[offset].Frame != requestedFrame")
 			}
 			*input = i.inputs[offset]
 			log.Printf("returning confirmed frame number %d.\n", input.Frame)
@@ -161,7 +161,7 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error
 	}
 
 	if i.prediction.Frame < 0 {
-		return false, errors.New("ggthx: InputQueue GetInput : i.prediction.Frame < 0")
+		return false, errors.New("ggpo: InputQueue GetInput : i.prediction.Frame < 0")
 	}
 	*input = i.prediction
 	input.Frame = requestedFrame
@@ -176,7 +176,7 @@ func (i *InputQueue) AddInput(input *GameInput) error {
 	log.Printf("adding input frame number %d to queue.\n", input.Frame)
 
 	if !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1) {
-		return errors.New("ggthx : InputQueue AddInput : !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1)")
+		return errors.New("ggpo : InputQueue AddInput : !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1)")
 	}
 	i.lastUserAddedFrame = input.Frame
 
@@ -198,10 +198,10 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) e
 
 	// Assert(input.Size == i.prediction.Size) No
 	if !(i.lastAddedFrame == NullFrame || frameNumber == i.lastAddedFrame+1) {
-		return errors.New("ggthx: InputQueue AddDelayedInputToQueue : i.lastAddedFrame != NullFrame && frameNumber != i.lastAddedFrame+1")
+		return errors.New("ggpo: InputQueue AddDelayedInputToQueue : i.lastAddedFrame != NullFrame && frameNumber != i.lastAddedFrame+1")
 	}
 	if !(frameNumber == 0 || i.inputs[previousFrame(i.head)].Frame == frameNumber-1) {
-		return errors.New("ggthx: InputQueue AddDelayedInputToQueue : frameNumber != 0 && i.inputs[previousFrame(i.head)].Frame == frameNumber-1")
+		return errors.New("ggpo: InputQueue AddDelayedInputToQueue : frameNumber != 0 && i.inputs[previousFrame(i.head)].Frame == frameNumber-1")
 	}
 	/*
 	 *	Add the frame to the back of the queue
@@ -215,7 +215,7 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) e
 	i.lastAddedFrame = frameNumber
 	if i.prediction.Frame != NullFrame {
 		if frameNumber != i.prediction.Frame {
-			return errors.New("ggthx: InputQueue AddDelayedInputToQueue : frameNumber != i.prediction.Frame")
+			return errors.New("ggpo: InputQueue AddDelayedInputToQueue : frameNumber != i.prediction.Frame")
 		}
 		equal, err := i.prediction.Equal(input, true)
 		if err != nil {
@@ -235,7 +235,7 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) e
 	}
 
 	if i.length > InputQueueLength {
-		return errors.New("ggthx: InputQueue AddDelayedInputToQueue : i.length > InputQueueLength")
+		return errors.New("ggpo: InputQueue AddDelayedInputToQueue : i.length > InputQueueLength")
 	}
 	return nil
 }
@@ -269,7 +269,7 @@ func (i *InputQueue) AdvanceQueueHead(frame int) (int, error) {
 	}
 
 	if !(frame == 0 || frame == i.inputs[previousFrame(i.head)].Frame+1) {
-		return 0, errors.New("ggthx: InputQueue AdvanceQueueHead : frame != 0 && frame != i.inputs[previousFrame(i.head)].Frame+")
+		return 0, errors.New("ggpo: InputQueue AdvanceQueueHead : frame != 0 && frame != i.inputs[previousFrame(i.head)].Frame+")
 	}
 	return frame, nil
 }

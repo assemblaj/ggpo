@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/assemblaj/ggthx/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
 )
 
 type FakeConnection struct {

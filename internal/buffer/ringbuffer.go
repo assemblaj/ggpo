@@ -20,7 +20,7 @@ func NewRingBuffer[T any](capacity int) RingBuffer[T] {
 func (r *RingBuffer[T]) Front() (T, error) {
 	var element T
 	if r.size == r.capacity {
-		return element, errors.New("ggthx RingBuffer Front : r.size == capacity")
+		return element, errors.New("ggpo RingBuffer Front : r.size == capacity")
 	}
 	element = r.elements[r.tail]
 	return element, nil
@@ -29,7 +29,7 @@ func (r *RingBuffer[T]) Front() (T, error) {
 func (r *RingBuffer[T]) Item(i int) (T, error) {
 	var element T
 	if i >= r.size {
-		return element, errors.New("ggthx RingBuffer Item: i >= r.size")
+		return element, errors.New("ggpo RingBuffer Item: i >= r.size")
 	}
 	element = r.elements[(r.tail+i)%r.capacity]
 	return element, nil
@@ -39,7 +39,7 @@ func (r *RingBuffer[T]) Item(i int) (T, error) {
 // seems to not make sense
 func (r *RingBuffer[T]) Pop() error {
 	if r.size == r.capacity {
-		return errors.New("ggthx RingBuffer Pop : r.size == r.capacity")
+		return errors.New("ggpo RingBuffer Pop : r.size == r.capacity")
 	}
 	r.tail = (r.tail + 1) % r.capacity
 	r.size--
@@ -48,7 +48,7 @@ func (r *RingBuffer[T]) Pop() error {
 
 func (r *RingBuffer[T]) Push(element T) error {
 	if r.size == r.capacity-1 {
-		return errors.New("ggthx RingBuffer Push : r.size == r.capacity -1 ")
+		return errors.New("ggpo RingBuffer Push : r.size == r.capacity -1 ")
 	}
 	r.elements[r.head] = element
 	r.head = (r.head + 1) % r.capacity

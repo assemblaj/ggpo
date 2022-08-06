@@ -3,7 +3,7 @@ package polling_test
 import (
 	"testing"
 
-	"github.com/assemblaj/ggthx/internal/polling"
+	"github.com/assemblaj/GGPO-Go/internal/polling"
 )
 
 type funcTimeType func() int64

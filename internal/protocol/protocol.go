@@ -7,12 +7,12 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/assemblaj/ggthx/internal/buffer"
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/polling"
-	"github.com/assemblaj/ggthx/internal/sync"
-	"github.com/assemblaj/ggthx/internal/transport"
-	"github.com/assemblaj/ggthx/internal/util"
+	"github.com/assemblaj/GGPO-Go/internal/buffer"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/polling"
+	"github.com/assemblaj/GGPO-Go/internal/sync"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/util"
 )
 
 const (
@@ -357,7 +357,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 		inputMsg.InputSize = uint8(input.Size)
 
 		if !(last.Frame == -1 || last.Frame+1 == int(inputMsg.StartFrame)) {
-			return errors.New("ggthx UdpProtocol SendPendingOutput: !((last.Frame == -1 || last.Frame+1 == int(msg.Input.StartFrame))) ")
+			return errors.New("ggpo UdpProtocol SendPendingOutput: !((last.Frame == -1 || last.Frame+1 == int(msg.Input.StartFrame))) ")
 		}
 
 		for j = 0; j < u.pendingOutput.Size(); j++ {
@@ -390,7 +390,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 
 	// may not even need this.
 	if offset >= transport.MaxCompressedBits {
-		return errors.New("ggthx UdpProtocol SendPendingOutput: offset >= MaxCompressedBits")
+		return errors.New("ggpo UdpProtocol SendPendingOutput: offset >= MaxCompressedBits")
 	}
 
 	u.SendMsg(inputMsg)
@@ -406,7 +406,7 @@ func (u *UdpProtocol) SendInputAck() {
 
 func (u *UdpProtocol) GetEvent() (*UdpProtocolEvent, error) {
 	if u.eventQueue.Size() == 0 {
-		return nil, errors.New("ggthx UdpProtocol GetEvent:no events")
+		return nil, errors.New("ggpo UdpProtocol GetEvent:no events")
 	}
 	e, err := u.eventQueue.Front()
 	if err != nil {
@@ -486,7 +486,7 @@ func (u *UdpProtocol) OnInput(msg transport.UDPMessage, length int) (bool, error
 		remoteStatus := inputMessage.PeerConnectStatus
 		for i := 0; i < len(u.peerConnectStatus); i++ {
 			if remoteStatus[i].LastFrame < u.peerConnectStatus[i].LastFrame {
-				return false, errors.New("ggthx UdpProtocol OnInput: remoteStatus[i].LastFrame < u.peerConnectStatus[i].LastFrame")
+				return false, errors.New("ggpo UdpProtocol OnInput: remoteStatus[i].LastFrame < u.peerConnectStatus[i].LastFrame")
 			}
 			u.peerConnectStatus[i].Disconnected = u.peerConnectStatus[i].Disconnected || remoteStatus[i].Disconnected
 			u.peerConnectStatus[i].LastFrame = util.Max(u.peerConnectStatus[i].LastFrame, remoteStatus[i].LastFrame)
@@ -507,12 +507,12 @@ func (u *UdpProtocol) OnInput(msg transport.UDPMessage, length int) (bool, error
 
 	for offset < len(inputMessage.Bits) {
 		if currentFrame > uint32(u.lastRecievedInput.Frame+1) {
-			return false, errors.New("ggthx UdpProtocol OnInput: currentFrame > uint32(u.lastRecievedInput.Frame + 1)")
+			return false, errors.New("ggpo UdpProtocol OnInput: currentFrame > uint32(u.lastRecievedInput.Frame + 1)")
 		}
 		useInputs := currentFrame == uint32(u.lastRecievedInput.Frame+1)
 		if useInputs {
 			if currentFrame != uint32(u.lastRecievedInput.Frame)+1 {
-				return false, errors.New("ggthx UdpProtocol OnInput: currentFrame != uint32(u.lastRecievedInput.Frame) +1")
+				return false, errors.New("ggpo UdpProtocol OnInput: currentFrame != uint32(u.lastRecievedInput.Frame) +1")
 			}
 			u.lastRecievedInput.Bits = inputMessage.Bits[offset : offset+int(inputMessage.InputSize)]
 			u.lastRecievedInput.Frame = int(currentFrame)
@@ -533,7 +533,7 @@ func (u *UdpProtocol) OnInput(msg transport.UDPMessage, length int) (bool, error
 	}
 
 	if u.lastRecievedInput.Frame < lastRecievedFrameNumber {
-		return false, errors.New("ggthx UdpProtocol OnInput: u.lastRecievedInput.Frame < lastRecievedFrameNumber")
+		return false, errors.New("ggpo UdpProtocol OnInput: u.lastRecievedInput.Frame < lastRecievedFrameNumber")
 	}
 
 	// Get rid of our buffered input
@@ -649,7 +649,7 @@ func (u *UdpProtocol) PumpSendQueue() error {
 			u.ooPacket.destIp = entry.destIp
 		} else {
 			if entry.destIp == "" {
-				return errors.New("ggthx UdpProtocol PumpSendQueue: entry.destIp == \"\"")
+				return errors.New("ggpo UdpProtocol PumpSendQueue: entry.destIp == \"\"")
 			}
 			u.connection.SendTo(entry.msg, entry.destIp, entry.destPort)
 			// would delete the udpmsg here
@@ -750,7 +750,7 @@ func (u *UdpProtocol) OnInvalid(msg transport.UDPMessage, len int) (bool, error)
 	//  Assert(false) // ? ASSERT(FALSE && "Invalid msg in UdpProtocol");
 	// ah
 	log.Printf("Invalid msg in UdpProtocol ")
-	return false, errors.New("ggthx UdpProtocol OnInvalid: invalid msg in UdpProtocol")
+	return false, errors.New("ggpo UdpProtocol OnInvalid: invalid msg in UdpProtocol")
 }
 
 func (u *UdpProtocol) OnSyncRequest(msg transport.UDPMessage, len int) (bool, error) {

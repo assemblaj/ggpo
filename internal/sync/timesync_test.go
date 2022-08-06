@@ -3,8 +3,8 @@ package sync_test
 import (
 	"testing"
 
-	"github.com/assemblaj/ggthx/internal/input"
-	"github.com/assemblaj/ggthx/internal/sync"
+	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/sync"
 )
 
 func TestTimeSyncRecommendFrameDuration(t *testing.T) {

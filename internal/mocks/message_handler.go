@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	"github.com/assemblaj/ggthx/internal/protocol"
-	"github.com/assemblaj/ggthx/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/protocol"
+	"github.com/assemblaj/GGPO-Go/internal/transport"
 )
 
 type FakeMessageHandler struct {
