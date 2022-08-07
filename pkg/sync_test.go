@@ -17,14 +17,13 @@ import (
 */
 func TestNewSync(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	want := 0
@@ -37,14 +36,13 @@ func TestNewSync(t *testing.T) {
 // Using Trying to load a frame when it hasn't been saved
 func TestSyncLoadFrameCharacterization(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	defer func() {
@@ -57,14 +55,13 @@ func TestSyncLoadFrameCharacterization(t *testing.T) {
 }
 func TestSyncIncrementFrame(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	sync.AdvanceFrame()
@@ -77,14 +74,13 @@ func TestSyncIncrementFrame(t *testing.T) {
 }
 func TestSyncAdustSimulationPanicIfSeekToUnsavedFrame(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	defer func() {
@@ -97,14 +93,13 @@ func TestSyncAdustSimulationPanicIfSeekToUnsavedFrame(t *testing.T) {
 }
 func TestSyncAjdustSimulationError(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
@@ -120,14 +115,13 @@ func TestSyncAjdustSimulationError(t *testing.T) {
 
 func TestSyncAdjustSimulationSucess(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
@@ -143,14 +137,13 @@ func TestSyncAdjustSimulationSucess(t *testing.T) {
 
 func TestSyncAddLocalInput(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 0
@@ -167,14 +160,13 @@ func TestSyncAddLocalInput(t *testing.T) {
 }
 func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	frameCount := 2
@@ -196,14 +188,13 @@ func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
 }
 func TestSyncSynchronizeInputsNoInput(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	inputs, disconnectFlags := sync.SynchronizeInputs()
@@ -226,14 +217,13 @@ func TestSyncSynchronizeInputsNoInput(t *testing.T) {
 
 func TestSyncSynchronizeInputsWithLocalInputs(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 0
@@ -259,14 +249,13 @@ func TestSyncSynchronizeInputsWithLocalInputs(t *testing.T) {
 
 func TestSyncSynchronizeInputsWithRemoteInputs(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
@@ -287,14 +276,13 @@ func TestSyncSynchronizeInputsWithRemoteInputs(t *testing.T) {
 
 func TestSyncSynchronizeInputsWithBothInputs(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
@@ -321,14 +309,13 @@ func TestSyncSynchronizeInputsWithBothInputs(t *testing.T) {
 
 func TestSyncGetConfirmedInputs(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
@@ -356,14 +343,13 @@ func TestSyncGetConfirmedInputs(t *testing.T) {
 // Characterization Test
 func TestSyncAddLocalInputPanic(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1
@@ -383,14 +369,13 @@ func TestSyncAddLocalInputPanic(t *testing.T) {
 
 func TestSyncAddLocalInputNoPanic(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
@@ -403,14 +388,13 @@ func TestSyncAddLocalInputNoPanic(t *testing.T) {
 
 func TestSyncAddRemoteInputPanic(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
@@ -427,14 +411,13 @@ func TestSyncAddRemoteInputPanic(t *testing.T) {
 // Characterization mocks. No idea why this works and the above doesn't.
 func TestSyncAddRemoteInputNoPanic(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
@@ -447,14 +430,13 @@ func TestSyncAddRemoteInputNoPanic(t *testing.T) {
 }
 func TestSyncAddFrameDelay(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	input1 := input.GameInput{Bits: []byte{1, 2, 3, 4}}
@@ -478,14 +460,13 @@ func TestSyncAddFrameDelay(t *testing.T) {
 }
 func TestSyncUseAfterClose(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 
 	peerConnection := []transport.UdpConnectStatus{
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
 	syncConfig := ggpo.NeweSyncConfig(
-		sessionCallbacks, 8, 2, 4,
+		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	queue := 1

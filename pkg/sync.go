@@ -9,7 +9,7 @@ import (
 )
 
 type Sync struct {
-	callbacks  SessionCallbacks
+	session    Session
 	savedState savedState
 	config     SyncConfig
 
@@ -26,7 +26,7 @@ type Sync struct {
 //const MaxPredictionFrames int = 8
 
 type SyncConfig struct {
-	callbacks           SessionCallbacks
+	session             Session
 	numPredictionFrames int
 	numPlayers          int
 	inputSize           int
@@ -51,7 +51,7 @@ type savedState struct {
 func NewSync(status []transport.UdpConnectStatus, config *SyncConfig) Sync {
 	s := Sync{
 		config:              *config,
-		callbacks:           config.callbacks,
+		session:             config.session,
 		maxPredictionFrames: config.numPredictionFrames,
 		localConnectStatus:  status,
 		frameCount:          0,
@@ -63,10 +63,10 @@ func NewSync(status []transport.UdpConnectStatus, config *SyncConfig) Sync {
 	s.CreateQueues(*config)
 	return s
 }
-func NeweSyncConfig(callbacks SessionCallbacks, numPredictionFrames int,
+func NeweSyncConfig(session Session, numPredictionFrames int,
 	numPlayers int, inputSize int) SyncConfig {
 	return SyncConfig{
-		callbacks:           callbacks,
+		session:             session,
 		numPredictionFrames: numPredictionFrames,
 		numPlayers:          numPlayers,
 		inputSize:           inputSize,
@@ -81,9 +81,6 @@ func (s *Sync) Close() {
 	// delete frames manually here rather than in a destructor of the sendFrame
 	// structure so we cna efficiently copy frames via weak references
 	// - pond3r
-	for i := 0; i < len(s.savedState.frames); i++ {
-		s.callbacks.FreeBuffer(s.savedState.frames[i].buf)
-	}
 	s.inputQueues = nil
 }
 
@@ -215,7 +212,7 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	// the master).
 	s.ResetPrediction(s.frameCount)
 	for i := 0; i < count; i++ {
-		s.callbacks.AdvanceFrame(0)
+		s.session.AdvanceFrame(0)
 	}
 
 	if s.frameCount != frameCount {
@@ -246,7 +243,7 @@ func (s *Sync) LoadFrame(frame int) error {
 		return errors.New("ggpo Sync LoadFrame: state.buf == nil || state.cbuf <= 0 ")
 	}
 	//s.callbacks.LoadGameState(state.buf, state.cbuf)
-	s.callbacks.LoadGameState(s.savedState.head)
+	s.session.LoadGameState(s.savedState.head)
 
 	// Reset framecount and the head of the state ring-buffer to point in
 	// advance of the current frame (as if we had just finished executing it).
@@ -262,11 +259,10 @@ func (s *Sync) SaveCurrentFrame() {
 	// SavedFrame *state = _savedstate.frames + _savedstate.head;
 	state := s.savedState.frames[s.savedState.head]
 	if state.buf != nil {
-		s.callbacks.FreeBuffer(state.buf)
 		state.buf = nil
 	}
 	state.frame = s.frameCount
-	buf, _ := s.callbacks.SaveGameState(s.savedState.head)
+	buf, _ := s.session.SaveGameState(s.savedState.head)
 	state.buf = buf
 	state.cbuf = 1000
 

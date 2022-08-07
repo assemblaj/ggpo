@@ -21,7 +21,7 @@ const (
 )
 
 type Peer2PeerBackend struct {
-	callbacks     SessionCallbacks
+	session       Session
 	poll          polling.Poller
 	sync          Sync
 	connection    transport.Connection
@@ -43,12 +43,12 @@ type Peer2PeerBackend struct {
 	localPort int
 }
 
-func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
+func NewPeer2PeerBackend(cb Session, gameName string,
 	localPort int, numPlayers int, inputSize int) Peer2PeerBackend {
 	p := Peer2PeerBackend{}
 	p.numPlayers = numPlayers
 	p.inputSize = inputSize
-	p.callbacks = *cb
+	p.session = cb
 	p.synchronizing = true
 	p.disconnectTimeout = DefaultDisconnectTimeout
 	p.disconnectNotifyStart = DefaultDisconnectNotifyStart
@@ -63,15 +63,14 @@ func NewPeer2PeerBackend(cb *SessionCallbacks, gameName string,
 		p.localConnectStatus[i].LastFrame = -1
 	}
 	var config SyncConfig = NeweSyncConfig(
-		p.callbacks, MaxPredictionFrames, p.numPlayers, p.inputSize)
+		p.session, MaxPredictionFrames, p.numPlayers, p.inputSize)
 	config.numPlayers = numPlayers
 	config.inputSize = inputSize
-	config.callbacks = p.callbacks
+	config.session = p.session
 	config.numPredictionFrames = MaxPredictionFrames
 	p.sync = NewSync(p.localConnectStatus, &config)
 	p.endpoints = make([]protocol.UdpProtocol, numPlayers)
 	p.spectators = make([]protocol.UdpProtocol, MaxSpectators)
-	p.callbacks.BeginGame(gameName)
 	//messages := make(chan UdpPacket)
 	//p.poll.RegisterLoop(&p.udp, nil )
 	//go p.udp.Read()
@@ -153,7 +152,7 @@ func (p *Peer2PeerBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) e
 					var info Event
 					info.Code = EventCodeTimeSync
 					info.framesAhead = interval
-					p.callbacks.OnEvent(&info)
+					p.session.OnEvent(&info)
 					p.nextRecommendedSleep = currentFrame + RecommendationInterval
 				}
 			}
@@ -464,7 +463,7 @@ func (p *Peer2PeerBackend) OnUdpProtocolSpectatorEvent(evt *protocol.UdpProtocol
 
 		info.Code = EventCodeDisconnectedFromPeer
 		info.player = handle
-		p.callbacks.OnEvent(&info)
+		p.session.OnEvent(&info)
 	}
 }
 
@@ -478,19 +477,19 @@ func (p *Peer2PeerBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent, ha
 	case protocol.ConnectedEvent:
 		info.Code = EventCodeConnectedToPeer
 		info.player = handle
-		p.callbacks.OnEvent(&info)
+		p.session.OnEvent(&info)
 
 	case protocol.SynchronizingEvent:
 		info.Code = EventCodeSynchronizingWithPeer
 		info.player = handle
 		info.count = evt.Count
 		info.total = evt.Total
-		p.callbacks.OnEvent(&info)
+		p.session.OnEvent(&info)
 
 	case protocol.SynchronziedEvent:
 		info.Code = EventCodeSynchronizedWithPeer
 		info.player = handle
-		p.callbacks.OnEvent(&info)
+		p.session.OnEvent(&info)
 
 		p.CheckInitialSync()
 
@@ -498,12 +497,12 @@ func (p *Peer2PeerBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent, ha
 		info.Code = EventCodeConnectionInterrupted
 		info.player = handle
 		info.disconnectTimeout = evt.DisconnectTimeout
-		p.callbacks.OnEvent(&info)
+		p.session.OnEvent(&info)
 
 	case protocol.NetworkResumedEvent:
 		info.Code = EventCodeConnectionResumed
 		info.player = handle
-		p.callbacks.OnEvent(&info)
+		p.session.OnEvent(&info)
 	}
 }
 
@@ -579,7 +578,7 @@ func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
 
 	info.Code = EventCodeDisconnectedFromPeer
 	info.player = p.QueueToPlayerHandle(queue)
-	p.callbacks.OnEvent(&info)
+	p.session.OnEvent(&info)
 
 	p.CheckInitialSync()
 }
@@ -727,7 +726,7 @@ func (p *Peer2PeerBackend) CheckInitialSync() {
 
 		var info Event
 		info.Code = EventCodeRunning
-		p.callbacks.OnEvent(&info)
+		p.session.OnEvent(&info)
 		p.synchronizing = false
 	}
 }

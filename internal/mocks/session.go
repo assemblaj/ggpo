@@ -24,17 +24,17 @@ func (s *FakeSession) beginGame(game string) bool {
 	return true
 }
 
-func (s *FakeSession) saveGameState(stateID int) ([]byte, bool) {
+func (s *FakeSession) SaveGameState(stateID int) ([]byte, bool) {
 	s.saveStates[stateID] = s.game.clone()
 	return []byte{}, true
 }
 
-func (s *FakeSession) loadGameState(stateID int) bool {
+func (s *FakeSession) LoadGameState(stateID int) bool {
 	s.game = *s.saveStates[stateID]
 	return true
 }
 
-func (s *FakeSession) logGameState(fileName string, buffer []byte, len int) bool {
+func (s *FakeSession) LogGameState(fileName string, buffer []byte, len int) bool {
 	var game2 FakeGame
 	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
 	dec := gob.NewDecoder(&buf)
@@ -50,7 +50,7 @@ func (s *FakeSession) freeBuffer(buffer []byte) {
 
 }
 
-func (s *FakeSession) onEvent(info *ggpo.Event) bool {
+func (s *FakeSession) OnEvent(info *ggpo.Event) bool {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
@@ -71,23 +71,11 @@ func (s *FakeSession) onEvent(info *ggpo.Event) bool {
 	}
 	return true
 }
-func (s *FakeSession) advanceFrame(flags int) bool {
-	/*
-		fmt.Println("Advancing frame from callback. ")
-		var discconectFlags int
-
-		// Make sure we fetch the inputs from GGPO and use these to update
-		// the game state instead of reading from the keyboard.
-		//inputs, result := ggpo.SynchronizeInput(session, &discconectFlags)
-		inputs, result := session.SyncInput(&discconectFlags)
-		if result == nil {
-			//log.Fatal("Error from GGTHXSynchronizeInput")
-			input := decodeInputs(inputs)
-			game.AdvanceFrame(input, discconectFlags)
-		}*/
-
+func (s *FakeSession) AdvanceFrame(flags int) bool {
 	return true
 }
+
+func (s *FakeSession) SetBackend(backend ggpo.Backend) {}
 
 type FakeSessionWithBackend struct {
 	backend    ggpo.Backend
@@ -111,17 +99,17 @@ func (f *FakeSessionWithBackend) beginGame(game string) bool {
 	return true
 }
 
-func (f *FakeSessionWithBackend) saveGameState(stateID int) ([]byte, bool) {
+func (f *FakeSessionWithBackend) SaveGameState(stateID int) ([]byte, bool) {
 	f.saveStates[stateID] = f.game.clone()
 	return []byte{}, true
 }
 
-func (f *FakeSessionWithBackend) loadGameState(stateID int) bool {
+func (f *FakeSessionWithBackend) LoadGameState(stateID int) bool {
 	f.game = *f.saveStates[stateID]
 	return true
 }
 
-func (f *FakeSessionWithBackend) logGameState(fileName string, buffer []byte, len int) bool {
+func (f *FakeSessionWithBackend) LogGameState(fileName string, buffer []byte, len int) bool {
 	var game2 FakeGame
 	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
 	dec := gob.NewDecoder(&buf)
@@ -137,7 +125,7 @@ func (f *FakeSessionWithBackend) freeBuffer(buffer []byte) {
 
 }
 
-func (f *FakeSessionWithBackend) onEvent(info *ggpo.Event) bool {
+func (f *FakeSessionWithBackend) OnEvent(info *ggpo.Event) bool {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
@@ -158,53 +146,37 @@ func (f *FakeSessionWithBackend) onEvent(info *ggpo.Event) bool {
 	}
 	return true
 }
-func (f *FakeSessionWithBackend) advanceFrame(flags int) bool {
+func (f *FakeSessionWithBackend) AdvanceFrame(flags int) bool {
 	var discconectFlags int
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
-	//inputs, result := ggpo.SynchronizeInput(session, &discconectFlags)
 	_, result := f.backend.SyncInput(&discconectFlags)
 	if result == nil {
 		f.backend.AdvanceFrame()
 	}
-
 	return true
 }
 
-/*
-func init() {
-	var callbacks ggpo.SessionCallbacks
-
-	session := NewFakeSession()
-	callbacks.AdvanceFrame = session.advanceFrame
-	callbacks.BeginGame = session.beginGame
-	callbacks.FreeBuffer = session.freeBuffer
-	callbacks.LoadGameState = session.loadGameState
-	callbacks.LogGameState = session.logGameState
-	callbacks.OnEvent = session.onEvent
-	callbacks.SaveGameState = session.saveGameState
-}
-*/
 func MakeSessionCallBacks(session FakeSession) ggpo.SessionCallbacks {
 	var sessionCallbacks ggpo.SessionCallbacks
-	sessionCallbacks.AdvanceFrame = session.advanceFrame
+	sessionCallbacks.AdvanceFrame = session.AdvanceFrame
 	sessionCallbacks.BeginGame = session.beginGame
 	sessionCallbacks.FreeBuffer = session.freeBuffer
-	sessionCallbacks.LoadGameState = session.loadGameState
-	sessionCallbacks.LogGameState = session.logGameState
-	sessionCallbacks.OnEvent = session.onEvent
-	sessionCallbacks.SaveGameState = session.saveGameState
+	sessionCallbacks.LoadGameState = session.LoadGameState
+	sessionCallbacks.LogGameState = session.LogGameState
+	sessionCallbacks.OnEvent = session.OnEvent
+	sessionCallbacks.SaveGameState = session.SaveGameState
 	return sessionCallbacks
 }
 
 func MakeSessionCallBacksBackend(session FakeSessionWithBackend) ggpo.SessionCallbacks {
 	var sessionCallbacks ggpo.SessionCallbacks
-	sessionCallbacks.AdvanceFrame = session.advanceFrame
+	sessionCallbacks.AdvanceFrame = session.AdvanceFrame
 	sessionCallbacks.BeginGame = session.beginGame
 	sessionCallbacks.FreeBuffer = session.freeBuffer
-	sessionCallbacks.LoadGameState = session.loadGameState
-	sessionCallbacks.LogGameState = session.logGameState
-	sessionCallbacks.OnEvent = session.onEvent
-	sessionCallbacks.SaveGameState = session.saveGameState
+	sessionCallbacks.LoadGameState = session.LoadGameState
+	sessionCallbacks.LogGameState = session.LogGameState
+	sessionCallbacks.OnEvent = session.OnEvent
+	sessionCallbacks.SaveGameState = session.SaveGameState
 	return sessionCallbacks
 }

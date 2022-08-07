@@ -12,7 +12,7 @@ import (
 )
 
 type SyncTestBackend struct {
-	callbacks     SessionCallbacks
+	session       Session
 	sync          Sync
 	numPlayers    int
 	checkDistance int
@@ -35,12 +35,12 @@ type savedInfo struct {
 	input    input.GameInput
 }
 
-func NewSyncTestBackend(cb *SessionCallbacks,
+func NewSyncTestBackend(cb Session,
 	gameName string,
 	numPlayers int,
 	frames int, inputSize int) SyncTestBackend {
 	s := SyncTestBackend{
-		callbacks:     *cb,
+		session:       cb,
 		numPlayers:    numPlayers,
 		checkDistance: frames,
 		savedFrames:   buffer.NewRingBuffer[savedInfo](32)}
@@ -48,12 +48,11 @@ func NewSyncTestBackend(cb *SessionCallbacks,
 	s.currentInput.Bits = make([]byte, input.GameInputMaxBytes*input.GameInputMaxPlayers)
 	s.currentInput.Size = inputSize
 	var config SyncConfig
-	config.callbacks = s.callbacks
+	config.session = s.session
 	config.numPredictionFrames = MaxPredictionFrames
 	config.inputSize = inputSize
 	s.sync = NewSync(nil, &config)
 
-	s.callbacks.BeginGame(gameName)
 	return s
 }
 
@@ -61,7 +60,7 @@ func (s *SyncTestBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) er
 	if !s.running {
 		var info Event
 		info.Code = EventCodeRunning
-		s.callbacks.OnEvent(&info)
+		s.session.OnEvent(&info)
 		s.running = true
 	}
 	return nil
@@ -151,7 +150,7 @@ func (s *SyncTestBackend) AdvanceFrame() error {
 
 		s.rollingBack = true
 		for !s.savedFrames.Empty() {
-			s.callbacks.AdvanceFrame(0)
+			s.session.AdvanceFrame(0)
 
 			// Verify that the checksum of this frame is the same as the one in our
 			// list
@@ -182,8 +181,8 @@ func (s *SyncTestBackend) AdvanceFrame() error {
 }
 
 func (s *SyncTestBackend) LogGameStates(info savedInfo) {
-	s.callbacks.LogGameState("saved:", info.buf, len(info.buf))
-	s.callbacks.LogGameState("loaded:", s.sync.GetLastSavedFrame().buf, s.sync.GetLastSavedFrame().cbuf)
+	//s.session.LogGameState("saved:", info.buf, len(info.buf))
+	//s.session.LogGameState("loaded:", s.sync.GetLastSavedFrame().buf, s.sync.GetLastSavedFrame().cbuf)
 }
 
 // We must 'impliment' these for this to be a true Session

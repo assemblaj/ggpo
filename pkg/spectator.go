@@ -14,7 +14,7 @@ const DefaultMaxFramesBehind int = 10
 const DefaultCatchupSpeed int = 1
 
 type SpectatorBackend struct {
-	callbacks       SessionCallbacks
+	session         Session
 	poll            polling.Poller
 	connection      transport.Connection
 	host            protocol.UdpProtocol
@@ -30,14 +30,14 @@ type SpectatorBackend struct {
 	currentFrame    int
 }
 
-func NewSpectatorBackend(cb *SessionCallbacks,
+func NewSpectatorBackend(cb Session,
 	gameName string, localPort int, numPlayers int, inputSize int, hostIp string, hostPort int) SpectatorBackend {
 	s := SpectatorBackend{}
 	s.numPlayers = numPlayers
 	s.inputSize = inputSize
 	s.nextInputToSend = 0
 
-	s.callbacks = *cb
+	s.session = cb
 	s.synchonizing = true
 
 	inputs := make([]input.GameInput, SpectatorFrameBufferSize)
@@ -52,7 +52,6 @@ func NewSpectatorBackend(cb *SessionCallbacks,
 	s.localPort = localPort
 	var poll polling.Poll = polling.NewPoll()
 	s.poll = &poll
-	s.callbacks.BeginGame(gameName)
 	//go s.udp.Read()
 	return s
 }
@@ -67,7 +66,7 @@ func (s *SpectatorBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) e
 
 	if s.framesBehind > 0 {
 		for s.nextInputToSend < s.currentFrame {
-			s.callbacks.AdvanceFrame(0)
+			s.session.AdvanceFrame(0)
 			log.Printf("In Spectator: skipping frame %d\n", s.nextInputToSend)
 			s.nextInputToSend++
 		}
@@ -140,23 +139,23 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 	case protocol.ConnectedEvent:
 		info.Code = EventCodeConnectedToPeer
 		info.player = 0
-		s.callbacks.OnEvent(&info)
+		s.session.OnEvent(&info)
 
 	case protocol.SynchronizingEvent:
 		info.Code = EventCodeSynchronizingWithPeer
 		info.player = 0
 		info.count = evt.Count
 		info.total = evt.Total
-		s.callbacks.OnEvent(&info)
+		s.session.OnEvent(&info)
 
 	case protocol.SynchronziedEvent:
 		if s.synchonizing {
 			info.Code = EventCodeSynchronizedWithPeer
 			info.player = 0
-			s.callbacks.OnEvent(&info)
+			s.session.OnEvent(&info)
 
 			info.Code = EventCodeRunning
-			s.callbacks.OnEvent(&info)
+			s.session.OnEvent(&info)
 			s.synchonizing = false
 		}
 
@@ -164,17 +163,17 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 		info.Code = EventCodeConnectionInterrupted
 		info.player = 0
 		info.disconnectTimeout = evt.DisconnectTimeout
-		s.callbacks.OnEvent(&info)
+		s.session.OnEvent(&info)
 
 	case protocol.NetworkResumedEvent:
 		info.Code = EventCodeConnectionResumed
 		info.player = 0
-		s.callbacks.OnEvent(&info)
+		s.session.OnEvent(&info)
 
 	case protocol.DisconnectedEvent:
 		info.Code = EventCodeDisconnectedFromPeer
 		info.player = 0
-		s.callbacks.OnEvent(&info)
+		s.session.OnEvent(&info)
 
 	case protocol.InputEvent:
 		input := evt.Input

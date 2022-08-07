@@ -122,6 +122,14 @@ type Event struct {
 	disconnectTimeout int // connection interrupted
 }
 
+type Session interface {
+	SaveGameState(stateID int) ([]byte, bool)
+	LoadGameState(stateID int) bool
+	AdvanceFrame(flags int) bool
+	OnEvent(info *Event) bool
+	SetBackend(backend Backend)
+}
+
 type SessionCallbacks struct {
 	BeginGame     beginGame
 	SaveGameState saveGameState

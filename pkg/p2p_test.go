@@ -28,13 +28,12 @@ func slice2dEqual(a [][]byte, b [][]byte) bool {
 func TestP2PBackendAddPlayer(t *testing.T) {
 	connection := mocks.NewFakeConnection()
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 	p2p.InitializeConnection(&connection)
 	player1 := ggpo.NewLocalPlayer(20, 1)
 	var p1Handle ggpo.PlayerHandle
@@ -54,13 +53,12 @@ func TestP2PBackendAddPlayer(t *testing.T) {
 func TestP2PBackendAddLocalInputError(t *testing.T) {
 	connection := mocks.NewFakeConnection()
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 	p2p.InitializeConnection(&connection)
 	player1 := ggpo.NewLocalPlayer(20, 1)
 	var p1Handle ggpo.PlayerHandle
@@ -84,13 +82,12 @@ func TestP2PBackendAddLocalInputError(t *testing.T) {
 func TestP2PBackendSyncInputError(t *testing.T) {
 	connection := mocks.NewFakeConnection()
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 	p2p.InitializeConnection(&connection)
 	player1 := ggpo.NewLocalPlayer(20, 1)
 	var p1Handle ggpo.PlayerHandle
@@ -114,13 +111,12 @@ func TestP2PBackendSyncInputError(t *testing.T) {
 func TestP2PBackendIncrementFrame(t *testing.T) {
 	connection := mocks.NewFakeConnection()
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 	p2p.InitializeConnection(&connection)
 	player1 := ggpo.NewLocalPlayer(20, 1)
 	var p1Handle ggpo.PlayerHandle
@@ -142,17 +138,15 @@ func TestP2PBackendIncrementFrame(t *testing.T) {
 
 func TestP2PBackendSynchronizeInputs(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -194,17 +188,15 @@ func TestP2PBackendSynchronizeInputs(t *testing.T) {
 
 func TestP2PBackendCharacterizationAddLocalInput(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -244,13 +236,12 @@ func TestP2PBackendCharacterizationAddLocalInput(t *testing.T) {
 func TestP2PBackendPoll2PlayersDefault(t *testing.T) {
 	connection := mocks.NewFakeConnection()
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 	p2p.InitializeConnection(&connection)
 	player1 := ggpo.NewLocalPlayer(20, 1)
 	var p1Handle ggpo.PlayerHandle
@@ -269,13 +260,12 @@ func TestP2PBackendPoll2PlayersDefault(t *testing.T) {
 func TestP2PBackendPollNPlayersDefault(t *testing.T) {
 	connection := mocks.NewFakeConnection()
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 3
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 	p2p.InitializeConnection(&connection)
 	player1 := ggpo.NewLocalPlayer(20, 1)
 	var p1Handle ggpo.PlayerHandle
@@ -297,17 +287,15 @@ func TestP2PBackendPollNPlayersDefault(t *testing.T) {
 
 func TestP2PBackendAddLocalInputMultiple(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -348,17 +336,15 @@ func TestP2PBackendAddLocalInputMultiple(t *testing.T) {
 
 func TestP2PBackendSynchronize(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -390,17 +376,15 @@ func TestP2PBackendSynchronize(t *testing.T) {
 
 func TestP2PBackendFullSession(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -480,17 +464,15 @@ func TestP2PBackendFullSession(t *testing.T) {
 
 func TestP2PBackendDisconnectPlayerLocal(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -519,17 +501,15 @@ func TestP2PBackendDisconnectPlayerLocal(t *testing.T) {
 
 func TestP2PBackendDisconnectPlayerRemoteCharacterization(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -560,11 +540,10 @@ func TestP2PBackendDisconnectPlayerRemoteCharacterization(t *testing.T) {
 
 func TestP2PBackendDisconnectPlayerError(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 	connection := mocks.NewFakeConnection()
 	p2p.InitializeConnection(&connection)
 
@@ -575,17 +554,15 @@ func TestP2PBackendDisconnectPlayerError(t *testing.T) {
 }
 func TestP2PBackendMockSynchronize(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -636,17 +613,15 @@ func TestP2PBackendMockSynchronize(t *testing.T) {
 }
 func TestP2PBackendMoockInputExchangeCharacterization(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -697,17 +672,15 @@ func TestP2PBackendMoockInputExchangeCharacterization(t *testing.T) {
 }
 func TestP2PBackendMoockInputExchange(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -761,17 +734,15 @@ func TestP2PBackendMoockInputExchange(t *testing.T) {
 }
 func TestP2PBackendMoockInputExchangeWithTimeout(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -825,17 +796,15 @@ func TestP2PBackendMoockInputExchangeWithTimeout(t *testing.T) {
 }
 func TestP2PBackendMoockInputExchangePol2Players(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -889,17 +858,15 @@ func TestP2PBackendMoockInputExchangePol2Players(t *testing.T) {
 }
 func TestP2PBackendMoockInputDelay(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -959,17 +926,15 @@ func TestP2PBackendMoockInputDelay(t *testing.T) {
 
 func TestP2PBackendMoockDisconnectTimeoutCharacterization(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -1026,17 +991,15 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization(t *testing.T) {
 }
 func TestP2PBackendMoockDisconnectTimeoutCharacterization2(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -1090,17 +1053,15 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization2(t *testing.T) {
 }
 func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -1193,23 +1154,20 @@ func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
 }
 func TestP2PBackendNPlayersSynchronize(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 3
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 
 	session3 := mocks.NewFakeSession()
-	sessionCallbacks3 := mocks.MakeSessionCallBacks(session3)
 
 	p3port := 6005
-	p2p3 := ggpo.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+	p2p3 := ggpo.NewPeer2PeerBackend(&session3, "test", p3port, numPlayers, inputSize)
 
 	connection := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p2, &p2p3}, localPort, remoteIp)
 	connection2 := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p, &p2p3}, remotePort, remoteIp)
@@ -1276,23 +1234,20 @@ func TestP2PBackendNPlayersSynchronize(t *testing.T) {
 
 func TestP2PBackendNPlayersShareInput(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 3
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 
 	session3 := mocks.NewFakeSession()
-	sessionCallbacks3 := mocks.MakeSessionCallBacks(session3)
 
 	p3port := 6005
-	p2p3 := ggpo.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+	p2p3 := ggpo.NewPeer2PeerBackend(&session3, "test", p3port, numPlayers, inputSize)
 
 	connection := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p2, &p2p3}, localPort, remoteIp)
 	connection2 := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p, &p2p3}, remotePort, remoteIp)
@@ -1382,28 +1337,24 @@ func TestP2PBackendNPlayersShareInput(t *testing.T) {
 
 func TestP2PBackend4PlayerSynchronize(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 4
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 
 	session3 := mocks.NewFakeSession()
-	sessionCallbacks3 := mocks.MakeSessionCallBacks(session3)
 
 	p3port := 6005
-	p2p3 := ggpo.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+	p2p3 := ggpo.NewPeer2PeerBackend(&session3, "test", p3port, numPlayers, inputSize)
 
 	session4 := mocks.NewFakeSession()
-	sessionCallbacks4 := mocks.MakeSessionCallBacks(session4)
 	p4port := 6006
-	p2p4 := ggpo.NewPeer2PeerBackend(&sessionCallbacks4, "test", p4port, numPlayers, inputSize)
+	p2p4 := ggpo.NewPeer2PeerBackend(&session4, "test", p4port, numPlayers, inputSize)
 
 	connection := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p2, &p2p3, &p2p4}, localPort, remoteIp)
 	connection2 := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p, &p2p3, &p2p4}, remotePort, remoteIp)
@@ -1500,28 +1451,24 @@ func TestP2PBackend4PlayerSynchronize(t *testing.T) {
 
 func TestP2PBackend4PlayerShareInput(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 4
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 
 	session3 := mocks.NewFakeSession()
-	sessionCallbacks3 := mocks.MakeSessionCallBacks(session3)
 
 	p3port := 6005
-	p2p3 := ggpo.NewPeer2PeerBackend(&sessionCallbacks3, "test", p3port, numPlayers, inputSize)
+	p2p3 := ggpo.NewPeer2PeerBackend(&session3, "test", p3port, numPlayers, inputSize)
 
 	session4 := mocks.NewFakeSession()
-	sessionCallbacks4 := mocks.MakeSessionCallBacks(session4)
 	p4port := 6006
-	p2p4 := ggpo.NewPeer2PeerBackend(&sessionCallbacks4, "test", p4port, numPlayers, inputSize)
+	p2p4 := ggpo.NewPeer2PeerBackend(&session4, "test", p4port, numPlayers, inputSize)
 
 	connection := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p2, &p2p3, &p2p4}, localPort, remoteIp)
 	connection2 := mocks.NewFakeMultiplePeerConnection([]transport.MessageHandler{&p2p, &p2p3, &p2p4}, remotePort, remoteIp)
@@ -1677,17 +1624,15 @@ func TestP2PBackend4PlayerShareInput(t *testing.T) {
 
 func TestP2PBackendGetNetworkStats(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 
@@ -1729,17 +1674,15 @@ func TestP2PBackendGetNetworkStats(t *testing.T) {
 }
 func TestP2PBackendGetNetworkStatsInvalid(t *testing.T) {
 	session := mocks.NewFakeSession()
-	sessionCallbacks := mocks.MakeSessionCallBacks(session)
 	localPort := 6000
 	remotePort := 6001
 	remoteIp := "127.2.1.1"
 	numPlayers := 2
 	inputSize := 4
-	p2p := ggpo.NewPeer2PeerBackend(&sessionCallbacks, "test", localPort, numPlayers, inputSize)
+	p2p := ggpo.NewPeer2PeerBackend(&session, "test", localPort, numPlayers, inputSize)
 
 	session2 := mocks.NewFakeSession()
-	sessionCallbacks2 := mocks.MakeSessionCallBacks(session2)
-	p2p2 := ggpo.NewPeer2PeerBackend(&sessionCallbacks2, "test", remotePort, numPlayers, inputSize)
+	p2p2 := ggpo.NewPeer2PeerBackend(&session2, "test", remotePort, numPlayers, inputSize)
 	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
 	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
 

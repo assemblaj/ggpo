@@ -15,8 +15,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-//var session *ggpo.SyncTestBackend
-var session ggpo.Backend
+type GameSession struct {
+	backend ggpo.Backend
+	game    *Game
+}
+
+var backend ggpo.Backend
 var player1 Player
 var player2 Player
 var game *Game
@@ -63,9 +67,8 @@ func (g *Game) clone() (result *Game) {
 
 func (g *Game) Update() error {
 	now = int(time.Now().UnixMilli())
-	//ggpo.Idle(session, int(math.Max(0, float64(next-now-1))))
 	fmt.Println("Idling ")
-	err := session.Idle(int(math.Max(0, float64(next-now-1))))
+	err := backend.Idle(int(math.Max(0, float64(next-now-1))))
 	if err != nil {
 		panic(err)
 	}
@@ -82,8 +85,7 @@ func (g *Game) RunFrame() {
 	buffer := encodeInputs(input)
 
 	fmt.Println("Attempting to add local inputs")
-	//result := ggpo.AddLocalInput(session, ggpo.PlayerHandle(currentPlayer), buffer, len(buffer))
-	result := session.AddLocalInput(ggpo.PlayerHandle(currentPlayer), buffer, len(buffer))
+	result := backend.AddLocalInput(ggpo.PlayerHandle(currentPlayer), buffer, len(buffer))
 	fmt.Println("Attempt to add local inputs complete")
 	if result == nil {
 		fmt.Println("Attempt to add local inputs was successful")
@@ -91,8 +93,7 @@ func (g *Game) RunFrame() {
 		disconnectFlags := 0
 
 		fmt.Println("Attempting to synchronize inputs")
-		//values, result = ggpo.SynchronizeInput(session, &disconnectFlags)
-		values, result = session.SyncInput(&disconnectFlags)
+		values, result = backend.SyncInput(&disconnectFlags)
 		if result == nil {
 			fmt.Println("Attempt synchronize inputs was sucessful")
 
@@ -109,8 +110,7 @@ func (g *Game) RunFrame() {
 
 func (g *Game) AdvanceFrame(inputs []InputBits, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
-	//err := ggpo.AdvanceFrame(session)
-	err := session.AdvanceFrame()
+	err := backend.AdvanceFrame()
 	if err != nil {
 		panic(err)
 	}
@@ -130,24 +130,6 @@ func (g *Game) UpdateByInputs(inputs []InputBits) {
 		if input.isButtonOn(int(ebiten.KeyArrowRight)) {
 			g.Players[i].X++
 		}
-		/*
-			for _, v := range input.Key {
-
-				if ebiten.Key(v) == ebiten.KeyArrowUp {
-					g.Players[i].Y--
-				}
-				if ebiten.Key(v) == ebiten.KeyArrowDown {
-					g.Players[i].Y++
-				}
-				if ebiten.Key(v) == ebiten.KeyArrowLeft {
-					g.Players[i].X--
-				}
-				if ebiten.Key(v) == ebiten.KeyArrowRight {
-					g.Players[i].X++
-				}
-
-			}*/
-
 	}
 }
 
@@ -202,7 +184,7 @@ func saveGameState(length *int, checksum *int, frame int) ([]byte, bool) {
 	return buffer, true
 }
 */
-func saveGameState(stateID int) ([]byte, bool) {
+func (g *GameSession) SaveGameState(stateID int) ([]byte, bool) {
 	saveStates[stateID] = game.clone()
 	return []byte{}, true
 }
@@ -227,12 +209,12 @@ func loadGameState(buffer []byte, len int) bool {
 	return true
 }
 */
-func loadGameState(stateID int) bool {
+func (g *GameSession) LoadGameState(stateID int) bool {
 	game = saveStates[stateID]
 	return true
 }
 
-func logGameState(fileName string, buffer []byte, len int) bool {
+func (g *GameSession) LogGameState(fileName string, buffer []byte, len int) bool {
 	var game2 Game
 	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
 	dec := gob.NewDecoder(&buf)
@@ -242,6 +224,9 @@ func logGameState(fileName string, buffer []byte, len int) bool {
 	}
 	log.Printf("%s Game State: %s\n", fileName, game2)
 	return true
+}
+
+func (g *GameSession) SetBackend(backend ggpo.Backend) {
 }
 
 func (g Game) String() string {
@@ -256,16 +241,14 @@ func freeBuffer(buffer []byte) {
 
 }
 
-func advanceFrame(flags int) bool {
+func (g *GameSession) AdvanceFrame(flags int) bool {
 	fmt.Println("Advancing frame from callback. ")
 	var discconectFlags int
 
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
-	//inputs, result := ggpo.SynchronizeInput(session, &discconectFlags)
-	inputs, result := session.SyncInput(&discconectFlags)
+	inputs, result := backend.SyncInput(&discconectFlags)
 	if result == nil {
-		//log.Fatal("Error from GGTHXSynchronizeInput")
 		input := decodeInputs(inputs)
 		game.AdvanceFrame(input, discconectFlags)
 	}
@@ -273,7 +256,7 @@ func advanceFrame(flags int) bool {
 	return true
 }
 
-func onEvent(info *ggpo.Event) bool {
+func (g *GameSession) OnEvent(info *ggpo.Event) bool {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
@@ -296,59 +279,39 @@ func onEvent(info *ggpo.Event) bool {
 }
 
 func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort int) {
-	var callbacks ggpo.SessionCallbacks
 	InitGameState()
 
 	var inputBits InputBits = 0
 
 	var inputSize int = len(encodeInputs(inputBits))
+	session := NewGameSession()
 
-	callbacks.AdvanceFrame = advanceFrame
-	callbacks.BeginGame = beginGame
-	callbacks.FreeBuffer = freeBuffer
-	callbacks.LoadGameState = loadGameState
-	callbacks.LogGameState = logGameState
-	callbacks.OnEvent = onEvent
-	callbacks.SaveGameState = saveGameState
-
-	backend := ggpo.NewSpectatorBackend(&callbacks, "Test", localPort, numPlayers, inputSize, hostIp, hostPort)
-	session = &backend
-	session.InitializeConnection()
-	session.Start()
+	spectator := ggpo.NewSpectatorBackend(&session, "Test", localPort, numPlayers, inputSize, hostIp, hostPort)
+	backend = &spectator
+	spectator.InitializeConnection()
+	spectator.Start()
 }
 
 func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectators int) {
 	var result error
-	var callbacks ggpo.SessionCallbacks
 	InitGameState()
 	var inputBits InputBits = 0
 	var inputSize int = len(encodeInputs(inputBits))
 
-	callbacks.AdvanceFrame = advanceFrame
-	callbacks.BeginGame = beginGame
-	callbacks.FreeBuffer = freeBuffer
-	callbacks.LoadGameState = loadGameState
-	callbacks.LogGameState = logGameState
-	callbacks.OnEvent = onEvent
-	callbacks.SaveGameState = saveGameState
+	session := NewGameSession()
 
-	//session = ggpo.StartSession(&callbacks, "Test", numPlayers, inputSize, localPort)
-	backend := ggpo.NewPeer2PeerBackend(&callbacks, "Test", localPort, numPlayers, inputSize)
-	//backend := ggpo.NewSyncTestBackend(&callbacks, "Test", numPlayers, 8, inputSize)
-	session = &backend
-	session.InitializeConnection()
-	session.Start()
+	peer := ggpo.NewPeer2PeerBackend(&session, "Test", localPort, numPlayers, inputSize)
+	//peer := ggpo.NewSyncTestBackend(&session, "Test", numPlayers, 8, inputSize)
+	backend = &peer
+	peer.InitializeConnection()
+	peer.Start()
 
 	//session.SetDisconnectTimeout(3000)
 	//session.SetDisconnectNotifyStart(1000)
 
-	//ggpo.SetDisconnectTimeout(session, 3000)
-	//ggpo.SetDisconnectNotifyStart(session, 1000)
-
 	for i := 0; i < numPlayers+numSpectators; i++ {
 		var handle ggpo.PlayerHandle
-		//result = ggpo.AddPlayer(session, &players[i], &handle)
-		result = session.AddPlayer(&players[i], &handle)
+		result = peer.AddPlayer(&players[i], &handle)
 		if players[i].PlayerType == ggpo.PlayerTypeLocal {
 			currentPlayer = int(handle)
 		}
@@ -356,14 +319,16 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 			log.Fatalf("There's an issue from AddPlayer")
 		}
 		if players[i].PlayerType == ggpo.PlayerTypeLocal {
-			//ggpo.SetFrameDelay(session, handle, FRAME_DELAY)
-			session.SetFrameDelay(handle, FRAME_DELAY)
-
+			peer.SetFrameDelay(handle, FRAME_DELAY)
 		}
 	}
-	session.SetDisconnectTimeout(3000)
-	session.SetDisconnectNotifyStart(1000)
+	peer.SetDisconnectTimeout(3000)
+	peer.SetDisconnectNotifyStart(1000)
+}
 
+func NewGameSession() GameSession {
+	g := GameSession{}
+	return g
 }
 
 func InitGameState() {
@@ -380,6 +345,7 @@ func InitGameState() {
 	game = &Game{
 		Players: []Player{player1, player2}}
 	saveStates = make(map[int]*Game)
+
 }
 
 func init() {
