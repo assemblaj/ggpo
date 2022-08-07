@@ -127,7 +127,7 @@ type Session interface {
 	LoadGameState(stateID int) bool
 	AdvanceFrame(flags int) bool
 	OnEvent(info *Event) bool
-	SetBackend(backend Backend)
+	//SetBackend(backend Backend)
 }
 
 type SessionCallbacks struct {
