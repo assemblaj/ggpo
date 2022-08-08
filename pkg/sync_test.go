@@ -23,7 +23,7 @@ func TestNewSync(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -42,7 +42,7 @@ func TestSyncLoadFrameCharacterization(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -61,7 +61,7 @@ func TestSyncIncrementFrame(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -80,7 +80,7 @@ func TestSyncAdustSimulationPanicIfSeekToUnsavedFrame(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -99,7 +99,7 @@ func TestSyncAjdustSimulationError(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -121,7 +121,7 @@ func TestSyncAdjustSimulationSucess(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -143,7 +143,7 @@ func TestSyncAddLocalInput(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -166,7 +166,7 @@ func TestSyncAddLocalInputAfterIncrementFrame(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -194,7 +194,7 @@ func TestSyncSynchronizeInputsNoInput(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -223,7 +223,7 @@ func TestSyncSynchronizeInputsWithLocalInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -255,7 +255,7 @@ func TestSyncSynchronizeInputsWithRemoteInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -282,7 +282,7 @@ func TestSyncSynchronizeInputsWithBothInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -315,7 +315,7 @@ func TestSyncGetConfirmedInputs(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -349,7 +349,7 @@ func TestSyncAddLocalInputPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -375,7 +375,7 @@ func TestSyncAddLocalInputNoPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -394,7 +394,7 @@ func TestSyncAddRemoteInputPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -417,7 +417,7 @@ func TestSyncAddRemoteInputNoPanic(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -436,7 +436,7 @@ func TestSyncAddFrameDelay(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
@@ -466,7 +466,7 @@ func TestSyncUseAfterClose(t *testing.T) {
 		{Disconnected: false, LastFrame: 12},
 		{Disconnected: false, LastFrame: 13},
 	}
-	syncConfig := ggpo.NeweSyncConfig(
+	syncConfig := ggpo.NewSyncConfig(
 		&session, 8, 2, 4,
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)

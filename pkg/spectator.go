@@ -14,7 +14,7 @@ const SpectatorFrameBufferSize int = 32
 const DefaultMaxFramesBehind int = 10
 const DefaultCatchupSpeed int = 1
 
-type SpectatorBackend struct {
+type Spectator struct {
 	session         Session
 	poll            polling.Poller
 	connection      transport.Connection
@@ -31,9 +31,8 @@ type SpectatorBackend struct {
 	currentFrame    int
 }
 
-func NewSpectatorBackend(cb Session,
-	gameName string, localPort int, numPlayers int, inputSize int, hostIp string, hostPort int) SpectatorBackend {
-	s := SpectatorBackend{}
+func NewSpectator(cb Session, localPort int, numPlayers int, inputSize int, hostIp string, hostPort int) Spectator {
+	s := Spectator{}
 	s.numPlayers = numPlayers
 	s.inputSize = inputSize
 	s.nextInputToSend = 0
@@ -57,7 +56,7 @@ func NewSpectatorBackend(cb Session,
 	return s
 }
 
-func (s *SpectatorBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
+func (s *Spectator) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if len(timeFunc) == 0 {
 		s.poll.Pump()
 	} else {
@@ -77,7 +76,7 @@ func (s *SpectatorBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) e
 	return nil
 }
 
-func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
+func (s *Spectator) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	// Wait until we've started to return inputs
 	if s.synchonizing {
 		return nil, Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
@@ -115,7 +114,7 @@ func (s *SpectatorBackend) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	return values, nil
 }
 
-func (s *SpectatorBackend) AdvanceFrame() error {
+func (s *Spectator) AdvanceFrame() error {
 	log.Printf("End of frame (%d)...\n", s.nextInputToSend-1)
 	s.Idle(0)
 	s.PollUdpProtocolEvents()
@@ -123,7 +122,7 @@ func (s *SpectatorBackend) AdvanceFrame() error {
 	return nil
 }
 
-func (s *SpectatorBackend) PollUdpProtocolEvents() {
+func (s *Spectator) PollUdpProtocolEvents() {
 	for {
 		evt, ok := s.host.GetEvent()
 		if ok != nil {
@@ -134,7 +133,7 @@ func (s *SpectatorBackend) PollUdpProtocolEvents() {
 	}
 }
 
-func (s *SpectatorBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
+func (s *Spectator) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 	var info Event
 	switch evt.Type() {
 	case protocol.ConnectedEvent:
@@ -185,40 +184,40 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 	}
 }
 
-func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg messages.UDPMessage, len int) {
+func (s *Spectator) HandleMessage(ipAddress string, port int, msg messages.UDPMessage, len int) {
 	if s.host.HandlesMsg(ipAddress, port) {
 		s.host.OnMsg(msg, len)
 	}
 }
 
-func (p *SpectatorBackend) AddLocalInput(player PlayerHandle, values []byte, size int) error {
+func (p *Spectator) AddLocalInput(player PlayerHandle, values []byte, size int) error {
 	return nil
 }
 
-func (s *SpectatorBackend) AddPlayer(player *Player, handle *PlayerHandle) error {
+func (s *Spectator) AddPlayer(player *Player, handle *PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 
 // We must 'impliment' these for this to be a true Session
-func (s *SpectatorBackend) DisconnectPlayer(handle PlayerHandle) error {
+func (s *Spectator) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) GetNetworkStats(handle PlayerHandle) (protocol.NetworkStats, error) {
+func (s *Spectator) GetNetworkStats(handle PlayerHandle) (protocol.NetworkStats, error) {
 	return protocol.NetworkStats{}, Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) SetFrameDelay(player PlayerHandle, delay int) error {
+func (s *Spectator) SetFrameDelay(player PlayerHandle, delay int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) SetDisconnectTimeout(timeout int) error {
+func (s *Spectator) SetDisconnectTimeout(timeout int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) SetDisconnectNotifyStart(timeout int) error {
+func (s *Spectator) SetDisconnectNotifyStart(timeout int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) Close() error {
+func (s *Spectator) Close() error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) InitializeConnection(c ...transport.Connection) error {
+func (s *Spectator) InitializeConnection(c ...transport.Connection) error {
 	if len(c) == 0 {
 		s.connection = transport.NewUdp(s, s.localPort)
 		return nil
@@ -227,7 +226,7 @@ func (s *SpectatorBackend) InitializeConnection(c ...transport.Connection) error
 	return nil
 }
 
-func (s *SpectatorBackend) Start() {
+func (s *Spectator) Start() {
 	//s.udp.messageHandler = s
 	go s.connection.Read()
 

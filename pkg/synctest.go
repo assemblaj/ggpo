@@ -11,7 +11,7 @@ import (
 	"github.com/assemblaj/GGPO-Go/pkg/transport"
 )
 
-type SyncTestBackend struct {
+type SyncTest struct {
 	session       Session
 	sync          Sync
 	numPlayers    int
@@ -35,11 +35,10 @@ type savedInfo struct {
 	input    input.GameInput
 }
 
-func NewSyncTestBackend(cb Session,
-	gameName string,
+func NewSyncTest(cb Session,
 	numPlayers int,
-	frames int, inputSize int) SyncTestBackend {
-	s := SyncTestBackend{
+	frames int, inputSize int) SyncTest {
+	s := SyncTest{
 		session:       cb,
 		numPlayers:    numPlayers,
 		checkDistance: frames,
@@ -56,7 +55,7 @@ func NewSyncTestBackend(cb Session,
 	return s
 }
 
-func (s *SyncTestBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
+func (s *SyncTest) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if !s.running {
 		var info Event
 		info.Code = EventCodeRunning
@@ -66,7 +65,7 @@ func (s *SyncTestBackend) Idle(timeout int, timeFunc ...polling.FuncTimeType) er
 	return nil
 }
 
-func (s *SyncTestBackend) AddPlayer(player *Player, handle *PlayerHandle) error {
+func (s *SyncTest) AddPlayer(player *Player, handle *PlayerHandle) error {
 	if player.PlayerNum < 1 || player.PlayerNum > s.numPlayers {
 		return Error{Code: ErrorCodePlayerOutOfRange, Name: "ErrorCodePlayerOutOfRange"}
 	}
@@ -74,7 +73,7 @@ func (s *SyncTestBackend) AddPlayer(player *Player, handle *PlayerHandle) error 
 	return nil
 }
 
-func (s *SyncTestBackend) AddLocalInput(player PlayerHandle, values []byte, size int) error {
+func (s *SyncTest) AddLocalInput(player PlayerHandle, values []byte, size int) error {
 	if !s.running {
 		return Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
@@ -88,7 +87,7 @@ func (s *SyncTestBackend) AddLocalInput(player PlayerHandle, values []byte, size
 	return nil
 }
 
-func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, error) {
+func (s *SyncTest) SyncInput(discconectFlags *int) ([][]byte, error) {
 	if s.rollingBack {
 		var info savedInfo
 		var err error
@@ -112,7 +111,7 @@ func (s *SyncTestBackend) SyncInput(discconectFlags *int) ([][]byte, error) {
 	return [][]byte{values}, nil
 }
 
-func (s *SyncTestBackend) AdvanceFrame() error {
+func (s *SyncTest) AdvanceFrame() error {
 	s.sync.AdvanceFrame()
 	s.currentInput.Erase()
 
@@ -177,33 +176,33 @@ func (s *SyncTestBackend) AdvanceFrame() error {
 	return nil
 }
 
-func (s *SyncTestBackend) LogGameStates(info savedInfo) {
+func (s *SyncTest) LogGameStates(info savedInfo) {
 	//s.session.LogGameState("saved:", info.buf, len(info.buf))
 	//s.session.LogGameState("loaded:", s.sync.GetLastSavedFrame().buf, s.sync.GetLastSavedFrame().cbuf)
 }
 
 // We must 'impliment' these for this to be a true Session
-func (s *SyncTestBackend) DisconnectPlayer(handle PlayerHandle) error {
+func (s *SyncTest) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) GetNetworkStats(handle PlayerHandle) (protocol.NetworkStats, error) {
+func (s *SyncTest) GetNetworkStats(handle PlayerHandle) (protocol.NetworkStats, error) {
 	return protocol.NetworkStats{}, Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) SetFrameDelay(player PlayerHandle, delay int) error {
+func (s *SyncTest) SetFrameDelay(player PlayerHandle, delay int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) SetDisconnectTimeout(timeout int) error {
+func (s *SyncTest) SetDisconnectTimeout(timeout int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) SetDisconnectNotifyStart(timeout int) error {
+func (s *SyncTest) SetDisconnectNotifyStart(timeout int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) Close() error {
+func (s *SyncTest) Close() error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 
-func (s *SyncTestBackend) Start() {}
+func (s *SyncTest) Start() {}
 
-func (s *SyncTestBackend) InitializeConnection(c ...transport.Connection) error {
+func (s *SyncTest) InitializeConnection(c ...transport.Connection) error {
 	return nil
 }

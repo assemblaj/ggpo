@@ -103,7 +103,7 @@ func main() {
 		numSpectators := 0
 		for offset < len(argsWithoutProg) {
 			remoteAddress := getPeerAddress(argsWithoutProg[offset])
-			players[i] = ggpo.NewSpectator(20, remoteAddress.ip, remoteAddress.port)
+			players[i] = ggpo.NewSpectatorPlayer(20, remoteAddress.ip, remoteAddress.port)
 			numSpectators++
 			i++
 			offset++

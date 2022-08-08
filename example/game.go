@@ -282,7 +282,7 @@ func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort in
 	var inputSize int = len(encodeInputs(inputBits))
 	session := NewGameSession()
 
-	spectator := ggpo.NewSpectatorBackend(&session, "Test", localPort, numPlayers, inputSize, hostIp, hostPort)
+	spectator := ggpo.NewSpectator(&session, localPort, numPlayers, inputSize, hostIp, hostPort)
 	backend = &spectator
 	spectator.InitializeConnection()
 	spectator.Start()
@@ -296,8 +296,8 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 
 	session := NewGameSession()
 
-	peer := ggpo.NewPeer2PeerBackend(&session, "Test", localPort, numPlayers, inputSize)
-	//peer := ggpo.NewSyncTestBackend(&session, "Test", numPlayers, 8, inputSize)
+	peer := ggpo.NewPeer(&session, localPort, numPlayers, inputSize)
+	//peer := ggpo.NewSyncTest(&session,  numPlayers, 8, inputSize)
 	backend = &peer
 	peer.InitializeConnection()
 	peer.Start()

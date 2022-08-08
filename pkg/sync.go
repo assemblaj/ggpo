@@ -61,7 +61,7 @@ func NewSync(status []messages.UdpConnectStatus, config *SyncConfig) Sync {
 	s.CreateQueues(*config)
 	return s
 }
-func NeweSyncConfig(session Session, numPredictionFrames int,
+func NewSyncConfig(session Session, numPredictionFrames int,
 	numPlayers int, inputSize int) SyncConfig {
 	return SyncConfig{
 		session:             session,
