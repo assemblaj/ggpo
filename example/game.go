@@ -45,7 +45,7 @@ type Player struct {
 	PlayerNum int
 }
 
-func (p Player) clone() Player {
+func (p *Player) clone() Player {
 	result := Player{}
 	result.X = p.X
 	result.Y = p.Y
@@ -184,9 +184,10 @@ func saveGameState(length *int, checksum *int, frame int) ([]byte, bool) {
 	return buffer, true
 }
 */
-func (g *GameSession) SaveGameState(stateID int) ([]byte, bool) {
+func (g *GameSession) SaveGameState(stateID int) int {
 	saveStates[stateID] = game.clone()
-	return []byte{}, true
+	checksum := calculateChecksum([]byte(saveStates[stateID].String()))
+	return checksum
 }
 
 func calculateChecksum(buffer []byte) int {
@@ -209,12 +210,11 @@ func loadGameState(buffer []byte, len int) bool {
 	return true
 }
 */
-func (g *GameSession) LoadGameState(stateID int) bool {
+func (g *GameSession) LoadGameState(stateID int) {
 	game = saveStates[stateID]
-	return true
 }
 
-func (g *GameSession) LogGameState(fileName string, buffer []byte, len int) bool {
+func (g *GameSession) LogGameState(fileName string, buffer []byte, len int) {
 	var game2 Game
 	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
 	dec := gob.NewDecoder(&buf)
@@ -222,18 +222,17 @@ func (g *GameSession) LogGameState(fileName string, buffer []byte, len int) bool
 	if err != nil {
 		log.Fatal("decode error:", err)
 	}
-	log.Printf("%s Game State: %s\n", fileName, game2)
-	return true
+	log.Printf("%s Game State: %s\n", fileName, game2.String())
 }
 
 func (g *GameSession) SetBackend(backend ggpo.Backend) {
 }
 
-func (g Game) String() string {
-	return fmt.Sprintf("%s : %s ", g.Players[0], g.Players[1])
+func (g *Game) String() string {
+	return fmt.Sprintf("%s : %s ", g.Players[0].String(), g.Players[1].String())
 }
 
-func (p Player) String() string {
+func (p *Player) String() string {
 	return fmt.Sprintf("Player %d: X:%f Y:%f Color: %s", p.PlayerNum, p.X, p.Y, p.Color)
 }
 
@@ -241,7 +240,7 @@ func freeBuffer(buffer []byte) {
 
 }
 
-func (g *GameSession) AdvanceFrame(flags int) bool {
+func (g *GameSession) AdvanceFrame(flags int) {
 	fmt.Println("Advancing frame from callback. ")
 	var discconectFlags int
 
@@ -252,11 +251,9 @@ func (g *GameSession) AdvanceFrame(flags int) bool {
 		input := decodeInputs(inputs)
 		game.AdvanceFrame(input, discconectFlags)
 	}
-
-	return true
 }
 
-func (g *GameSession) OnEvent(info *ggpo.Event) bool {
+func (g *GameSession) OnEvent(info *ggpo.Event) {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
@@ -275,7 +272,6 @@ func (g *GameSession) OnEvent(info *ggpo.Event) bool {
 	case ggpo.EventCodeConnectionResumed:
 		log.Println("EventCodeconnectionInterrupted")
 	}
-	return true
 }
 
 func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort int) {
@@ -300,8 +296,8 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 
 	session := NewGameSession()
 
-	peer := ggpo.NewPeer2PeerBackend(&session, "Test", localPort, numPlayers, inputSize)
-	//peer := ggpo.NewSyncTestBackend(&session, "Test", numPlayers, 8, inputSize)
+	//peer := ggpo.NewPeer2PeerBackend(&session, "Test", localPort, numPlayers, inputSize)
+	peer := ggpo.NewSyncTestBackend(&session, "Test", numPlayers, 8, inputSize)
 	backend = &peer
 	peer.InitializeConnection()
 	peer.Start()

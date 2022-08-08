@@ -65,7 +65,7 @@ func TestSyncIncrementFrame(t *testing.T) {
 	)
 	sync := ggpo.NewSync(peerConnection, &syncConfig)
 	sync.AdvanceFrame()
-	sync.LoadFrame(0)
+	//sync.LoadFrame(0)
 	want := 1
 	got := sync.FrameCount()
 	if got != want {

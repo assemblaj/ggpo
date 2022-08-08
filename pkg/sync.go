@@ -37,8 +37,6 @@ type SyncEvntType int
 const SyncConfirmedInput SyncEvntType = 0
 
 type savedFrame struct {
-	buf      []byte
-	cbuf     int
 	frame    int
 	checksum int
 }
@@ -237,11 +235,8 @@ func (s *Sync) LoadFrame(frame int) error {
 	}
 	state := s.savedState.frames[s.savedState.head]
 
-	log.Printf("=== Loading frame info %d (size: %d  checksum: %08x).\n",
-		state.frame, state.cbuf, state.checksum)
-	if state.buf == nil || state.cbuf <= 0 {
-		return errors.New("ggpo Sync LoadFrame: state.buf == nil || state.cbuf <= 0 ")
-	}
+	log.Printf("=== Loading frame info %d (checksum: %08x).\n",
+		state.frame, state.checksum)
 	//s.callbacks.LoadGameState(state.buf, state.cbuf)
 	s.session.LoadGameState(s.savedState.head)
 
@@ -258,16 +253,12 @@ func (s *Sync) SaveCurrentFrame() {
 	// originally was
 	// SavedFrame *state = _savedstate.frames + _savedstate.head;
 	state := s.savedState.frames[s.savedState.head]
-	if state.buf != nil {
-		state.buf = nil
-	}
 	state.frame = s.frameCount
-	buf, _ := s.session.SaveGameState(s.savedState.head)
-	state.buf = buf
-	state.cbuf = 1000
+	checksum := s.session.SaveGameState(s.savedState.head)
+	state.checksum = checksum
 
 	s.savedState.frames[s.savedState.head] = state
-	log.Printf("=== Saved frame info %d (size: %d  checksum: %08x).\n", state.frame, state.cbuf, state.checksum)
+	log.Printf("=== Saved frame info %d (checksum: %08x).\n", state.frame, state.checksum)
 	s.savedState.head = (s.savedState.head + 1) % len(s.savedState.frames)
 }
 

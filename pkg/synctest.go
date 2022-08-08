@@ -130,9 +130,6 @@ func (s *SyncTestBackend) AdvanceFrame() error {
 	var info savedInfo
 	info.frame = frame
 	info.input = s.lastInput
-	info.cbuf = s.sync.GetLastSavedFrame().cbuf
-	info.buf = make([]byte, len(s.sync.GetLastSavedFrame().buf))
-	copy(info.buf, s.sync.GetLastSavedFrame().buf)
 	info.checksum = s.sync.GetLastSavedFrame().checksum
 
 	err = s.savedFrames.Push(info)

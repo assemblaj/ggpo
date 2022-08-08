@@ -24,14 +24,13 @@ func (s *FakeSession) beginGame(game string) bool {
 	return true
 }
 
-func (s *FakeSession) SaveGameState(stateID int) ([]byte, bool) {
+func (s *FakeSession) SaveGameState(stateID int) int {
 	s.saveStates[stateID] = s.game.clone()
-	return []byte{}, true
+	return ggpo.DefaultChecksum
 }
 
-func (s *FakeSession) LoadGameState(stateID int) bool {
+func (s *FakeSession) LoadGameState(stateID int) {
 	s.game = *s.saveStates[stateID]
-	return true
 }
 
 func (s *FakeSession) LogGameState(fileName string, buffer []byte, len int) bool {
@@ -50,7 +49,7 @@ func (s *FakeSession) freeBuffer(buffer []byte) {
 
 }
 
-func (s *FakeSession) OnEvent(info *ggpo.Event) bool {
+func (s *FakeSession) OnEvent(info *ggpo.Event) {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
@@ -69,10 +68,8 @@ func (s *FakeSession) OnEvent(info *ggpo.Event) bool {
 	case ggpo.EventCodeConnectionResumed:
 		log.Println("EventCodeconnectionInterrupted")
 	}
-	return true
 }
-func (s *FakeSession) AdvanceFrame(flags int) bool {
-	return true
+func (s *FakeSession) AdvanceFrame(flags int) {
 }
 
 func (s *FakeSession) SetBackend(backend ggpo.Backend) {}
@@ -99,17 +96,16 @@ func (f *FakeSessionWithBackend) beginGame(game string) bool {
 	return true
 }
 
-func (f *FakeSessionWithBackend) SaveGameState(stateID int) ([]byte, bool) {
+func (f *FakeSessionWithBackend) SaveGameState(stateID int) int {
 	f.saveStates[stateID] = f.game.clone()
-	return []byte{}, true
+	return ggpo.DefaultChecksum
 }
 
-func (f *FakeSessionWithBackend) LoadGameState(stateID int) bool {
+func (f *FakeSessionWithBackend) LoadGameState(stateID int) {
 	f.game = *f.saveStates[stateID]
-	return true
 }
 
-func (f *FakeSessionWithBackend) LogGameState(fileName string, buffer []byte, len int) bool {
+func (f *FakeSessionWithBackend) LogGameState(fileName string, buffer []byte, len int) {
 	var game2 FakeGame
 	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
 	dec := gob.NewDecoder(&buf)
@@ -118,14 +114,13 @@ func (f *FakeSessionWithBackend) LogGameState(fileName string, buffer []byte, le
 		log.Fatal("decode error:", err)
 	}
 	log.Printf("%s Game State: %s\n", fileName, game2)
-	return true
 }
 
 func (f *FakeSessionWithBackend) freeBuffer(buffer []byte) {
 
 }
 
-func (f *FakeSessionWithBackend) OnEvent(info *ggpo.Event) bool {
+func (f *FakeSessionWithBackend) OnEvent(info *ggpo.Event) {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
 		log.Println("EventCodeConnectedToPeer")
@@ -144,9 +139,8 @@ func (f *FakeSessionWithBackend) OnEvent(info *ggpo.Event) bool {
 	case ggpo.EventCodeConnectionResumed:
 		log.Println("EventCodeconnectionInterrupted")
 	}
-	return true
 }
-func (f *FakeSessionWithBackend) AdvanceFrame(flags int) bool {
+func (f *FakeSessionWithBackend) AdvanceFrame(flags int) {
 	var discconectFlags int
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
@@ -154,29 +148,28 @@ func (f *FakeSessionWithBackend) AdvanceFrame(flags int) bool {
 	if result == nil {
 		f.backend.AdvanceFrame()
 	}
-	return true
 }
 
 func MakeSessionCallBacks(session FakeSession) ggpo.SessionCallbacks {
 	var sessionCallbacks ggpo.SessionCallbacks
-	sessionCallbacks.AdvanceFrame = session.AdvanceFrame
+	//sessionCallbacks.AdvanceFrame = session.AdvanceFrame
 	sessionCallbacks.BeginGame = session.beginGame
 	sessionCallbacks.FreeBuffer = session.freeBuffer
-	sessionCallbacks.LoadGameState = session.LoadGameState
+	//sessionCallbacks.LoadGameState = session.LoadGameState
 	sessionCallbacks.LogGameState = session.LogGameState
-	sessionCallbacks.OnEvent = session.OnEvent
-	sessionCallbacks.SaveGameState = session.SaveGameState
+	//sessionCallbacks.OnEvent = session.OnEvent
+	//sessionCallbacks.SaveGameState = session.SaveGameState
 	return sessionCallbacks
 }
 
 func MakeSessionCallBacksBackend(session FakeSessionWithBackend) ggpo.SessionCallbacks {
 	var sessionCallbacks ggpo.SessionCallbacks
-	sessionCallbacks.AdvanceFrame = session.AdvanceFrame
+	//sessionCallbacks.AdvanceFrame = session.AdvanceFrame
 	sessionCallbacks.BeginGame = session.beginGame
 	sessionCallbacks.FreeBuffer = session.freeBuffer
-	sessionCallbacks.LoadGameState = session.LoadGameState
-	sessionCallbacks.LogGameState = session.LogGameState
-	sessionCallbacks.OnEvent = session.OnEvent
-	sessionCallbacks.SaveGameState = session.SaveGameState
+	//sessionCallbacks.LoadGameState = session.LoadGameState
+	//sessionCallbacks.LogGameState = session.LogGameState
+	//sessionCallbacks.OnEvent = session.OnEvent
+	//sessionCallbacks.SaveGameState = session.SaveGameState
 	return sessionCallbacks
 }

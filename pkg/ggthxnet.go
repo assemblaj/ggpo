@@ -123,10 +123,10 @@ type Event struct {
 }
 
 type Session interface {
-	SaveGameState(stateID int) ([]byte, bool)
-	LoadGameState(stateID int) bool
-	AdvanceFrame(flags int) bool
-	OnEvent(info *Event) bool
+	SaveGameState(stateID int) int
+	LoadGameState(stateID int)
+	AdvanceFrame(flags int)
+	OnEvent(info *Event)
 	//SetBackend(backend Backend)
 }
 
@@ -160,3 +160,5 @@ const (
 	ConnectionTypeFake ConnectionType = iota - 1
 	ConnectionTypeUDP
 )
+
+const DefaultChecksum = 0
