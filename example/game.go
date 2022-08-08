@@ -296,8 +296,8 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 
 	session := NewGameSession()
 
-	//peer := ggpo.NewPeer2PeerBackend(&session, "Test", localPort, numPlayers, inputSize)
-	peer := ggpo.NewSyncTestBackend(&session, "Test", numPlayers, 8, inputSize)
+	peer := ggpo.NewPeer2PeerBackend(&session, "Test", localPort, numPlayers, inputSize)
+	//peer := ggpo.NewSyncTestBackend(&session, "Test", numPlayers, 8, inputSize)
 	backend = &peer
 	peer.InitializeConnection()
 	peer.Start()
