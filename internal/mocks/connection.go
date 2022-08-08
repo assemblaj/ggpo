@@ -4,25 +4,26 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/assemblaj/GGPO-Go/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/messages"
+	"github.com/assemblaj/GGPO-Go/pkg/transport"
 )
 
 type FakeConnection struct {
-	SendMap         map[string][]transport.UDPMessage
-	LastSentMessage transport.UDPMessage
+	SendMap         map[string][]messages.UDPMessage
+	LastSentMessage messages.UDPMessage
 }
 
 func NewFakeConnection() FakeConnection {
 	return FakeConnection{
-		SendMap: make(map[string][]transport.UDPMessage),
+		SendMap: make(map[string][]messages.UDPMessage),
 	}
 }
-func (f *FakeConnection) SendTo(msg transport.UDPMessage, remoteIp string, remotePort int) {
+func (f *FakeConnection) SendTo(msg messages.UDPMessage, remoteIp string, remotePort int) {
 	portStr := strconv.Itoa(remotePort)
 	addresssStr := remoteIp + ":" + portStr
 	sendSlice, ok := f.SendMap[addresssStr]
 	if !ok {
-		sendSlice := make([]transport.UDPMessage, 2)
+		sendSlice := make([]messages.UDPMessage, 2)
 		f.SendMap[addresssStr] = sendSlice
 	}
 	sendSlice = append(sendSlice, msg)
@@ -44,11 +45,11 @@ type FakeP2PConnection struct {
 	remotePort      int
 	localIP         string
 	printOutput     bool
-	LastSentMessage transport.UDPMessage
-	MessageHistory  []transport.UDPMessage
+	LastSentMessage messages.UDPMessage
+	MessageHistory  []messages.UDPMessage
 }
 
-func (f *FakeP2PConnection) SendTo(msg transport.UDPMessage, remoteIp string, remotePort int) {
+func (f *FakeP2PConnection) SendTo(msg messages.UDPMessage, remoteIp string, remotePort int) {
 	if f.printOutput {
 		fmt.Printf("f.localIP %s f.localPort %d msg %s size %d\n", f.localIP, f.localPort, msg, msg.PacketSize())
 	}
@@ -69,7 +70,7 @@ func NewFakeP2PConnection(remoteHandler transport.MessageHandler, localPort int,
 	f.remoteHandler = remoteHandler
 	f.localPort = localPort
 	f.localIP = localIP
-	f.MessageHistory = make([]transport.UDPMessage, 10)
+	f.MessageHistory = make([]messages.UDPMessage, 10)
 	return f
 }
 
@@ -80,7 +81,7 @@ type FakeMultiplePeerConnection struct {
 	printOutput   bool
 }
 
-func (f *FakeMultiplePeerConnection) SendTo(msg transport.UDPMessage, remoteIp string, remotePort int) {
+func (f *FakeMultiplePeerConnection) SendTo(msg messages.UDPMessage, remoteIp string, remotePort int) {
 	if f.printOutput {
 		fmt.Printf("f.localIP %s f.localPort %d msg %s size %d\n", f.localIP, f.localPort, msg, msg.PacketSize())
 	}

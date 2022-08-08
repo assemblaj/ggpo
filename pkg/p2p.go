@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/messages"
 	"github.com/assemblaj/GGPO-Go/internal/polling"
 	"github.com/assemblaj/GGPO-Go/internal/protocol"
-	"github.com/assemblaj/GGPO-Go/internal/transport"
 	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/GGPO-Go/pkg/transport"
 )
 
 const (
@@ -38,7 +39,7 @@ type Peer2PeerBackend struct {
 	disconnectTimeout     int
 	disconnectNotifyStart int
 
-	localConnectStatus []transport.UdpConnectStatus
+	localConnectStatus []messages.UdpConnectStatus
 
 	localPort int
 }
@@ -58,7 +59,7 @@ func NewPeer2PeerBackend(cb Session, gameName string,
 	//p.udp = NewUdp(&p, localPort)
 	p.localPort = localPort
 
-	p.localConnectStatus = make([]transport.UdpConnectStatus, transport.UDPMsgMaxPlayers)
+	p.localConnectStatus = make([]messages.UdpConnectStatus, messages.UDPMsgMaxPlayers)
 	for i := 0; i < len(p.localConnectStatus); i++ {
 		p.localConnectStatus[i].LastFrame = -1
 	}
@@ -684,7 +685,7 @@ func (p *Peer2PeerBackend) QueueToSpectatorHandle(queue int) PlayerHandle {
 	As of right now it hands the message off to the first endpoint that
 	handles it then returns?
 */
-func (p *Peer2PeerBackend) HandleMessage(ipAddress string, port int, msg transport.UDPMessage, length int) {
+func (p *Peer2PeerBackend) HandleMessage(ipAddress string, port int, msg messages.UDPMessage, length int) {
 	for i := 0; i < p.numPlayers; i++ {
 		if p.endpoints[i].HandlesMsg(ipAddress, port) {
 			p.endpoints[i].OnMsg(msg, length)

@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/transport"
+	"github.com/assemblaj/GGPO-Go/internal/messages"
 )
 
 type Sync struct {
@@ -20,7 +20,7 @@ type Sync struct {
 
 	inputQueues []input.InputQueue
 
-	localConnectStatus []transport.UdpConnectStatus
+	localConnectStatus []messages.UdpConnectStatus
 }
 
 //const MaxPredictionFrames int = 8
@@ -46,7 +46,7 @@ type savedState struct {
 	head   int
 }
 
-func NewSync(status []transport.UdpConnectStatus, config *SyncConfig) Sync {
+func NewSync(status []messages.UdpConnectStatus, config *SyncConfig) Sync {
 	s := Sync{
 		config:              *config,
 		session:             config.session,

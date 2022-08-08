@@ -4,9 +4,10 @@ import (
 	"log"
 
 	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/messages"
 	"github.com/assemblaj/GGPO-Go/internal/polling"
 	"github.com/assemblaj/GGPO-Go/internal/protocol"
-	"github.com/assemblaj/GGPO-Go/internal/transport"
+	"github.com/assemblaj/GGPO-Go/pkg/transport"
 )
 
 const SpectatorFrameBufferSize int = 32
@@ -184,7 +185,7 @@ func (s *SpectatorBackend) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 	}
 }
 
-func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg transport.UDPMessage, len int) {
+func (s *SpectatorBackend) HandleMessage(ipAddress string, port int, msg messages.UDPMessage, len int) {
 	if s.host.HandlesMsg(ipAddress, port) {
 		s.host.OnMsg(msg, len)
 	}

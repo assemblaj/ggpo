@@ -4,6 +4,8 @@ import (
 	"log"
 	"net"
 	"strconv"
+
+	"github.com/assemblaj/GGPO-Go/internal/messages"
 )
 
 const (
@@ -62,7 +64,7 @@ func NewUdp(messageHandler MessageHandler, localPort int) Udp {
 // dst should be sockaddr
 // maybe create Gob encoder and decoder members
 // instead of creating them on each message send
-func (u Udp) SendTo(msg UDPMessage, remoteIp string, remotePort int) {
+func (u Udp) SendTo(msg messages.UDPMessage, remoteIp string, remotePort int) {
 	if msg == nil || remoteIp == "" {
 		return
 	}
@@ -95,7 +97,7 @@ func (u Udp) Read() {
 			peer := getPeerAddress(addr)
 
 			//msg, err := DecodeMessage(recvBuf)
-			msg, err := DecodeMessageBinary(recvBuf)
+			msg, err := messages.DecodeMessageBinary(recvBuf)
 
 			if err != nil {
 				log.Printf("Error decoding message: %s", err)

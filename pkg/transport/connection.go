@@ -1,7 +1,9 @@
 package transport
 
+import "github.com/assemblaj/GGPO-Go/internal/messages"
+
 type Connection interface {
-	SendTo(msg UDPMessage, remoteIp string, remotePort int)
+	SendTo(msg messages.UDPMessage, remoteIp string, remotePort int)
 	Read()
 	Close()
 }

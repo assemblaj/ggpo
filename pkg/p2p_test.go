@@ -8,7 +8,7 @@ import (
 
 	"github.com/assemblaj/GGPO-Go/internal/mocks"
 	"github.com/assemblaj/GGPO-Go/internal/protocol"
-	"github.com/assemblaj/GGPO-Go/internal/transport"
+	"github.com/assemblaj/GGPO-Go/pkg/transport"
 
 	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 )

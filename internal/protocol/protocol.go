@@ -9,10 +9,11 @@ import (
 
 	"github.com/assemblaj/GGPO-Go/internal/buffer"
 	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/GGPO-Go/internal/messages"
 	"github.com/assemblaj/GGPO-Go/internal/polling"
 	"github.com/assemblaj/GGPO-Go/internal/sync"
-	"github.com/assemblaj/GGPO-Go/internal/transport"
 	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/GGPO-Go/pkg/transport"
 )
 
 const (
@@ -54,8 +55,8 @@ type UdpProtocol struct {
 	statsStartTime int
 
 	// The State Machine
-	localConnectStatus *[]transport.UdpConnectStatus
-	peerConnectStatus  []transport.UdpConnectStatus
+	localConnectStatus *[]messages.UdpConnectStatus
+	peerConnectStatus  []messages.UdpConnectStatus
 	currentState       UdpProtocolState
 	state              UdpProtocolStateInfo
 
@@ -189,7 +190,7 @@ type UdpProtocolStateInfo struct {
 type QueueEntry struct {
 	queueTime int
 	destIp    string
-	msg       transport.UDPMessage
+	msg       messages.UDPMessage
 	destPort  int
 }
 
@@ -197,7 +198,7 @@ func (q QueueEntry) String() string {
 	return fmt.Sprintf("Entry : queueTime %d destIp %s msg %s", q.queueTime, q.destIp, q.msg)
 }
 
-func NewQueEntry(time int, destIp string, destPort int, m transport.UDPMessage) QueueEntry {
+func NewQueEntry(time int, destIp string, destPort int, m messages.UDPMessage) QueueEntry {
 	return QueueEntry{
 		queueTime: time,
 		destIp:    destIp,
@@ -209,10 +210,10 @@ func NewQueEntry(time int, destIp string, destPort int, m transport.UDPMessage) 
 type OoPacket struct {
 	sendTime int
 	destIp   string
-	msg      transport.UDPMessage
+	msg      messages.UDPMessage
 }
 
-func NewUdpProtocol(connection transport.Connection, queue int, ip string, port int, status *[]transport.UdpConnectStatus) UdpProtocol {
+func NewUdpProtocol(connection transport.Connection, queue int, ip string, port int, status *[]messages.UdpConnectStatus) UdpProtocol {
 	var magicNumber uint16
 	for {
 		magicNumber = uint16(rand.Int())
@@ -220,7 +221,7 @@ func NewUdpProtocol(connection transport.Connection, queue int, ip string, port 
 			break
 		}
 	}
-	peerConnectStatus := make([]transport.UdpConnectStatus, transport.UDPMsgMaxPlayers)
+	peerConnectStatus := make([]messages.UdpConnectStatus, messages.UDPMsgMaxPlayers)
 	for i := 0; i < len(peerConnectStatus); i++ {
 		peerConnectStatus[i].LastFrame = -1
 	}
@@ -287,8 +288,8 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 
 		//if (!u.State.running.last_quality_report_time || _state.running.last_quality_report_time + QUALITY_REPORT_INTERVAL < now) {
 		if u.state.lastQualityReportTime == 0 || uint32(u.state.lastQualityReportTime)+uint32(QualityReportInterval) < uint32(now) {
-			msg := transport.NewUDPMessage(transport.QualityReportMsg)
-			qualityReport := msg.(*transport.QualityReportPacket)
+			msg := messages.NewUDPMessage(messages.QualityReportMsg)
+			qualityReport := msg.(*messages.QualityReportPacket)
 			qualityReport.Ping = uint32(time.Now().UnixMilli())
 			qualityReport.FrameAdvantage = int8(u.localFrameAdvantage)
 			u.SendMsg(qualityReport)
@@ -302,7 +303,7 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 
 		if u.lastSendTime > 0 && u.lastSendTime+uint(KeepAliveInterval) < uint(now) {
 			log.Println("Sending keep alive packet")
-			msg := transport.NewUDPMessage(transport.KeepAliveMsg)
+			msg := messages.NewUDPMessage(messages.KeepAliveMsg)
 			u.SendMsg(msg)
 		}
 
@@ -341,8 +342,8 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 // go globs can do a lot of that for us, so i've forgone much of that logic
 // https://github.com/pond3r/ggpo/blob/7ddadef8546a7d99ff0b3530c6056bc8ee4b9c0a/src/lib/ggpo/network/udp_proto.cpp#L111
 func (u *UdpProtocol) SendPendingOutput() error {
-	msg := transport.NewUDPMessage(transport.InputMsg)
-	inputMsg := msg.(*transport.InputPacket)
+	msg := messages.NewUDPMessage(messages.InputMsg)
+	inputMsg := msg.(*messages.InputPacket)
 
 	var j, offset int
 
@@ -382,14 +383,14 @@ func (u *UdpProtocol) SendPendingOutput() error {
 	inputMsg.DisconectRequested = u.currentState == DisconnectedState
 
 	if u.localConnectStatus != nil {
-		inputMsg.PeerConnectStatus = make([]transport.UdpConnectStatus, len(*u.localConnectStatus))
+		inputMsg.PeerConnectStatus = make([]messages.UdpConnectStatus, len(*u.localConnectStatus))
 		copy(inputMsg.PeerConnectStatus, *u.localConnectStatus)
 	} else {
-		inputMsg.PeerConnectStatus = make([]transport.UdpConnectStatus, transport.UDPMsgMaxPlayers)
+		inputMsg.PeerConnectStatus = make([]messages.UdpConnectStatus, messages.UDPMsgMaxPlayers)
 	}
 
 	// may not even need this.
-	if offset >= transport.MaxCompressedBits {
+	if offset >= messages.MaxCompressedBits {
 		return errors.New("ggpo UdpProtocol SendPendingOutput: offset >= MaxCompressedBits")
 	}
 
@@ -398,8 +399,8 @@ func (u *UdpProtocol) SendPendingOutput() error {
 }
 
 func (u *UdpProtocol) SendInputAck() {
-	msg := transport.NewUDPMessage(transport.InputAckMsg)
-	inputAck := msg.(*transport.InputAckPacket)
+	msg := messages.NewUDPMessage(messages.InputAckMsg)
+	inputAck := msg.(*messages.InputAckPacket)
 	inputAck.AckFrame = int32(u.lastRecievedInput.Frame)
 	u.SendMsg(inputAck)
 }
@@ -437,13 +438,13 @@ func (u *UdpProtocol) Disconnect() {
 
 func (u *UdpProtocol) SendSyncRequest() {
 	u.state.random = uint32(rand.Int() & 0xFFFF)
-	msg := transport.NewUDPMessage(transport.SyncRequestMsg)
-	syncRequest := msg.(*transport.SyncRequestPacket)
+	msg := messages.NewUDPMessage(messages.SyncRequestMsg)
+	syncRequest := msg.(*messages.SyncRequestPacket)
 	syncRequest.RandomRequest = u.state.random
 	u.SendMsg(syncRequest)
 }
 
-func (u *UdpProtocol) SendMsg(msg transport.UDPMessage) {
+func (u *UdpProtocol) SendMsg(msg messages.UDPMessage) {
 	log.Printf("In UdpProtocol send %s", msg)
 	u.packetsSent++
 	u.lastSendTime = uint(time.Now().UnixMilli())
@@ -467,8 +468,8 @@ func (u *UdpProtocol) SendMsg(msg transport.UDPMessage) {
 }
 
 // finally bitvector at work
-func (u *UdpProtocol) OnInput(msg transport.UDPMessage, length int) (bool, error) {
-	inputMessage := msg.(*transport.InputPacket)
+func (u *UdpProtocol) OnInput(msg messages.UDPMessage, length int) (bool, error) {
+	inputMessage := msg.(*messages.InputPacket)
 
 	// If a disconnect is requested, go ahead and disconnect now.
 	disconnectRequested := inputMessage.DisconectRequested
@@ -556,8 +557,8 @@ func (u *UdpProtocol) OnInput(msg transport.UDPMessage, length int) (bool, error
 	return true, nil
 }
 
-func (u *UdpProtocol) OnInputAck(msg transport.UDPMessage, len int) (bool, error) {
-	inputAck := msg.(*transport.InputAckPacket)
+func (u *UdpProtocol) OnInputAck(msg messages.UDPMessage, len int) (bool, error) {
+	inputAck := msg.(*messages.InputAckPacket)
 	// Get rid of our buffered input
 	for u.pendingOutput.Size() > 0 {
 		input, err := u.pendingOutput.Front()
@@ -578,10 +579,10 @@ func (u *UdpProtocol) OnInputAck(msg transport.UDPMessage, len int) (bool, error
 	return true, nil
 }
 
-func (u *UdpProtocol) OnQualityReport(msg transport.UDPMessage, len int) (bool, error) {
-	qualityReport := msg.(*transport.QualityReportPacket)
-	reply := transport.NewUDPMessage(transport.QualityReplyMsg)
-	replyPacket := reply.(*transport.QualityReplyPacket)
+func (u *UdpProtocol) OnQualityReport(msg messages.UDPMessage, len int) (bool, error) {
+	qualityReport := msg.(*messages.QualityReportPacket)
+	reply := messages.NewUDPMessage(messages.QualityReplyMsg)
+	replyPacket := reply.(*messages.QualityReplyPacket)
 	replyPacket.Pong = qualityReport.Ping
 	u.SendMsg(replyPacket)
 
@@ -589,13 +590,13 @@ func (u *UdpProtocol) OnQualityReport(msg transport.UDPMessage, len int) (bool, 
 	return true, nil
 }
 
-func (u *UdpProtocol) OnQualityReply(msg transport.UDPMessage, len int) (bool, error) {
-	qualityReply := msg.(*transport.QualityReplyPacket)
+func (u *UdpProtocol) OnQualityReply(msg messages.UDPMessage, len int) (bool, error) {
+	qualityReply := msg.(*messages.QualityReplyPacket)
 	u.roundTripTime = int(time.Now().UnixMilli()) - int(qualityReply.Pong)
 	return true, nil
 }
 
-func (u *UdpProtocol) OnKeepAlive(msg transport.UDPMessage, len int) (bool, error) {
+func (u *UdpProtocol) OnKeepAlive(msg messages.UDPMessage, len int) (bool, error) {
 	return true, nil
 }
 
@@ -748,31 +749,31 @@ func (u *UdpProtocol) GetPeerConnectStatus(id int, frame *int32) bool {
 	return !u.peerConnectStatus[id].Disconnected
 }
 
-func (u *UdpProtocol) OnInvalid(msg transport.UDPMessage, len int) (bool, error) {
+func (u *UdpProtocol) OnInvalid(msg messages.UDPMessage, len int) (bool, error) {
 	//  Assert(false) // ? ASSERT(FALSE && "Invalid msg in UdpProtocol");
 	// ah
 	log.Printf("Invalid msg in UdpProtocol ")
 	return false, errors.New("ggpo UdpProtocol OnInvalid: invalid msg in UdpProtocol")
 }
 
-func (u *UdpProtocol) OnSyncRequest(msg transport.UDPMessage, len int) (bool, error) {
+func (u *UdpProtocol) OnSyncRequest(msg messages.UDPMessage, len int) (bool, error) {
 	if u.remoteMagicNumber != 0 && msg.Header().Magic != u.remoteMagicNumber {
 		log.Printf("Ignoring sync request from unknown endpoint (%d != %d).\n",
 			msg.Header().Magic, u.remoteMagicNumber)
 		return false, nil
 	}
-	request := msg.(*transport.SyncRequestPacket)
-	reply := transport.NewUDPMessage(transport.SyncReplyMsg)
-	syncReply := reply.(*transport.SyncReplyPacket)
+	request := msg.(*messages.SyncRequestPacket)
+	reply := messages.NewUDPMessage(messages.SyncReplyMsg)
+	syncReply := reply.(*messages.SyncReplyPacket)
 	syncReply.RandomReply = request.RandomRequest
 	u.SendMsg(syncReply)
 	return true, nil
 }
 
-func (u *UdpProtocol) OnMsg(msg transport.UDPMessage, length int) {
+func (u *UdpProtocol) OnMsg(msg messages.UDPMessage, length int) {
 	handled := false
 	var err error
-	type UdpProtocolDispatchFunc func(msg transport.UDPMessage, length int) (bool, error)
+	type UdpProtocolDispatchFunc func(msg messages.UDPMessage, length int) (bool, error)
 
 	table := []UdpProtocolDispatchFunc{
 		u.OnInvalid,
@@ -786,7 +787,7 @@ func (u *UdpProtocol) OnMsg(msg transport.UDPMessage, length int) {
 
 	// filter out messages that don't match what we expect
 	seq := msg.Header().SequenceNumber
-	if msg.Header().HeaderType != uint8(transport.SyncRequestMsg) && msg.Header().HeaderType != uint8(transport.SyncReplyMsg) {
+	if msg.Header().HeaderType != uint8(messages.SyncRequestMsg) && msg.Header().HeaderType != uint8(messages.SyncReplyMsg) {
 		if msg.Header().Magic != u.remoteMagicNumber {
 			log.Printf("recv rejecting %s", msg)
 			return
@@ -823,8 +824,8 @@ func (u *UdpProtocol) OnMsg(msg transport.UDPMessage, length int) {
 	}
 }
 
-func (u *UdpProtocol) OnSyncReply(msg transport.UDPMessage, length int) (bool, error) {
-	syncReply := msg.(*transport.SyncReplyPacket)
+func (u *UdpProtocol) OnSyncReply(msg messages.UDPMessage, length int) (bool, error) {
+	syncReply := msg.(*messages.SyncReplyPacket)
 	if u.currentState != SyncingState {
 		log.Println("Ignoring SyncReply while not synching.")
 		return msg.Header().Magic == u.remoteMagicNumber, nil

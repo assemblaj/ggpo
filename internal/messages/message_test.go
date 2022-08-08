@@ -1,23 +1,23 @@
-package transport_test
+package messages_test
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
 
-	"github.com/assemblaj/GGPO-Go/internal/transport"
+	messages "github.com/assemblaj/GGPO-Go/internal/messages"
 )
 
 func TestEncodeDecodeUDPMessage(t *testing.T) {
-	want := &transport.SyncRequestPacket{}
+	want := &messages.SyncRequestPacket{}
 
-	packetBuffer, err := transport.EncodeMessage(&transport.SyncRequestPacket{})
+	packetBuffer, err := messages.EncodeMessage(&messages.SyncRequestPacket{})
 	if err != nil {
 		t.Errorf("Error in EncodeMessage %s", err)
 	}
 
-	packet, err := transport.DecodeMessage(packetBuffer)
-	got := packet.(*transport.SyncRequestPacket)
+	packet, err := messages.DecodeMessage(packetBuffer)
+	got := packet.(*messages.SyncRequestPacket)
 	if err != nil {
 		t.Errorf("Error in DecodeMessage %s", err)
 	}
@@ -28,17 +28,17 @@ func TestEncodeDecodeUDPMessage(t *testing.T) {
 }
 
 func BenchmarkBinaryEncodeVsGob(b *testing.B) {
-	msg := transport.NewUDPMessage(transport.SyncRequestMsg)
+	msg := messages.NewUDPMessage(messages.SyncRequestMsg)
 
 	buf := msg.ToBytes()
 	fmt.Printf("Binary buffer size: %d\n", len(buf))
 
-	buf, _ = transport.EncodeMessage(msg)
+	buf, _ = messages.EncodeMessage(msg)
 	fmt.Printf("Gob buffer size: %d\n", len(buf))
 }
 
 func BenchmarkBinaryEncode(b *testing.B) {
-	msg := transport.NewUDPMessage(transport.SyncRequestMsg)
+	msg := messages.NewUDPMessage(messages.SyncRequestMsg)
 	for i := 0; i < b.N; i++ {
 		msg.ToBytes()
 	}
@@ -46,19 +46,19 @@ func BenchmarkBinaryEncode(b *testing.B) {
 
 func BenchmarkGobEncode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		transport.EncodeMessage(&transport.SyncRequestPacket{})
+		messages.EncodeMessage(&messages.SyncRequestPacket{})
 	}
 }
 
 func TestEncodeHeader(t *testing.T) {
-	msg := transport.NewUDPMessage(transport.SyncRequestMsg)
+	msg := messages.NewUDPMessage(messages.SyncRequestMsg)
 	workingBuf := msg.ToBytes()
-	testedBuf := transport.UDPHeader{HeaderType: 1}.ToBytes()
-	want, err := transport.GetPacketTypeFromBuffer(workingBuf)
+	testedBuf := messages.UDPHeader{HeaderType: 1}.ToBytes()
+	want, err := messages.GetPacketTypeFromBuffer(workingBuf)
 	if err != nil {
 		t.Errorf("%s", err)
 	}
-	got, err := transport.GetPacketTypeFromBuffer(testedBuf)
+	got, err := messages.GetPacketTypeFromBuffer(testedBuf)
 	if err != nil {
 		t.Errorf("%s", err)
 	}
@@ -67,9 +67,9 @@ func TestEncodeHeader(t *testing.T) {
 	}
 }
 func TestEncodeDecodeHeader(t *testing.T) {
-	want := transport.UDPHeader{HeaderType: uint8(transport.SyncRequestMsg), SequenceNumber: 8, Magic: 25}
+	want := messages.UDPHeader{HeaderType: uint8(messages.SyncRequestMsg), SequenceNumber: 8, Magic: 25}
 	buf := want.ToBytes()
-	got := transport.UDPHeader{}
+	got := messages.UDPHeader{}
 	got.FromBytes(buf)
 
 	if got != want {
@@ -78,9 +78,9 @@ func TestEncodeDecodeHeader(t *testing.T) {
 }
 
 func TestEncodeDecodeUDPConnectionState(t *testing.T) {
-	want := transport.UdpConnectStatus{Disconnected: true, LastFrame: -1}
+	want := messages.UdpConnectStatus{Disconnected: true, LastFrame: -1}
 	buf := want.ToBytes()
-	got := transport.UdpConnectStatus{}
+	got := messages.UdpConnectStatus{}
 	got.FromBytes(buf)
 
 	if got != want {
@@ -89,15 +89,15 @@ func TestEncodeDecodeUDPConnectionState(t *testing.T) {
 }
 
 func TestEncodeDecodeSyncRequestPacket(t *testing.T) {
-	packet := transport.NewUDPMessage(transport.SyncRequestMsg)
-	want := packet.(*transport.SyncRequestPacket)
+	packet := messages.NewUDPMessage(messages.SyncRequestMsg)
+	want := packet.(*messages.SyncRequestPacket)
 	want.RandomRequest = 23
 	want.RemoteEndpoint = 24
 	want.RemoteMagic = 9000
 
 	buf := want.ToBytes()
 
-	got := transport.SyncRequestPacket{}
+	got := messages.SyncRequestPacket{}
 	got.FromBytes(buf)
 	if got != *want {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
@@ -105,27 +105,27 @@ func TestEncodeDecodeSyncRequestPacket(t *testing.T) {
 }
 
 func TestEncodeDecodeSyncReplyPacket(t *testing.T) {
-	packet := transport.NewUDPMessage(transport.SyncReplyMsg)
-	want := packet.(*transport.SyncReplyPacket)
+	packet := messages.NewUDPMessage(messages.SyncReplyMsg)
+	want := packet.(*messages.SyncReplyPacket)
 	want.RandomReply = 23
 
 	buf := want.ToBytes()
 
-	got := transport.SyncReplyPacket{}
+	got := messages.SyncReplyPacket{}
 	got.FromBytes(buf)
 	if got != *want {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
 	}
 }
 func TestEncodeDecodeQualityReportPacket(t *testing.T) {
-	packet := transport.NewUDPMessage(transport.QualityReportMsg)
-	want := packet.(*transport.QualityReportPacket)
+	packet := messages.NewUDPMessage(messages.QualityReportMsg)
+	want := packet.(*messages.QualityReportPacket)
 	want.FrameAdvantage = 90
 	want.Ping = 202
 
 	buf := want.ToBytes()
 
-	got := transport.QualityReportPacket{}
+	got := messages.QualityReportPacket{}
 	got.FromBytes(buf)
 	if got != *want {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
@@ -133,13 +133,13 @@ func TestEncodeDecodeQualityReportPacket(t *testing.T) {
 }
 
 func TestEncodeDecodeQualityReplytPacket(t *testing.T) {
-	packet := transport.NewUDPMessage(transport.QualityReplyMsg)
-	want := packet.(*transport.QualityReplyPacket)
+	packet := messages.NewUDPMessage(messages.QualityReplyMsg)
+	want := packet.(*messages.QualityReplyPacket)
 	want.Pong = 23434
 
 	buf := want.ToBytes()
 
-	got := transport.QualityReplyPacket{}
+	got := messages.QualityReplyPacket{}
 	got.FromBytes(buf)
 	if got != *want {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
@@ -147,43 +147,43 @@ func TestEncodeDecodeQualityReplytPacket(t *testing.T) {
 }
 
 func TestEncodeDecodeInputAckPacket(t *testing.T) {
-	packet := transport.NewUDPMessage(transport.InputAckMsg)
-	want := packet.(*transport.InputAckPacket)
+	packet := messages.NewUDPMessage(messages.InputAckMsg)
+	want := packet.(*messages.InputAckPacket)
 	want.AckFrame = 112341
 
 	buf := want.ToBytes()
 
-	got := transport.InputAckPacket{}
+	got := messages.InputAckPacket{}
 	got.FromBytes(buf)
 	if got != *want {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
 	}
 }
 func TestEncodeDecodeKeepAlivePacket(t *testing.T) {
-	packet := transport.NewUDPMessage(transport.KeepAliveMsg)
-	want := packet.(*transport.KeepAlivePacket)
+	packet := messages.NewUDPMessage(messages.KeepAliveMsg)
+	want := packet.(*messages.KeepAlivePacket)
 
 	buf := want.ToBytes()
 
-	got := transport.KeepAlivePacket{}
+	got := messages.KeepAlivePacket{}
 	got.FromBytes(buf)
 	if got != *want {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
 	}
 }
 func TestEncodeInput(t *testing.T) {
-	packet := transport.NewUDPMessage(transport.InputMsg)
-	want := packet.(*transport.InputPacket)
+	packet := messages.NewUDPMessage(messages.InputMsg)
+	want := packet.(*messages.InputPacket)
 	want.InputSize = 20
 	want.StartFrame = 50
 	want.NumBits = 643
 	want.DisconectRequested = false
-	want.PeerConnectStatus = make([]transport.UdpConnectStatus, 2)
-	want.PeerConnectStatus[0] = transport.UdpConnectStatus{
+	want.PeerConnectStatus = make([]messages.UdpConnectStatus, 2)
+	want.PeerConnectStatus[0] = messages.UdpConnectStatus{
 		Disconnected: false,
 		LastFrame:    -1,
 	}
-	want.PeerConnectStatus[1] = transport.UdpConnectStatus{
+	want.PeerConnectStatus[1] = messages.UdpConnectStatus{
 		Disconnected: true,
 		LastFrame:    80,
 	}
@@ -191,9 +191,9 @@ func TestEncodeInput(t *testing.T) {
 
 	buf := want.ToBytes()
 
-	got := transport.InputPacket{}
+	got := messages.InputPacket{}
 	got.FromBytes(buf)
-	//gobBuf, _ := transport.EncodeMessage(want)
+	//gobBuf, _ := messages.EncodeMessage(want)
 	//fmt.Printf("Gob input size: %d Binary input size %d\n", len(gobBuf), len(buf))
 
 	if got.InputSize != want.InputSize {
@@ -230,29 +230,29 @@ func TestEncodeInput(t *testing.T) {
 
 /*
 /*
-This test made sense before transport.UDPMessage was a pointer
+This test made sense before messages.UDPMessage was a pointer
 func TestPackets(t *testing.T) {
 	packetTests := []struct {
 		name       string
-		packetType transport.UDPMessage
-		want       transport.UDPMessage
+		packetType messages.UDPMessage
+		want       messages.UDPMessage
 	}{
-		{name: "SyncRequest", packetType: &transport.SyncRequestPacket{}, want: &transport.SyncRequestPacket{}},
-		{name: "SyncReply", packetType: &transport.SyncReplyPacket{}, want: &transport.SyncReplyPacket{}},
-		{name: "QualityReport", packetType: &transport.QualityReportPacket{}, want: &transport.QualityReportPacket{}},
-		{name: "QualityReply", packetType: &transport.QualityReplyPacket{}, want: &transport.QualityReplyPacket{}},
+		{name: "SyncRequest", packetType: &messages.SyncRequestPacket{}, want: &messages.SyncRequestPacket{}},
+		{name: "SyncReply", packetType: &messages.SyncReplyPacket{}, want: &messages.SyncReplyPacket{}},
+		{name: "QualityReport", packetType: &messages.QualityReportPacket{}, want: &messages.QualityReportPacket{}},
+		{name: "QualityReply", packetType: &messages.QualityReplyPacket{}, want: &messages.QualityReplyPacket{}},
 		//{name: "Input", packetType: Input{}, want: Input{}},
-		{name: "InputAck", packetType: &transport.InputAckPacket{}, want: &transport.InputAckPacket{}},
-		{name: "KeepAlive", packetType: &transport.KeepAlivePacket{}, want: &transport.KeepAlivePacket{}},
+		{name: "InputAck", packetType: &messages.InputAckPacket{}, want: &messages.InputAckPacket{}},
+		{name: "KeepAlive", packetType: &messages.KeepAlivePacket{}, want: &messages.KeepAlivePacket{}},
 	}
 
 	for _, tt := range packetTests {
-		packetBuffer, err := transport.EncodeMessage(tt.packetType)
+		packetBuffer, err := messages.EncodeMessage(tt.packetType)
 		if err != nil {
 			t.Errorf("Error in EncodeMessage %s", err)
 		}
 
-		got, err := transport.DecodeMessage(packetBuffer)
+		got, err := messages.DecodeMessage(packetBuffer)
 		if err != nil {
 			t.Errorf("Error in DecodeMessage %s", err)
 		}
@@ -266,21 +266,21 @@ func TestPackets(t *testing.T) {
 */
 
 func TestExtractInputFromBytes(t *testing.T) {
-	want := transport.InputPacket{
+	want := messages.InputPacket{
 		StartFrame: 0,
 		AckFrame:   12,
 	}
-	inputBytes, err := transport.EncodeMessage(&want)
+	inputBytes, err := messages.EncodeMessage(&want)
 	if err != nil {
 		t.Errorf("Error in EncodeMessage %s", err)
 	}
 
-	packet, err := transport.DecodeMessage(inputBytes)
+	packet, err := messages.DecodeMessage(inputBytes)
 	if err != nil {
 		t.Errorf("Error in DecodeMessage %s", err)
 	}
 
-	got := packet.(*transport.InputPacket)
+	got := packet.(*messages.InputPacket)
 	if want.StartFrame != got.StartFrame || want.AckFrame != got.AckFrame {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
 	}
@@ -289,13 +289,13 @@ func TestExtractInputFromBytes(t *testing.T) {
 
 func TestNewUDPMessage(t *testing.T) {
 
-	want := transport.InputPacket{
+	want := messages.InputPacket{
 		AckFrame:   0,
 		StartFrame: 5,
 	}
 
-	packet := transport.NewUDPMessage(transport.InputMsg)
-	got := packet.(*transport.InputPacket)
+	packet := messages.NewUDPMessage(messages.InputMsg)
+	got := packet.(*messages.InputPacket)
 	got.AckFrame = 0
 	got.StartFrame = 5
 
@@ -305,21 +305,21 @@ func TestNewUDPMessage(t *testing.T) {
 
 }
 func TestDecodeMessageBinaryNil(t *testing.T) {
-	_, err := transport.DecodeMessageBinary(nil)
+	_, err := messages.DecodeMessageBinary(nil)
 	if err == nil {
 		t.Errorf("A nil buffer should cause an error.")
 	}
 }
 
 func TestDecodeMessageBinaryTooSmall(t *testing.T) {
-	_, err := transport.DecodeMessageBinary([]byte{1})
+	_, err := messages.DecodeMessageBinary([]byte{1})
 	if err == nil {
 		t.Errorf("A buffer with a size < 4 should cause an error.")
 	}
 }
 
 func TestDecodeMessageBinaryInvalidBuffer(t *testing.T) {
-	_, err := transport.DecodeMessageBinary([]byte{3, 3, 3, 3, 3, 3, 3, 3})
+	_, err := messages.DecodeMessageBinary([]byte{3, 3, 3, 3, 3, 3, 3, 3})
 	if err == nil {
 		t.Errorf("Invalid buffer should've created an error. ")
 	}
@@ -329,8 +329,8 @@ func TestDecodeMessageBinaryAllInvalid(t *testing.T) {
 	fakePacket := []byte{3, 3, 3, 3, 3, 3, 3, 3}
 	for i := 1; i < 8; i++ {
 		fakePacket[4] = byte(i)
-		_, err := transport.DecodeMessageBinary(fakePacket)
-		if transport.UDPMessageType(i) == transport.KeepAliveMsg {
+		_, err := messages.DecodeMessageBinary(fakePacket)
+		if messages.UDPMessageType(i) == messages.KeepAliveMsg {
 			continue
 		}
 		if err == nil {

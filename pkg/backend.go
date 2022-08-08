@@ -3,7 +3,7 @@ package ggpo
 import (
 	"github.com/assemblaj/GGPO-Go/internal/polling"
 	"github.com/assemblaj/GGPO-Go/internal/protocol"
-	"github.com/assemblaj/GGPO-Go/internal/transport"
+	"github.com/assemblaj/GGPO-Go/pkg/transport"
 )
 
 /*
