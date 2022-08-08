@@ -186,8 +186,8 @@ func (s *SyncTestBackend) LogGameStates(info savedInfo) {
 func (s *SyncTestBackend) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SyncTestBackend) GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error {
-	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+func (s *SyncTestBackend) GetNetworkStats(handle PlayerHandle) (protocol.NetworkStats, error) {
+	return protocol.NetworkStats{}, Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SyncTestBackend) SetFrameDelay(player PlayerHandle, delay int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}

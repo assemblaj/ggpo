@@ -599,12 +599,14 @@ func (u *UdpProtocol) OnKeepAlive(msg transport.UDPMessage, len int) (bool, erro
 	return true, nil
 }
 
-func (u *UdpProtocol) GetNetworkStats(s *NetworkStats) {
+func (u *UdpProtocol) GetNetworkStats() NetworkStats {
+	s := NetworkStats{}
 	s.Network.Ping = u.roundTripTime
 	s.Network.SendQueueLen = u.pendingOutput.Size()
 	s.Network.KbpsSent = u.kbpsSent
 	s.Timesync.RemoteFramesBehind = u.remoteFrameAdvantage
 	s.Timesync.LocalFramesBehind = u.localFrameAdvantage
+	return s
 }
 
 func (u *UdpProtocol) SetLocalFrameNumber(localFrame int) {

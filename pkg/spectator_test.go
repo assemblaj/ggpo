@@ -588,8 +588,7 @@ func TestSpectatorBackendGetNetworkStatsError(t *testing.T) {
 	hostPort := 6001
 	localPort := 6000
 	stb := ggpo.NewSpectatorBackend(&session, "test", localPort, 2, 4, hostIp, hostPort)
-	var status protocol.NetworkStats
-	err := stb.GetNetworkStats(&status, ggpo.PlayerHandle(1))
+	_, err := stb.GetNetworkStats(ggpo.PlayerHandle(1))
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
 	}

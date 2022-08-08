@@ -1662,11 +1662,11 @@ func TestP2PBackendGetNetworkStats(t *testing.T) {
 	}
 	p1stats := make([]protocol.NetworkStats, numPlayers)
 	for i := 0; i < numPlayers; i++ {
-		p2p.GetNetworkStats(&p1stats[i], ggpo.PlayerHandle(i+1))
+		p1stats[i], _ = p2p.GetNetworkStats(ggpo.PlayerHandle(i + 1))
 	}
 	p2stats := make([]protocol.NetworkStats, numPlayers)
 	for i := 0; i < numPlayers; i++ {
-		p2p2.GetNetworkStats(&p2stats[i], ggpo.PlayerHandle(i+1))
+		p2stats[i], _ = p2p2.GetNetworkStats(ggpo.PlayerHandle(i + 1))
 	}
 	if p2stats[0].Timesync.LocalFramesBehind != p1stats[1].Timesync.LocalFramesBehind {
 		t.Errorf("Remote local frames behind for both endpoints should be -1 at this state.")
@@ -1696,8 +1696,7 @@ func TestP2PBackendGetNetworkStatsInvalid(t *testing.T) {
 	p2p.AddPlayer(&player1, &p1Handle)
 	p2p.AddPlayer(&player2, &p2Handle)
 
-	var stats protocol.NetworkStats
-	err := p2p.GetNetworkStats(&stats, ggpo.PlayerHandle(29))
+	_, err := p2p.GetNetworkStats(ggpo.PlayerHandle(29))
 	if err == nil {
 		t.Errorf("Trying to create stats for an invalid player handle should return an error.")
 	}

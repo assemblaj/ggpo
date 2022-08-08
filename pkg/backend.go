@@ -16,7 +16,7 @@ type Backend interface {
 	SyncInput(disconnectFlags *int) ([][]byte, error)
 	AdvanceFrame() error
 	DisconnectPlayer(handle PlayerHandle) error
-	GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error
+	GetNetworkStats(handle PlayerHandle) (protocol.NetworkStats, error)
 	SetFrameDelay(player PlayerHandle, delay int) error
 	SetDisconnectTimeout(timeout int) error
 	SetDisconnectNotifyStart(timeout int) error

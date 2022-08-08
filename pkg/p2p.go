@@ -589,17 +589,15 @@ func (p *Peer2PeerBackend) DisconnectPlayerQueue(queue int, syncto int) {
 	All coming from the UdpProtocol Endpoint
 	Maps to top level API function.
 */
-func (p *Peer2PeerBackend) GetNetworkStats(stats *protocol.NetworkStats, player PlayerHandle) error {
+func (p *Peer2PeerBackend) GetNetworkStats(player PlayerHandle) (protocol.NetworkStats, error) {
 	var queue int
 
 	result := p.PlayerHandleToQueue(player, &queue)
 	if result != nil {
-		return result
+		return protocol.NetworkStats{}, result
 	}
 
-	p.endpoints[queue].GetNetworkStats(stats)
-
-	return nil
+	return p.endpoints[queue].GetNetworkStats(), nil
 }
 
 /*

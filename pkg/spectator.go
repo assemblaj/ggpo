@@ -202,8 +202,8 @@ func (s *SpectatorBackend) AddPlayer(player *Player, handle *PlayerHandle) error
 func (s *SpectatorBackend) DisconnectPlayer(handle PlayerHandle) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
-func (s *SpectatorBackend) GetNetworkStats(stats *protocol.NetworkStats, handle PlayerHandle) error {
-	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
+func (s *SpectatorBackend) GetNetworkStats(handle PlayerHandle) (protocol.NetworkStats, error) {
+	return protocol.NetworkStats{}, Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}
 }
 func (s *SpectatorBackend) SetFrameDelay(player PlayerHandle, delay int) error {
 	return Error{Code: ErrorCodeInvalidRequest, Name: "ErrorCodeInvalidRequest"}

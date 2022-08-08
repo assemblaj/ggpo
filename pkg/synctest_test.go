@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/assemblaj/GGPO-Go/internal/mocks"
-	"github.com/assemblaj/GGPO-Go/internal/protocol"
 
 	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 )
@@ -200,8 +199,7 @@ func TestSyncTestBackendGetNetworkStatsError(t *testing.T) {
 	session := mocks.NewFakeSession()
 	checkDistance := 8
 	stb := ggpo.NewSyncTestBackend(&session, "test", 1, checkDistance, 4)
-	var status protocol.NetworkStats
-	err := stb.GetNetworkStats(&status, ggpo.PlayerHandle(1))
+	_, err := stb.GetNetworkStats(ggpo.PlayerHandle(1))
 	if err == nil {
 		t.Errorf("The code did not error when using an unsupported Feature.")
 	}

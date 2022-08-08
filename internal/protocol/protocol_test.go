@@ -250,7 +250,7 @@ func TestUDPProtocolSetLocalFrameNumber(t *testing.T) {
 
 	endpoint.SetLocalFrameNumber(8)
 	var stats protocol.NetworkStats
-	endpoint.GetNetworkStats(&stats)
+	stats = endpoint.GetNetworkStats()
 	want := -9 //
 	got := stats.Timesync.LocalFramesBehind
 	if want != got {
@@ -274,7 +274,7 @@ func TestUDPProtocolOnQualityReply(t *testing.T) {
 	endpoint.OnQualityReply(qualityReplyPacket, qualityReplyPacket.PacketSize())
 
 	var stats protocol.NetworkStats
-	endpoint.GetNetworkStats(&stats)
+	stats = endpoint.GetNetworkStats()
 	want := -9 //
 	got := stats.Timesync.LocalFramesBehind
 	now := int(time.Now().UnixMilli())
