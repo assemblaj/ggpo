@@ -57,29 +57,29 @@ func main() {
 		panic("Please enter integer numPlayers")
 	}
 
-	/*
-		logFileName := ""
-		if len(argsWithoutProg) > 4 {
-			logFileName = "Player" + argsWithoutProg[4] + ".log"
-		} else {
-			logFileName = "Spectator.log"
-		}
+	logFileName := ""
+	if len(argsWithoutProg) > 4 {
+		logFileName = "Player" + argsWithoutProg[4] + ".log"
+	} else {
+		logFileName = "Spectator.log"
+	}
 
-		f, err := os.OpenFile(logFileName, os.O_CREATE|os.O_RDWR, 0666)
-		if err != nil {
-			panic(err)
-		}
+	f, err := os.OpenFile(logFileName, os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
+	}
 
-		// don't forget to close it
-		defer f.Close()
+	// don't forget to close it
+	defer f.Close()
 
-		ggpo.EnableLogger()
-		ggpo.SetLoggerOutput(f)*/
+	ggpo.EnableLogger()
+	ggpo.SetLoggerOutput(f)
 
+	var game *Game
 	if argsWithoutProg[2] == "spectate" {
 		hostIp := argsWithoutProg[3]
 		hostAddress := getPeerAddress(hostIp)
-		GameInitSpectator(localPort, numPlayers, hostAddress.ip, hostAddress.port)
+		game = GameInitSpectator(localPort, numPlayers, hostAddress.ip, hostAddress.port)
 	} else {
 		ipAddress := []string{argsWithoutProg[2], argsWithoutProg[3]}
 
@@ -108,7 +108,7 @@ func main() {
 			i++
 			offset++
 		}
-		GameInit(localPort, numPlayers, players, numSpectators)
+		game = GameInit(localPort, numPlayers, players, numSpectators)
 	}
 
 	flag.Parse()

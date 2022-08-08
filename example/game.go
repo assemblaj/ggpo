@@ -16,8 +16,9 @@ import (
 )
 
 type GameSession struct {
-	backend ggpo.Backend
-	game    *Game
+	backend    ggpo.Backend
+	game       *Game
+	saveStates map[int]*Game
 }
 
 var backend ggpo.Backend
@@ -163,30 +164,10 @@ func (g *Game) Layout(outsideWidth, insideWidth int) (screenWidth, screenHeight 
 	return 320, 240
 }
 
-func beginGame(game string) bool {
-	log.Println("Starting Game!")
-	return true
-}
-
-/*
-func saveGameState(length *int, checksum *int, frame int) ([]byte, bool) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(&game)
-	if err != nil {
-		log.Fatal("encode error ", err)
-	}
-	buffer := make([]byte, len(buf.Bytes()))
-	copy(buffer, buf.Bytes())
-
-	*checksum = calculateChecksum(buffer)
-	*length = len(buffer)
-	return buffer, true
-}
-*/
 func (g *GameSession) SaveGameState(stateID int) int {
-	saveStates[stateID] = game.clone()
-	checksum := calculateChecksum([]byte(saveStates[stateID].String()))
+	g.saveStates[stateID] = g.game.clone()
+	fmt.Println(g.game.clone())
+	checksum := calculateChecksum([]byte(g.saveStates[stateID].String()))
 	return checksum
 }
 
@@ -199,19 +180,8 @@ func calculateChecksum(buffer []byte) int {
 	return checksum
 }
 
-/*
-func loadGameState(buffer []byte, len int) bool {
-	var buf bytes.Buffer = *bytes.NewBuffer(buffer)
-	dec := gob.NewDecoder(&buf)
-	err := dec.Decode(&game)
-	if err != nil {
-		log.Fatal("decode error:", err)
-	}
-	return true
-}
-*/
 func (g *GameSession) LoadGameState(stateID int) {
-	game = saveStates[stateID]
+	g.game = g.saveStates[stateID]
 }
 
 func (g *GameSession) LogGameState(fileName string, buffer []byte, len int) {
@@ -236,20 +206,16 @@ func (p *Player) String() string {
 	return fmt.Sprintf("Player %d: X:%f Y:%f Color: %s", p.PlayerNum, p.X, p.Y, p.Color)
 }
 
-func freeBuffer(buffer []byte) {
-
-}
-
 func (g *GameSession) AdvanceFrame(flags int) {
 	fmt.Println("Advancing frame from callback. ")
 	var discconectFlags int
 
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
-	inputs, result := backend.SyncInput(&discconectFlags)
+	inputs, result := g.backend.SyncInput(&discconectFlags)
 	if result == nil {
 		input := decodeInputs(inputs)
-		game.AdvanceFrame(input, discconectFlags)
+		g.game.AdvanceFrame(input, discconectFlags)
 	}
 }
 
@@ -274,9 +240,7 @@ func (g *GameSession) OnEvent(info *ggpo.Event) {
 	}
 }
 
-func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort int) {
-	InitGameState()
-
+func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort int) *Game {
 	var inputBits InputBits = 0
 
 	var inputSize int = len(encodeInputs(inputBits))
@@ -286,19 +250,21 @@ func GameInitSpectator(localPort int, numPlayers int, hostIp string, hostPort in
 	backend = &spectator
 	spectator.InitializeConnection()
 	spectator.Start()
+
+	return session.game
 }
 
-func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectators int) {
+func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectators int) *Game {
 	var result error
-	InitGameState()
 	var inputBits InputBits = 0
 	var inputSize int = len(encodeInputs(inputBits))
 
 	session := NewGameSession()
 
-	peer := ggpo.NewPeer(&session, localPort, numPlayers, inputSize)
-	//peer := ggpo.NewSyncTest(&session,  numPlayers, 8, inputSize)
+	//peer := ggpo.NewPeer(&session, localPort, numPlayers, inputSize)
+	peer := ggpo.NewSyncTest(&session, numPlayers, 8, inputSize)
 	backend = &peer
+	session.backend = backend
 	peer.InitializeConnection()
 	peer.Start()
 
@@ -320,11 +286,32 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 	}
 	peer.SetDisconnectTimeout(3000)
 	peer.SetDisconnectNotifyStart(1000)
+
+	return session.game
 }
 
 func NewGameSession() GameSession {
 	g := GameSession{}
+	game := NewGame()
+	g.game = &game
+	g.saveStates = make(map[int]*Game)
 	return g
+}
+
+func NewGame() Game {
+	var player1 = Player{
+		X:         50,
+		Y:         50,
+		Color:     color.RGBA{255, 0, 0, 255},
+		PlayerNum: 1}
+	var player2 = Player{
+		X:         150,
+		Y:         50,
+		Color:     color.RGBA{0, 0, 255, 255},
+		PlayerNum: 2}
+	return Game{
+		Players: []Player{player1, player2},
+	}
 }
 
 func InitGameState() {
