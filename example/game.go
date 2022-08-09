@@ -22,14 +22,7 @@ type GameSession struct {
 }
 
 var backend ggpo.Backend
-var player1 Player
-var player2 Player
-var game *Game
 var start, next, now int
-var playerInputs []Input
-var saveStates map[int]*Game
-
-var localPort, numPlayers int
 
 const FRAME_DELAY int = 2
 
@@ -166,7 +159,6 @@ func (g *Game) Layout(outsideWidth, insideWidth int) (screenWidth, screenHeight 
 
 func (g *GameSession) SaveGameState(stateID int) int {
 	g.saveStates[stateID] = g.game.clone()
-	fmt.Println(g.game.clone())
 	checksum := calculateChecksum([]byte(g.saveStates[stateID].String()))
 	return checksum
 }
@@ -181,7 +173,7 @@ func calculateChecksum(buffer []byte) int {
 }
 
 func (g *GameSession) LoadGameState(stateID int) {
-	g.game = g.saveStates[stateID]
+	*g.game = *g.saveStates[stateID]
 }
 
 func (g *GameSession) LogGameState(fileName string, buffer []byte, len int) {
@@ -261,8 +253,8 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 
 	session := NewGameSession()
 
-	//peer := ggpo.NewPeer(&session, localPort, numPlayers, inputSize)
-	peer := ggpo.NewSyncTest(&session, numPlayers, 8, inputSize)
+	peer := ggpo.NewPeer(&session, localPort, numPlayers, inputSize)
+	//peer := ggpo.NewSyncTest(&session, numPlayers, 8, inputSize)
 	backend = &peer
 	session.backend = backend
 	peer.InitializeConnection()
@@ -312,23 +304,6 @@ func NewGame() Game {
 	return Game{
 		Players: []Player{player1, player2},
 	}
-}
-
-func InitGameState() {
-	player1 = Player{
-		X:         50,
-		Y:         50,
-		Color:     color.RGBA{255, 0, 0, 255},
-		PlayerNum: 1}
-	player2 = Player{
-		X:         150,
-		Y:         50,
-		Color:     color.RGBA{0, 0, 255, 255},
-		PlayerNum: 2}
-	game = &Game{
-		Players: []Player{player1, player2}}
-	saveStates = make(map[int]*Game)
-
 }
 
 func init() {

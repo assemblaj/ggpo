@@ -95,12 +95,12 @@ func (s *SyncTest) SyncInput(discconectFlags *int) ([][]byte, error) {
 		if err != nil {
 			panic(err)
 		}
-		s.lastInput = info.input
+		s.lastInput = *info.input.Clone()
 	} else {
 		if s.sync.FrameCount() == 0 {
 			s.sync.SaveCurrentFrame()
 		}
-		s.lastInput = s.currentInput
+		s.lastInput = *s.currentInput.Clone()
 	}
 	var values = make([]byte, len(s.lastInput.Bits))
 	copy(values, s.lastInput.Bits)

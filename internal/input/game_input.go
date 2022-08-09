@@ -62,6 +62,14 @@ func (g *GameInput) Erase() {
 	}
 }
 
+func (g *GameInput) Clone() *GameInput {
+	gi := GameInput{}
+	gi = *g
+	gi.Bits = make([]byte, len(g.Bits))
+	copy(gi.Bits, g.Bits)
+	return &gi
+}
+
 func (g *GameInput) Log(prefix string, showFrame bool) {
 	log.Printf("%s%s", prefix, g)
 }
