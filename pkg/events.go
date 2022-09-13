@@ -19,9 +19,9 @@ const (
 // Hopefully I remember I did this like this
 type Event struct {
 	Code              EventCode
-	player            PlayerHandle
-	count             int // synchronizing
-	total             int // synchronizing
-	framesAhead       int // timesync
-	disconnectTimeout int // connection interrupted
+	Player            PlayerHandle
+	Count             int // synchronizing
+	Total             int // synchronizing
+	FramesAhead       int // timesync
+	DisconnectTimeout int // connection interrupted
 }

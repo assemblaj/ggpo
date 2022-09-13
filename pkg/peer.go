@@ -152,7 +152,7 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 				if interval > 0 {
 					var info Event
 					info.Code = EventCodeTimeSync
-					info.framesAhead = interval
+					info.FramesAhead = interval
 					p.session.OnEvent(&info)
 					p.nextRecommendedSleep = currentFrame + RecommendationInterval
 				}
@@ -463,7 +463,7 @@ func (p *Peer) OnUdpProtocolSpectatorEvent(evt *protocol.UdpProtocolEvent, queue
 		p.spectators[queue].Disconnect()
 
 		info.Code = EventCodeDisconnectedFromPeer
-		info.player = handle
+		info.Player = handle
 		p.session.OnEvent(&info)
 	}
 }
@@ -477,32 +477,32 @@ func (p *Peer) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent, handle PlayerH
 	switch evt.Type() {
 	case protocol.ConnectedEvent:
 		info.Code = EventCodeConnectedToPeer
-		info.player = handle
+		info.Player = handle
 		p.session.OnEvent(&info)
 
 	case protocol.SynchronizingEvent:
 		info.Code = EventCodeSynchronizingWithPeer
-		info.player = handle
-		info.count = evt.Count
-		info.total = evt.Total
+		info.Player = handle
+		info.Count = evt.Count
+		info.Total = evt.Total
 		p.session.OnEvent(&info)
 
 	case protocol.SynchronziedEvent:
 		info.Code = EventCodeSynchronizedWithPeer
-		info.player = handle
+		info.Player = handle
 		p.session.OnEvent(&info)
 
 		p.CheckInitialSync()
 
 	case protocol.NetworkInterruptedEvent:
 		info.Code = EventCodeConnectionInterrupted
-		info.player = handle
-		info.disconnectTimeout = evt.DisconnectTimeout
+		info.Player = handle
+		info.DisconnectTimeout = evt.DisconnectTimeout
 		p.session.OnEvent(&info)
 
 	case protocol.NetworkResumedEvent:
 		info.Code = EventCodeConnectionResumed
-		info.player = handle
+		info.Player = handle
 		p.session.OnEvent(&info)
 	}
 }
@@ -578,7 +578,7 @@ func (p *Peer) DisconnectPlayerQueue(queue int, syncto int) {
 	}
 
 	info.Code = EventCodeDisconnectedFromPeer
-	info.player = p.QueueToPlayerHandle(queue)
+	info.Player = p.QueueToPlayerHandle(queue)
 	p.session.OnEvent(&info)
 
 	p.CheckInitialSync()

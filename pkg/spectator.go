@@ -138,20 +138,20 @@ func (s *Spectator) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 	switch evt.Type() {
 	case protocol.ConnectedEvent:
 		info.Code = EventCodeConnectedToPeer
-		info.player = 0
+		info.Player = 0
 		s.session.OnEvent(&info)
 
 	case protocol.SynchronizingEvent:
 		info.Code = EventCodeSynchronizingWithPeer
-		info.player = 0
-		info.count = evt.Count
-		info.total = evt.Total
+		info.Player = 0
+		info.Count = evt.Count
+		info.Total = evt.Total
 		s.session.OnEvent(&info)
 
 	case protocol.SynchronziedEvent:
 		if s.synchonizing {
 			info.Code = EventCodeSynchronizedWithPeer
-			info.player = 0
+			info.Player = 0
 			s.session.OnEvent(&info)
 
 			info.Code = EventCodeRunning
@@ -161,18 +161,18 @@ func (s *Spectator) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent) {
 
 	case protocol.NetworkInterruptedEvent:
 		info.Code = EventCodeConnectionInterrupted
-		info.player = 0
-		info.disconnectTimeout = evt.DisconnectTimeout
+		info.Player = 0
+		info.DisconnectTimeout = evt.DisconnectTimeout
 		s.session.OnEvent(&info)
 
 	case protocol.NetworkResumedEvent:
 		info.Code = EventCodeConnectionResumed
-		info.player = 0
+		info.Player = 0
 		s.session.OnEvent(&info)
 
 	case protocol.DisconnectedEvent:
 		info.Code = EventCodeDisconnectedFromPeer
-		info.player = 0
+		info.Player = 0
 		s.session.OnEvent(&info)
 
 	case protocol.InputEvent:
