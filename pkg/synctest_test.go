@@ -176,11 +176,61 @@ func TestSyncTestBackendChecksumCheck(t *testing.T) {
 		stb.Idle(0)
 		result = stb.AddLocalInput(handle, inputBytes, 4)
 		if result == nil {
-			_, result := stb.SyncInput(&disconnectFlags)
+			vals, result := stb.SyncInput(&disconnectFlags)
 			if result == nil {
+				session.Game.UpdateByInputs(vals)
 				stb.AdvanceFrame()
 			}
 		}
+	}
+}
+
+func TestSyncTestBackendMultiplePlayers(t *testing.T) {
+	session := mocks.NewFakeSessionWithBackend()
+	var stb ggpo.SyncTest
+	session.SetBackend(&stb)
+	player1 := ggpo.NewLocalPlayer(20, 1)
+	player2 := ggpo.NewLocalPlayer(20, 2)
+	checkDistance := 8
+	stb = ggpo.NewSyncTest(&session, 2, checkDistance, 2)
+
+	var handle1 ggpo.PlayerHandle
+	stb.AddPlayer(&player1, &handle1)
+
+	var handle2 ggpo.PlayerHandle
+	stb.AddPlayer(&player2, &handle2)
+
+	ib1 := []byte{2, 4}
+	ib2 := []byte{1, 3}
+	var disconnectFlags int
+	var result error
+
+	res1 := []float64{0, 0}
+	res2 := []float64{0, 0}
+	for i := 0; i < checkDistance+1; i++ {
+		res1[0] += float64(ib1[0])
+		res1[1] += float64(ib1[1])
+		res2[0] += float64(ib2[0])
+		res2[1] += float64(ib2[1])
+	}
+
+	for i := 0; i < checkDistance+1; i++ {
+		stb.Idle(0)
+		result = stb.AddLocalInput(handle1, ib1, 2)
+		if result == nil {
+			result = stb.AddLocalInput(handle2, ib2, 2)
+		}
+		if result == nil {
+			vals, result := stb.SyncInput(&disconnectFlags)
+			if result == nil {
+				session.Game.UpdateByInputs(vals)
+				stb.AdvanceFrame()
+			}
+		}
+	}
+	if session.Game.Players[0].X != res1[0] || session.Game.Players[0].Y != res1[1] ||
+		session.Game.Players[1].X != res2[0] || session.Game.Players[1].Y != res2[1] {
+		t.Errorf("Invalid result in 2 Player SyncTest Session")
 	}
 }
 

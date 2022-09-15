@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/sha1"
 	"encoding/gob"
 	"fmt"
 	"image/color"
@@ -145,12 +146,23 @@ func (g *Game) ReadInputs() InputBits {
 	return in
 }
 
+func (g *Game) Checksum() int {
+	h := sha1.New()
+	h.Write([]byte(g.String()))
+	toSum := h.Sum(nil)
+	sum := 0
+	for _, v := range toSum {
+		sum += int(v)
+	}
+	return sum
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
 	for _, p := range g.Players {
 		ebitenutil.DrawRect(screen, p.X, p.Y, 50, 50, p.Color)
 	}
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("Player 1: X: %.2f Y:%.2f Player 2 X: %.2f Y: %.2f",
-		g.Players[0].X, g.Players[0].Y, g.Players[1].X, g.Players[1].Y))
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("Player 1: X: %.2f Y:%.2f Player 2 X: %.2f Y: %.2f\nChecksum: %d",
+		g.Players[0].X, g.Players[0].Y, g.Players[1].X, g.Players[1].Y, g.Checksum()))
 }
 
 func (g *Game) Layout(outsideWidth, insideWidth int) (screenWidth, screenHeight int) {

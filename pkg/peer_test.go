@@ -1701,3 +1701,88 @@ func TestP2PBackendGetNetworkStatsInvalid(t *testing.T) {
 		t.Errorf("Trying to create stats for an invalid player handle should return an error.")
 	}
 }
+
+/*
+func TestP2PBackendMoockInputExchangeSameState(t *testing.T) {
+	var p2p ggpo.Peer
+	session := mocks.NewFakeSessionWithBackend()
+	session.SetBackend(&p2p)
+	localPort := 6000
+	remotePort := 6001
+	remoteIp := "127.2.1.1"
+	numPlayers := 2
+	inputSize := 4
+	p2p = ggpo.NewPeer(&session, localPort, numPlayers, inputSize)
+
+	var p2p2 ggpo.Peer
+	session2 := mocks.NewFakeSessionWithBackend()
+	session2.SetBackend(&p2p2)
+	p2p2 = ggpo.NewPeer(&session2, remotePort, numPlayers, inputSize)
+	connection := mocks.NewFakeP2PConnection(&p2p2, localPort, remoteIp)
+	connection2 := mocks.NewFakeP2PConnection(&p2p, remotePort, remoteIp)
+
+	p2p.InitializeConnection(&connection)
+	p2p2.InitializeConnection(&connection2)
+
+	player1 := ggpo.NewLocalPlayer(20, 1)
+	var p1Handle ggpo.PlayerHandle
+	player2 := ggpo.NewRemotePlayer(20, 2, remoteIp, remotePort)
+	var p2Handle ggpo.PlayerHandle
+	p2p.AddPlayer(&player1, &p1Handle)
+	p2p.AddPlayer(&player2, &p2Handle)
+
+	player1 = ggpo.NewRemotePlayer(20, 1, remoteIp, localPort)
+	player2 = ggpo.NewLocalPlayer(20, 2)
+	var p2handle1 ggpo.PlayerHandle
+	var p2handle2 ggpo.PlayerHandle
+	p2p2.AddPlayer(&player1, &p2handle1)
+	p2p2.AddPlayer(&player2, &p2handle2)
+
+	advance := func() int64 {
+		return time.Now().Add(time.Millisecond * 2000).UnixMilli()
+	}
+	for i := 0; i < protocol.NumSyncPackets; i++ {
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+
+	var vals, vals2 [][]byte
+	var df1, df2 int
+	iterations := 8
+	input1 := make([]byte, 2)
+	input2 := make([]byte, 2)
+
+	for i := 0; i < iterations; i++ {
+		rand.Read(input1)
+		rand.Read(input2)
+		fmt.Printf("Iteration %d\n", i+1)
+		p2p.Idle(0, advance)
+		p2p2.Idle(0, advance)
+		result1 := p2p.AddLocalInput(p1Handle, input1, 2)
+		if result1 == nil {
+			vals, result1 = p2p.SyncInput(&df1)
+			fmt.Printf("Inputs Peer 1 sees: %v\n", vals)
+			if result1 == nil {
+				session.Game.UpdateByInputs(vals)
+				p2p.AdvanceFrame()
+			}
+		}
+
+		result2 := p2p2.AddLocalInput(p2handle2, input2, 2)
+		if result2 == nil {
+			vals2, result2 = p2p2.SyncInput(&df2)
+			fmt.Printf("Inputs Peer 2 sees: %v\n", vals2)
+			if result2 == nil {
+				session2.Game.UpdateByInputs(vals2)
+				p2p2.AdvanceFrame()
+			}
+		}
+	}
+
+	if session.Game.Checksum() != session2.Game.Checksum() {
+		t.Errorf("The games do not have the same state after synchronizing input.")
+	}
+}
+*/

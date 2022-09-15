@@ -9,14 +9,14 @@ import (
 )
 
 type FakeSession struct {
-	game       FakeGame
-	saveStates map[int]*FakeGame
+	Game       FakeGame
+	SaveStates map[int]*FakeGame
 }
 
 func NewFakeSession() FakeSession {
 	return FakeSession{
-		game:       FakeGame{},
-		saveStates: make(map[int]*FakeGame),
+		Game:       NewFakeGame(),
+		SaveStates: make(map[int]*FakeGame),
 	}
 }
 func (s *FakeSession) beginGame(game string) bool {
@@ -25,12 +25,12 @@ func (s *FakeSession) beginGame(game string) bool {
 }
 
 func (s *FakeSession) SaveGameState(stateID int) int {
-	s.saveStates[stateID] = s.game.clone()
+	s.SaveStates[stateID] = s.Game.clone()
 	return ggpo.DefaultChecksum
 }
 
 func (s *FakeSession) LoadGameState(stateID int) {
-	s.game = *s.saveStates[stateID]
+	s.Game = *s.SaveStates[stateID]
 }
 
 func (s *FakeSession) LogGameState(fileName string, buffer []byte, len int) bool {
@@ -41,7 +41,7 @@ func (s *FakeSession) LogGameState(fileName string, buffer []byte, len int) bool
 	if err != nil {
 		log.Fatal("decode error:", err)
 	}
-	log.Printf("%s Game State: %s\n", fileName, game2)
+	log.Printf("%s Game State: %s\n", fileName, &game2)
 	return true
 }
 
@@ -76,14 +76,14 @@ func (s *FakeSession) SetBackend(backend ggpo.Backend) {}
 
 type FakeSessionWithBackend struct {
 	backend    ggpo.Backend
-	game       FakeGame
-	saveStates map[int]*FakeGame
+	Game       FakeGame
+	SaveStates map[int]*FakeGame
 }
 
 func NewFakeSessionWithBackend() FakeSessionWithBackend {
 	return FakeSessionWithBackend{
-		game:       FakeGame{},
-		saveStates: make(map[int]*FakeGame),
+		Game:       NewFakeGame(),
+		SaveStates: make(map[int]*FakeGame),
 	}
 }
 
@@ -97,12 +97,12 @@ func (f *FakeSessionWithBackend) beginGame(game string) bool {
 }
 
 func (f *FakeSessionWithBackend) SaveGameState(stateID int) int {
-	f.saveStates[stateID] = f.game.clone()
-	return ggpo.DefaultChecksum
+	f.SaveStates[stateID] = f.Game.clone()
+	return f.SaveStates[stateID].Checksum()
 }
 
 func (f *FakeSessionWithBackend) LoadGameState(stateID int) {
-	f.game = *f.saveStates[stateID]
+	f.Game = *f.SaveStates[stateID]
 }
 
 func (f *FakeSessionWithBackend) LogGameState(fileName string, buffer []byte, len int) {
@@ -113,7 +113,7 @@ func (f *FakeSessionWithBackend) LogGameState(fileName string, buffer []byte, le
 	if err != nil {
 		log.Fatal("decode error:", err)
 	}
-	log.Printf("%s Game State: %s\n", fileName, game2)
+	log.Printf("%s Game State: %s\n", fileName, &game2)
 }
 
 func (f *FakeSessionWithBackend) freeBuffer(buffer []byte) {
@@ -144,8 +144,9 @@ func (f *FakeSessionWithBackend) AdvanceFrame(flags int) {
 	var discconectFlags int
 	// Make sure we fetch the inputs from GGPO and use these to update
 	// the game state instead of reading from the keyboard.
-	_, result := f.backend.SyncInput(&discconectFlags)
+	vals, result := f.backend.SyncInput(&discconectFlags)
 	if result == nil {
+		f.Game.UpdateByInputs(vals)
 		f.backend.AdvanceFrame()
 	}
 }

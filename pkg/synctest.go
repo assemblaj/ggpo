@@ -82,8 +82,11 @@ func (s *SyncTest) AddLocalInput(player PlayerHandle, values []byte, size int) e
 	//for i := 0; i < size; i++ {
 	//	s.currentInput.Bits[index*size+i] |= values[i]
 	//}
-	s.currentInput.Bits = make([]byte, len(values))
-	copy(s.currentInput.Bits, values)
+	//copy(s.currentInput.Bits, values)
+	index := int(player)
+	start := index * size
+	end := start + size
+	copy(s.currentInput.Bits[start:end], values)
 	return nil
 }
 
@@ -102,13 +105,22 @@ func (s *SyncTest) SyncInput(discconectFlags *int) ([][]byte, error) {
 		}
 		s.lastInput = *s.currentInput.Clone()
 	}
-	var values = make([]byte, len(s.lastInput.Bits))
-	copy(values, s.lastInput.Bits)
+	//var values = make([]byte, len(s.lastInput.Bits))
+	//copy(values, s.lastInput.Bits)
+
+	values := make([][]byte, s.numPlayers)
+	offset := 0
+	counter := 0
+	for offset < len(s.lastInput.Bits) && counter < s.numPlayers {
+		values[counter] = s.lastInput.Bits[offset : s.lastInput.Size+offset]
+		offset += s.lastInput.Size
+		counter++
+	}
 
 	if *discconectFlags > 0 {
 		*discconectFlags = 0
 	}
-	return [][]byte{values}, nil
+	return values, nil
 }
 
 func (s *SyncTest) AdvanceFrame() error {
