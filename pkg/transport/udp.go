@@ -45,7 +45,9 @@ func getPeerAddress(address net.Addr) peerAddress {
 }
 
 func (u Udp) Close() {
-	u.listener.Close()
+	if u.listener != nil {
+		u.listener.Close()
+	}
 }
 
 func NewUdp(messageHandler MessageHandler, localPort int) Udp {

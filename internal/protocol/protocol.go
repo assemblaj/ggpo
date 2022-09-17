@@ -683,7 +683,9 @@ func (u *UdpProtocol) ClearSendQueue() {
 // going to call deletes close
 func (u *UdpProtocol) Close() {
 	u.ClearSendQueue()
-	u.connection.Close()
+	if u.connection != nil {
+		u.connection.Close()
+	}
 }
 
 func (u *UdpProtocol) HandlesMsg(ipAddress string, port int) bool {
