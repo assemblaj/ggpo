@@ -193,6 +193,12 @@ func (s *SyncTest) AdvanceFrame() error {
 						panic(err)
 					}
 					s.leniantRevert = true
+					for !s.savedFrames.Empty() {
+						err = s.savedFrames.Pop()
+						if err != nil {
+							panic(err)
+						}
+					}
 					break
 				}
 			}
