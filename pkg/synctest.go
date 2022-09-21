@@ -175,7 +175,9 @@ func (s *SyncTest) AdvanceFrame() error {
 			}
 			if info.frame != s.sync.FrameCount() {
 				log.Printf("Frame number %d does not match saved frame number %d", info.frame, frame)
-				panic("RaiseSyncError")
+				if s.strict {
+					panic("RaiseSyncError")
+				}
 			}
 			checksum := s.sync.GetLastSavedFrame().checksum
 			if info.checksum != checksum {
