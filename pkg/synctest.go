@@ -23,10 +23,11 @@ type SyncTest struct {
 	logFp         os.File
 	game          string
 
-	currentInput input.GameInput
-	lastInput    input.GameInput
-	savedFrames  buffer.RingBuffer[savedInfo]
-	strict       bool
+	currentInput  input.GameInput
+	lastInput     input.GameInput
+	savedFrames   buffer.RingBuffer[savedInfo]
+	strict        bool
+	leniantRevert bool
 }
 
 type savedInfo struct {
@@ -191,11 +192,15 @@ func (s *SyncTest) AdvanceFrame() error {
 					if err != nil {
 						panic(err)
 					}
+					s.leniantRevert = true
+					break
 				}
 			}
 			log.Printf("Checksum %08d for frame %d matches.\n", checksum, info.frame)
 		}
-		s.lastVerified = frame
+		if !s.leniantRevert {
+			s.lastVerified = frame
+		}
 		s.rollingBack = false
 	}
 	return nil
