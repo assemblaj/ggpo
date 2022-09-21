@@ -1,6 +1,7 @@
 package ggpo
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -25,6 +26,7 @@ type SyncTest struct {
 	currentInput input.GameInput
 	lastInput    input.GameInput
 	savedFrames  buffer.RingBuffer[savedInfo]
+	strict       bool
 }
 
 type savedInfo struct {
@@ -37,7 +39,7 @@ type savedInfo struct {
 
 func NewSyncTest(cb Session,
 	numPlayers int,
-	frames int, inputSize int) SyncTest {
+	frames int, inputSize int, strict bool) SyncTest {
 	s := SyncTest{
 		session:       cb,
 		numPlayers:    numPlayers,
@@ -51,7 +53,7 @@ func NewSyncTest(cb Session,
 	config.numPredictionFrames = MaxPredictionFrames
 	config.inputSize = inputSize
 	s.sync = NewSync(nil, &config)
-
+	s.strict = strict
 	return s
 }
 
@@ -77,7 +79,7 @@ func (s *SyncTest) AddLocalInput(player PlayerHandle, values []byte, size int) e
 	if !s.running {
 		return Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
-
+	fmt.Printf("Values in AddLocalInput %v \n", values)
 	//index := int(player)
 	//for i := 0; i < size; i++ {
 	//	s.currentInput.Bits[index*size+i] |= values[i]
@@ -87,6 +89,7 @@ func (s *SyncTest) AddLocalInput(player PlayerHandle, values []byte, size int) e
 	start := index * size
 	end := start + size
 	copy(s.currentInput.Bits[start:end], values)
+	fmt.Printf("Values after addLocalInput: %v", s.currentInput.Bits)
 	return nil
 }
 
@@ -116,7 +119,7 @@ func (s *SyncTest) SyncInput(discconectFlags *int) ([][]byte, error) {
 		offset += s.lastInput.Size
 		counter++
 	}
-
+	fmt.Println(values)
 	if *discconectFlags > 0 {
 		*discconectFlags = 0
 	}
@@ -178,7 +181,15 @@ func (s *SyncTest) AdvanceFrame() error {
 			if info.checksum != checksum {
 				s.LogGameStates(info)
 				log.Printf("Checksum for frame %d does not match saved (%d != %d)", frame, checksum, info.checksum)
-				panic("RaiseSyncError")
+				if s.strict {
+					panic("RaiseSyncError")
+				} else {
+					log.Println("RaiseSyncError: Returning to last verified frame.")
+					err = s.sync.LoadFrame(s.lastVerified)
+					if err != nil {
+						panic(err)
+					}
+				}
 			}
 			log.Printf("Checksum %08d for frame %d matches.\n", checksum, info.frame)
 		}

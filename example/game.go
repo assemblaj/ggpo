@@ -30,7 +30,8 @@ const FRAME_DELAY int = 2
 var currentPlayer int = 1
 
 type Game struct {
-	Players []Player
+	Players  []Player
+	syncTest bool
 }
 
 type Player struct {
@@ -81,6 +82,12 @@ func (g *Game) RunFrame() {
 
 	fmt.Println("Attempting to add local inputs")
 	result := backend.AddLocalInput(ggpo.PlayerHandle(currentPlayer), buffer, len(buffer))
+
+	if g.syncTest {
+		input = g.ReadInputsP2()
+		buffer = encodeInputs(input)
+		result = backend.AddLocalInput(ggpo.PlayerHandle(1), buffer, len(buffer))
+	}
 	fmt.Println("Attempt to add local inputs complete")
 	if result == nil {
 		fmt.Println("Attempt to add local inputs was successful")
@@ -91,7 +98,6 @@ func (g *Game) RunFrame() {
 		values, result = backend.SyncInput(&disconnectFlags)
 		if result == nil {
 			fmt.Println("Attempt synchronize inputs was sucessful")
-
 			inputs := decodeInputs(values)
 			fmt.Println("Advancing Frame from game loop")
 			g.AdvanceFrame(inputs, disconnectFlags)
@@ -125,6 +131,18 @@ func (g *Game) UpdateByInputs(inputs []InputBits) {
 		if input.isButtonOn(int(ebiten.KeyArrowRight)) {
 			g.Players[i].X++
 		}
+		if input.isButtonOn(int(ebiten.KeyW)) {
+			g.Players[i].Y--
+		}
+		if input.isButtonOn(int(ebiten.KeyS)) {
+			g.Players[i].Y++
+		}
+		if input.isButtonOn(int(ebiten.KeyA)) {
+			g.Players[i].X--
+		}
+		if input.isButtonOn(int(ebiten.KeyD)) {
+			g.Players[i].X++
+		}
 	}
 }
 
@@ -144,6 +162,25 @@ func (g *Game) ReadInputs() InputBits {
 		in.setButton(int(ebiten.KeyArrowRight))
 	}
 	return in
+}
+
+func (g *Game) ReadInputsP2() InputBits {
+	var in InputBits
+
+	if ebiten.IsKeyPressed(ebiten.KeyW) {
+		in.setButton(int(ebiten.KeyW))
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		in.setButton(int(ebiten.KeyS))
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyA) {
+		in.setButton(int(ebiten.KeyA))
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyD) {
+		in.setButton(int(ebiten.KeyD))
+	}
+	return in
+
 }
 
 func (g *Game) Checksum() int {
@@ -266,7 +303,7 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 	session := NewGameSession()
 
 	peer := ggpo.NewPeer(&session, localPort, numPlayers, inputSize)
-	//peer := ggpo.NewSyncTest(&session, numPlayers, 8, inputSize)
+	//peer := ggpo.NewSyncTest(&session, numPlayers, 8, inputSize, true)
 	backend = &peer
 	session.backend = backend
 	peer.InitializeConnection()
@@ -315,6 +352,7 @@ func NewGame() Game {
 		PlayerNum: 2}
 	return Game{
 		Players: []Player{player1, player2},
+		///syncTest: true,
 	}
 }
 
