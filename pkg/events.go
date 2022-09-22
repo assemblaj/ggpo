@@ -11,6 +11,7 @@ const (
 	EventCodeTimeSync              EventCode = 1005
 	EventCodeConnectionInterrupted EventCode = 1006
 	EventCodeConnectionResumed     EventCode = 1007
+	EventCodeSyncTestDesync        EventCode = 1000
 )
 
 // the original had a union a named struct for each event type,
@@ -24,4 +25,6 @@ type Event struct {
 	Total             int // synchronizing
 	FramesAhead       int // timesync
 	DisconnectTimeout int // connection interrupted
+	CurrentState      int // SyncTestDesync
+	LastVerified      int // SyncTestDesync
 }

@@ -195,6 +195,12 @@ func (s *SyncTest) AdvanceFrame() error {
 					//s.revert()
 					//break
 				}
+				lastVerifiedStateID, _ := s.sync.FindSavedFrameIndex(s.lastVerified)
+				s.session.OnEvent(&Event{
+					Code:         EventCodeSyncTestDesync,
+					CurrentState: s.sync.savedState.head,
+					LastVerified: lastVerifiedStateID,
+				})
 			}
 			log.Printf("Checksum %08d for frame %d matches.\n", checksum, info.frame)
 		}
