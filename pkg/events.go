@@ -11,7 +11,7 @@ const (
 	EventCodeTimeSync              EventCode = 1005
 	EventCodeConnectionInterrupted EventCode = 1006
 	EventCodeConnectionResumed     EventCode = 1007
-	EventCodeSyncTestDesync        EventCode = 1000
+	EventCodeSyncTestDesync        EventCode = 1008
 )
 
 // the original had a union a named struct for each event type,
