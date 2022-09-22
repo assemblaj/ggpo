@@ -1,7 +1,6 @@
 package ggpo
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -80,7 +79,6 @@ func (s *SyncTest) AddLocalInput(player PlayerHandle, values []byte, size int) e
 	if !s.running {
 		return Error{Code: ErrorCodeNotSynchronized, Name: "ErrorCodeNotSynchronized"}
 	}
-	fmt.Printf("Values in AddLocalInput %v \n", values)
 	//index := int(player)
 	//for i := 0; i < size; i++ {
 	//	s.currentInput.Bits[index*size+i] |= values[i]
@@ -90,7 +88,6 @@ func (s *SyncTest) AddLocalInput(player PlayerHandle, values []byte, size int) e
 	start := index * size
 	end := start + size
 	copy(s.currentInput.Bits[start:end], values)
-	fmt.Printf("Values after addLocalInput: %v", s.currentInput.Bits)
 	return nil
 }
 
@@ -120,7 +117,6 @@ func (s *SyncTest) SyncInput(discconectFlags *int) ([][]byte, error) {
 		offset += s.lastInput.Size
 		counter++
 	}
-	fmt.Println(values)
 	if *discconectFlags > 0 {
 		*discconectFlags = 0
 	}
