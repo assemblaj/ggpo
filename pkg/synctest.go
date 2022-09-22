@@ -179,9 +179,9 @@ func (s *SyncTest) AdvanceFrame() error {
 				if s.strict {
 					panic("RaiseSyncError")
 				} else {
-					log.Println("RaiseSyncError: Returning to last verified frame.")
-					s.revert()
-					break
+					log.Println("RaiseSyncError: Continuing as normal.")
+					//s.revert()
+					//break
 				}
 			}
 			checksum := s.sync.GetLastSavedFrame().checksum
@@ -191,16 +191,14 @@ func (s *SyncTest) AdvanceFrame() error {
 				if s.strict {
 					panic("RaiseSyncError")
 				} else {
-					log.Println("RaiseSyncError: Returning to last verified frame.")
-					s.revert()
-					break
+					log.Println("RaiseSyncError: Continuing as normal..")
+					//s.revert()
+					//break
 				}
 			}
 			log.Printf("Checksum %08d for frame %d matches.\n", checksum, info.frame)
 		}
-		if !s.leniantRevert {
-			s.lastVerified = frame
-		}
+		s.lastVerified = frame
 		s.rollingBack = false
 	}
 	return nil
