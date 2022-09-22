@@ -179,6 +179,7 @@ func (s *SyncTest) AdvanceFrame() error {
 				if s.strict {
 					panic("RaiseSyncError")
 				} else {
+					log.Println("RaiseSyncError: Returning to last verified frame.")
 					s.revert()
 					break
 				}
