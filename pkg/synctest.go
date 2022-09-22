@@ -178,6 +178,9 @@ func (s *SyncTest) AdvanceFrame() error {
 				log.Printf("Frame number %d does not match saved frame number %d", info.frame, frame)
 				if s.strict {
 					panic("RaiseSyncError")
+				} else {
+					s.revert()
+					break
 				}
 			}
 			checksum := s.sync.GetLastSavedFrame().checksum
@@ -188,17 +191,7 @@ func (s *SyncTest) AdvanceFrame() error {
 					panic("RaiseSyncError")
 				} else {
 					log.Println("RaiseSyncError: Returning to last verified frame.")
-					err = s.sync.LoadFrame(s.lastVerified)
-					if err != nil {
-						panic(err)
-					}
-					s.leniantRevert = true
-					for !s.savedFrames.Empty() {
-						err = s.savedFrames.Pop()
-						if err != nil {
-							panic(err)
-						}
-					}
+					s.revert()
 					break
 				}
 			}
@@ -210,6 +203,20 @@ func (s *SyncTest) AdvanceFrame() error {
 		s.rollingBack = false
 	}
 	return nil
+}
+
+func (s *SyncTest) revert() {
+	err := s.sync.LoadFrame(s.lastVerified)
+	if err != nil {
+		panic(err)
+	}
+	s.leniantRevert = true
+	for !s.savedFrames.Empty() {
+		err = s.savedFrames.Pop()
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (s *SyncTest) LogGameStates(info savedInfo) {
