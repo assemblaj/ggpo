@@ -2,7 +2,6 @@ package ggpo
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"math"
 	"time"
@@ -97,6 +96,7 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 			p.poll.Pump(timeFunc[0])
 		}
 		p.PollUdpProtocolEvents()
+		p.CheckDesync()
 
 		if !p.synchronizing {
 			p.sync.CheckSimulation(timeout)
@@ -730,6 +730,10 @@ func (p *Peer) CheckInitialSync() {
 	}
 }
 
+func (p *Peer) CheckDesync() {
+
+}
+
 func (p *Peer) InitializeConnection(t ...transport.Connection) error {
 	if len(t) == 0 {
 		p.connection = transport.NewUdp(p, p.localPort)
@@ -744,6 +748,5 @@ func (p *Peer) Start() {
 	//go p.udp.ReadMsg(messages)
 	//go p.OnMsg(messages)
 	//p.udp.messageHandler = p
-	fmt.Printf("In Peer start udp: %v\n", p.connection)
 	go p.connection.Read()
 }
