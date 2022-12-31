@@ -114,7 +114,7 @@ func (s *Spectator) SyncInput(disconnectFlags *int) ([][]byte, error) {
 	return values, nil
 }
 
-func (s *Spectator) AdvanceFrame() error {
+func (s *Spectator) AdvanceFrame(checksum uint32) error {
 	log.Printf("End of frame (%d)...\n", s.nextInputToSend-1)
 	s.Idle(0)
 	s.PollUdpProtocolEvents()

@@ -249,12 +249,11 @@ func TestUDPProtocolSetLocalFrameNumber(t *testing.T) {
 	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.SetLocalFrameNumber(8)
-	var stats protocol.NetworkStats
-	stats = endpoint.GetNetworkStats()
-	want := -9 //
+	stats := endpoint.GetNetworkStats()
+	want := float32(-9.0) //
 	got := stats.Timesync.LocalFramesBehind
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 

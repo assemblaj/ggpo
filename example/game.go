@@ -111,7 +111,7 @@ func (g *Game) RunFrame() {
 
 func (g *Game) AdvanceFrame(inputs []InputBits, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
-	err := backend.AdvanceFrame()
+	err := backend.AdvanceFrame(uint32(g.Checksum()))
 	if err != nil {
 		panic(err)
 	}

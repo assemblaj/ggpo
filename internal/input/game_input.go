@@ -15,10 +15,11 @@ const (
 )
 
 type GameInput struct {
-	Frame  int
-	Size   int
-	Bits   []byte
-	Inputs [][]byte
+	Frame    int
+	Size     int
+	Bits     []byte
+	Inputs   [][]byte
+	Checksum uint32
 }
 
 // Will come back to this if the needing the offset becomes a thing

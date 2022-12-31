@@ -111,10 +111,11 @@ func (u *UDPHeader) FromBytes(buffer []byte) {
 }
 
 type SyncRequestPacket struct {
-	MessageHeader  UDPHeader
-	RandomRequest  uint32
-	RemoteMagic    uint16
-	RemoteEndpoint uint8
+	MessageHeader    UDPHeader
+	RandomRequest    uint32
+	RemoteMagic      uint16
+	RemoteEndpoint   uint8
+	RemoteInputDelay uint8
 }
 
 func (s *SyncRequestPacket) Type() UDPMessageType { return SyncRequestMsg }
@@ -128,6 +129,7 @@ func (s *SyncRequestPacket) PacketSize() int {
 	sum += int(unsafe.Sizeof(s.RandomRequest))
 	sum += int(unsafe.Sizeof(s.RemoteMagic))
 	sum += int(unsafe.Sizeof(s.RemoteEndpoint))
+	sum += int(unsafe.Sizeof(s.RemoteInputDelay))
 	return sum
 }
 func (s *SyncRequestPacket) String() string {
@@ -139,6 +141,7 @@ func (s *SyncRequestPacket) ToBytes() []byte {
 	binary.BigEndian.PutUint32(buf[5:9], s.RandomRequest)
 	binary.BigEndian.PutUint16(buf[9:11], s.RemoteMagic)
 	buf[11] = s.RemoteEndpoint
+	buf[12] = s.RemoteInputDelay
 	return buf
 }
 
@@ -150,6 +153,7 @@ func (s *SyncRequestPacket) FromBytes(buffer []byte) error {
 	s.RandomRequest = binary.BigEndian.Uint32(buffer[5:9])
 	s.RemoteMagic = binary.BigEndian.Uint16(buffer[9:11])
 	s.RemoteEndpoint = buffer[11]
+	s.RemoteInputDelay = buffer[12]
 	return nil
 }
 
@@ -268,10 +272,10 @@ type InputPacket struct {
 
 	DisconectRequested bool
 	AckFrame           int32
-
-	NumBits   uint16
-	InputSize uint8
-	Bits      []byte
+	Checksum           uint32
+	NumBits            uint16
+	InputSize          uint8
+	Bits               []byte
 }
 
 func (i *InputPacket) Type() UDPMessageType { return InputMsg }
@@ -292,6 +296,7 @@ func (i *InputPacket) PacketSize() int {
 	size += int(unsafe.Sizeof(i.StartFrame))
 	size += int(unsafe.Sizeof(i.DisconectRequested))
 	size += int(unsafe.Sizeof(i.AckFrame))
+	size += int(unsafe.Sizeof(i.Checksum))
 	size += int(unsafe.Sizeof(i.NumBits))
 	size += int(unsafe.Sizeof(i.InputSize))
 	size += 1 // will store total
@@ -318,6 +323,8 @@ func (i *InputPacket) ToBytes() []byte {
 	}
 	offset++
 	binary.BigEndian.PutUint32(buf[offset:], uint32(i.AckFrame))
+	offset += Int32size
+	binary.BigEndian.PutUint32(buf[offset:], i.Checksum)
 	offset += Int32size
 	binary.BigEndian.PutUint16(buf[offset:], i.NumBits)
 	offset += 2
@@ -360,6 +367,8 @@ func (i *InputPacket) FromBytes(buffer []byte) error {
 	}
 	offset++
 	i.AckFrame = int32(binary.BigEndian.Uint32(buffer[offset : offset+Int32size]))
+	offset += Int32size
+	i.Checksum = binary.BigEndian.Uint32(buffer[offset : offset+Int32size])
 	offset += Int32size
 	i.NumBits = binary.BigEndian.Uint16(buffer[offset : offset+2])
 	offset += 2

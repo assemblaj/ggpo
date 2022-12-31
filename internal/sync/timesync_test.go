@@ -14,10 +14,10 @@ func TestTimeSyncRecommendFrameDuration(t *testing.T) {
 	size := 4
 	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 8, 9)
-	want := 0
+	want := float32(0)
 	got := ts.ReccomendFrameWaitDuration(false)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 func TestTimeSyncRecommendFrameDurationIdleInput(t *testing.T) {
@@ -27,10 +27,10 @@ func TestTimeSyncRecommendFrameDurationIdleInput(t *testing.T) {
 	size := 4
 	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 8, 9)
-	want := 0
+	want := float32(0)
 	got := ts.ReccomendFrameWaitDuration(true)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 
@@ -41,10 +41,10 @@ func TestTimeSyncHighLocalFrameAdvantage(t *testing.T) {
 	size := 4
 	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 9, 800)
-	want := 9
+	want := float32(9)
 	got := ts.ReccomendFrameWaitDuration(false)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 
 }
@@ -72,10 +72,10 @@ func TestTimeSyncHighLocalFrameAdvantageRequireIdleInput(t *testing.T) {
 		input, _ := input.NewGameInput(frame, bytes, size)
 		ts.AdvanceFrames(&input, 9, 800)
 	}
-	want := 9
+	want := float32(9)
 	got := ts.ReccomendFrameWaitDuration(true)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 
@@ -86,10 +86,10 @@ func TestTimeSyncHighRemoteFrameAdvantage(t *testing.T) {
 	size := 4
 	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 800, 9)
-	want := 0
+	want := float32(0)
 	got := ts.ReccomendFrameWaitDuration(false)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 
 }
@@ -101,10 +101,10 @@ func TestTimeSyncNoFrameAdvantage(t *testing.T) {
 	size := 4
 	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, 0, 0)
-	want := 0
+	want := float32(0)
 	got := ts.ReccomendFrameWaitDuration(false)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 
@@ -115,10 +115,10 @@ func TestTimeSyncNegativeLocalFrameAdvantage(t *testing.T) {
 	size := 4
 	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, -1, 9)
-	want := 0
+	want := float32(0)
 	got := ts.ReccomendFrameWaitDuration(false)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 func TestTimeSyncBothNegativeFrameAdvantage(t *testing.T) {
@@ -128,10 +128,10 @@ func TestTimeSyncBothNegativeFrameAdvantage(t *testing.T) {
 	size := 4
 	input, _ := input.NewGameInput(frame, bytes, size)
 	ts.AdvanceFrames(&input, -2000, -2000)
-	want := 0
+	want := float32(0)
 	got := ts.ReccomendFrameWaitDuration(false)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 
@@ -143,11 +143,11 @@ func TestTimeSyncAdvanceFramesAndAdvantage(t *testing.T) {
 		bytes := []byte{1, 2, 3, 4}
 		size := 4
 		input, _ := input.NewGameInput(frame, bytes, size)
-		ts.AdvanceFrames(&input, 0, i)
+		ts.AdvanceFrames(&input, 0, float32(i))
 	}
-	want := 0
+	want := float32(0)
 	got := ts.ReccomendFrameWaitDuration(false)
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }

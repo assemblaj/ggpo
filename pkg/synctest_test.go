@@ -96,7 +96,7 @@ func TestSyncTestBackendIncrementFramePanic(t *testing.T) {
 		}
 	}()
 	for i := 0; i < checkDistance; i++ {
-		stb.AdvanceFrame()
+		stb.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 }
 
@@ -113,7 +113,7 @@ func TestSyncTestBackendIncrementFrameCharacterization(t *testing.T) {
 	for i := 0; i < checkDistance-1; i++ {
 		stb.AddLocalInput(handle, inputBytes, 4)
 		stb.SyncInput(&disconnectFlags)
-		stb.AdvanceFrame()
+		stb.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 
 	defer func() {
@@ -121,7 +121,7 @@ func TestSyncTestBackendIncrementFrameCharacterization(t *testing.T) {
 			t.Errorf("The code did not panic due to a SyncError")
 		}
 	}()
-	stb.AdvanceFrame()
+	stb.AdvanceFrame(ggpo.DefaultChecksum)
 
 }
 
@@ -144,7 +144,7 @@ func TestSyncTestBackendIncrementFrame(t *testing.T) {
 		if result == nil {
 			_, result = stb.SyncInput(&disconnectFlags)
 			if result == nil {
-				stb.AdvanceFrame()
+				stb.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 	}
@@ -154,7 +154,7 @@ func TestSyncTestBackendIncrementFrame(t *testing.T) {
 			t.Errorf("The code did not panic due to a SyncError")
 		}
 	}()
-	stb.AdvanceFrame()
+	stb.AdvanceFrame(ggpo.DefaultChecksum)
 }
 
 /*Again, WIP, I don't know how to test that this is working, but it is. */
@@ -179,7 +179,7 @@ func TestSyncTestBackendChecksumCheck(t *testing.T) {
 			vals, result := stb.SyncInput(&disconnectFlags)
 			if result == nil {
 				session.Game.UpdateByInputs(vals)
-				stb.AdvanceFrame()
+				stb.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 	}
@@ -224,7 +224,7 @@ func TestSyncTestBackendMultiplePlayers(t *testing.T) {
 			vals, result := stb.SyncInput(&disconnectFlags)
 			if result == nil {
 				session.Game.UpdateByInputs(vals)
-				stb.AdvanceFrame()
+				stb.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 	}

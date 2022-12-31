@@ -61,8 +61,8 @@ type UdpProtocol struct {
 	state              UdpProtocolStateInfo
 
 	// Fairness
-	localFrameAdvantage  int
-	remoteFrameAdvantage int
+	localFrameAdvantage  float32
+	remoteFrameAdvantage float32
 
 	// Packet Loss
 	pendingOutput         buffer.RingBuffer[input.GameInput]
@@ -85,6 +85,9 @@ type UdpProtocol struct {
 
 	// Event Queue
 	eventQueue buffer.RingBuffer[UdpProtocolEvent]
+
+	RemoteChecksumsThisFrame util.OrderedMap[int, uint32]
+	RemoteChecksums          util.OrderedMap[int, uint32]
 }
 
 type NetworkStats struct {
@@ -99,8 +102,10 @@ type NetworkNetworkStats struct {
 	KbpsSent     int
 }
 type NetworkTimeSyncStats struct {
-	LocalFramesBehind  int
-	RemoteFramesBehind int
+	LocalFramesBehind     float32
+	RemoteFramesBehind    float32
+	AvgLocalFramesBehind  float32
+	AvgRemoteFramesBehind float32
 }
 
 type UdpProtocolStats struct {
@@ -230,22 +235,48 @@ func NewUdpProtocol(connection transport.Connection, queue int, ip string, port 
 	lastAckedInput, _ := input.NewGameInput(-1, nil, 1)
 
 	protocol := UdpProtocol{
-		connection:         connection,
-		queue:              queue,
-		localConnectStatus: status,
-		peerConnectStatus:  peerConnectStatus,
-		peerAddress:        ip,
-		peerPort:           port,
-		magicNumber:        magicNumber,
-		pendingOutput:      buffer.NewRingBuffer[input.GameInput](64),
-		sendQueue:          buffer.NewRingBuffer[QueueEntry](64),
-		eventQueue:         buffer.NewRingBuffer[UdpProtocolEvent](64),
-		timesync:           sync.NewTimeSync(),
-		lastSentInput:      lastSentInput,
-		lastRecievedInput:  lastRecievedInput,
-		lastAckedInput:     lastAckedInput}
+		connection:               connection,
+		queue:                    queue,
+		localConnectStatus:       status,
+		peerConnectStatus:        peerConnectStatus,
+		peerAddress:              ip,
+		peerPort:                 port,
+		magicNumber:              magicNumber,
+		pendingOutput:            buffer.NewRingBuffer[input.GameInput](64),
+		sendQueue:                buffer.NewRingBuffer[QueueEntry](64),
+		eventQueue:               buffer.NewRingBuffer[UdpProtocolEvent](64),
+		timesync:                 sync.NewTimeSync(),
+		lastSentInput:            lastSentInput,
+		lastRecievedInput:        lastRecievedInput,
+		lastAckedInput:           lastAckedInput,
+		RemoteChecksums:          util.NewOrderedMap[int, uint32](16),
+		RemoteChecksumsThisFrame: util.NewOrderedMap[int, uint32](16),
+	}
 	//poll.RegisterLoop(&protocol, nil)
 	return protocol
+}
+
+func (u *UdpProtocol) StartPollLoop() {
+	u.RemoteChecksumsThisFrame.Clear()
+}
+
+func (u *UdpProtocol) EndPollLoop() {
+	if u.RemoteChecksumsThisFrame.Len() > 0 {
+		highestFrameNum := u.RemoteChecksumsThisFrame.Greatest()
+		u.RemoteChecksums.Set(highestFrameNum.Key, highestFrameNum.Value)
+	}
+}
+
+func (u *UdpProtocol) SetIncomingRemoteChecksum(frame int, checksum uint32) {
+	u.RemoteChecksumsThisFrame.Set(frame, checksum)
+}
+
+func (u *UdpProtocol) SetFrameDelay(delay int) {
+	u.timesync.SetFrameDelay(delay)
+}
+
+func (u *UdpProtocol) RemoteFrameDelay() int {
+	return u.timesync.RemoteFrameDelay
 }
 
 func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
@@ -363,6 +394,7 @@ func (u *UdpProtocol) SendPendingOutput() error {
 
 		for j = 0; j < u.pendingOutput.Size(); j++ {
 			current, err := u.pendingOutput.Item(j)
+			inputMsg.Checksum = current.Checksum
 			if err != nil {
 				panic(err)
 			}
@@ -441,6 +473,7 @@ func (u *UdpProtocol) SendSyncRequest() {
 	msg := messages.NewUDPMessage(messages.SyncRequestMsg)
 	syncRequest := msg.(*messages.SyncRequestPacket)
 	syncRequest.RandomRequest = u.state.random
+	syncRequest.RemoteInputDelay = uint8(u.timesync.FrameDelay2)
 	u.SendMsg(syncRequest)
 }
 
@@ -517,6 +550,7 @@ func (u *UdpProtocol) OnInput(msg messages.UDPMessage, length int) (bool, error)
 			}
 			u.lastRecievedInput.Bits = inputMessage.Bits[offset : offset+int(inputMessage.InputSize)]
 			u.lastRecievedInput.Frame = int(currentFrame)
+			u.lastRecievedInput.Checksum = inputMessage.Checksum
 			evt := UdpProtocolEvent{
 				eventType: InputEvent,
 				Input:     u.lastRecievedInput,
@@ -586,7 +620,7 @@ func (u *UdpProtocol) OnQualityReport(msg messages.UDPMessage, len int) (bool, e
 	replyPacket.Pong = qualityReport.Ping
 	u.SendMsg(replyPacket)
 
-	u.remoteFrameAdvantage = int(qualityReport.FrameAdvantage)
+	u.remoteFrameAdvantage = float32(qualityReport.FrameAdvantage) / 10.0
 	return true, nil
 }
 
@@ -605,17 +639,19 @@ func (u *UdpProtocol) GetNetworkStats() NetworkStats {
 	s.Network.Ping = u.roundTripTime
 	s.Network.SendQueueLen = u.pendingOutput.Size()
 	s.Network.KbpsSent = u.kbpsSent
-	s.Timesync.RemoteFramesBehind = u.remoteFrameAdvantage
-	s.Timesync.LocalFramesBehind = u.localFrameAdvantage
+	s.Timesync.RemoteFramesBehind = u.timesync.RemoteAdvantage()
+	s.Timesync.LocalFramesBehind = u.timesync.LocalAdvantage()
+	s.Timesync.AvgLocalFramesBehind = u.timesync.AvgLocalAdvantageSinceStart()
+	s.Timesync.AvgRemoteFramesBehind = u.timesync.AvgRemoteAdvantageSinceStart()
 	return s
 }
 
 func (u *UdpProtocol) SetLocalFrameNumber(localFrame int) {
-	remoteFrame := u.lastRecievedInput.Frame + (u.roundTripTime * 60 / 1000)
-	u.localFrameAdvantage = remoteFrame - localFrame
+	remoteFrame := float32(u.lastRecievedInput.Frame + (u.roundTripTime * 60.0 / 2000.0))
+	u.localFrameAdvantage = ((remoteFrame - float32(localFrame)) - float32(u.timesync.FrameDelay2))
 }
 
-func (u *UdpProtocol) RecommendFrameDelay() int {
+func (u *UdpProtocol) RecommendFrameDelay() float32 {
 	return u.timesync.ReccomendFrameWaitDuration(false)
 }
 
@@ -768,6 +804,8 @@ func (u *UdpProtocol) OnSyncRequest(msg messages.UDPMessage, len int) (bool, err
 	reply := messages.NewUDPMessage(messages.SyncReplyMsg)
 	syncReply := reply.(*messages.SyncReplyPacket)
 	syncReply.RandomReply = request.RandomRequest
+	u.timesync.RemoteFrameDelay = int(request.RemoteInputDelay)
+
 	u.SendMsg(syncReply)
 	return true, nil
 }
