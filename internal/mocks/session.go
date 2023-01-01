@@ -147,7 +147,7 @@ func (f *FakeSessionWithBackend) AdvanceFrame(flags int) {
 	vals, result := f.backend.SyncInput(&discconectFlags)
 	if result == nil {
 		f.Game.UpdateByInputs(vals)
-		f.backend.AdvanceFrame()
+		f.backend.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 }
 
