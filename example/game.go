@@ -112,6 +112,7 @@ func (g *Game) RunFrame() {
 func (g *Game) AdvanceFrame(inputs []InputBits, disconnectFlags int) {
 	g.UpdateByInputs(inputs)
 	err := backend.AdvanceFrame(uint32(g.Checksum()))
+
 	if err != nil {
 		panic(err)
 	}
@@ -273,11 +274,14 @@ func (g *GameSession) OnEvent(info *ggpo.Event) {
 	case ggpo.EventCodeDisconnectedFromPeer:
 		log.Println("EventCodeDisconnectedFromPeer")
 	case ggpo.EventCodeTimeSync:
-		log.Println("EventCodeTimeSync")
+		log.Printf("EventCodeTimeSync: FramesAhead %f TimeSyncPeriodInFrames: %d\n", info.FramesAhead, info.TimeSyncPeriodInFrames)
 	case ggpo.EventCodeConnectionInterrupted:
 		log.Println("EventCodeconnectionInterrupted")
 	case ggpo.EventCodeConnectionResumed:
 		log.Println("EventCodeconnectionInterrupted")
+	case ggpo.EventCodeDesync:
+		log.Printf("Desync Error! LocalCheckSum %d Remote Checksum %d\n", info.LocalChecksum, info.RemoteChecksum)
+		panic("DesyncError")
 	}
 }
 
@@ -307,14 +311,14 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 	backend = &peer
 	session.backend = backend
 	peer.InitializeConnection()
-	peer.Start()
 
 	//session.SetDisconnectTimeout(3000)
 	//session.SetDisconnectNotifyStart(1000)
-
+	var localHandle ggpo.PlayerHandle
 	for i := 0; i < numPlayers+numSpectators; i++ {
 		var handle ggpo.PlayerHandle
 		result = peer.AddPlayer(&players[i], &handle)
+
 		if players[i].PlayerType == ggpo.PlayerTypeLocal {
 			currentPlayer = int(handle)
 		}
@@ -322,12 +326,14 @@ func GameInit(localPort int, numPlayers int, players []ggpo.Player, numSpectator
 			log.Fatalf("There's an issue from AddPlayer")
 		}
 		if players[i].PlayerType == ggpo.PlayerTypeLocal {
-			peer.SetFrameDelay(handle, FRAME_DELAY)
+			localHandle = handle
 		}
 	}
 	peer.SetDisconnectTimeout(3000)
 	peer.SetDisconnectNotifyStart(1000)
+	peer.SetFrameDelay(localHandle, FRAME_DELAY)
 
+	peer.Start()
 	return session.game
 }
 

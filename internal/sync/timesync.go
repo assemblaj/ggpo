@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	FrameWindowSize   = 40
+	FrameWindowSize   = 120
 	MinUniqueFrames   = 10
 	MinFrameAdvantage = 3
 	MaxFrameAdvantage = 9

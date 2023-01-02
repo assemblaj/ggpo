@@ -322,7 +322,7 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 			msg := messages.NewUDPMessage(messages.QualityReportMsg)
 			qualityReport := msg.(*messages.QualityReportPacket)
 			qualityReport.Ping = uint32(time.Now().UnixMilli())
-			qualityReport.FrameAdvantage = int8(u.localFrameAdvantage)
+			qualityReport.FrameAdvantage = int8(util.Min(255.0, u.timesync.LocalAdvantage()*10))
 			u.SendMsg(qualityReport)
 			u.state.lastQualityReportTime = uint32(now)
 		}
@@ -805,7 +805,6 @@ func (u *UdpProtocol) OnSyncRequest(msg messages.UDPMessage, len int) (bool, err
 	syncReply := reply.(*messages.SyncReplyPacket)
 	syncReply.RandomReply = request.RandomRequest
 	u.timesync.RemoteFrameDelay = int(request.RemoteInputDelay)
-
 	u.SendMsg(syncReply)
 	return true, nil
 }

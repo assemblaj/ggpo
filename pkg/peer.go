@@ -155,14 +155,14 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 					interval = util.Max(interval, p.endpoints[i].RecommendFrameDelay())
 				}
 
-				if interval > 0 {
-					var info Event
-					info.Code = EventCodeTimeSync
-					info.FramesAhead = interval
-					info.TimeSyncPeriodInFrames = RecommendationInterval
-					p.session.OnEvent(&info)
-					p.nextRecommendedSleep = currentFrame + RecommendationInterval
-				}
+				//if interval > 0 {
+				var info Event
+				info.Code = EventCodeTimeSync
+				info.FramesAhead = interval
+				info.TimeSyncPeriodInFrames = RecommendationInterval
+				p.session.OnEvent(&info)
+				p.nextRecommendedSleep = currentFrame + RecommendationInterval
+				//}
 			}
 			// because GGPO had this
 			if timeout > 0 {
@@ -359,7 +359,7 @@ func (p *Peer) AddLocalInput(player PlayerHandle, values []byte, size int) error
 			}
 			p.confirmedChecksums.Set(p.confirmedChecksumFrame, localInput.Checksum)
 			p.pendingChecksums.Delete(p.confirmedChecksumFrame)
-			log.Printf("Frame %d: Send checksum for frame %d, val %d\n", localInput.Frame, p.confirmedChecksums, localInput.Checksum)
+			log.Printf("Frame %d: Send checksum for frame %d, val %d\n", localInput.Frame, p.confirmedChecksumFrame, localInput.Checksum)
 		}
 
 		log.Printf("setting local connect status for local queue %d to %d", queue, localInput.Frame)
@@ -663,7 +663,14 @@ func (p *Peer) SetFrameDelay(player PlayerHandle, delay int) error {
 	if result != nil {
 		return result
 	}
+
 	p.sync.SetFrameDelay(queue, delay)
+	for i := 0; i < p.numPlayers; i++ {
+		if p.endpoints[i].IsInitialized() {
+			p.endpoints[i].SetFrameDelay(delay)
+		}
+	}
+
 	return nil
 }
 
@@ -780,7 +787,7 @@ func (p *Peer) CheckInitialSync() {
 func (p *Peer) CheckDesync() {
 	keysToRemove := make([]int, 0, 16)
 	for i := 0; i < len(p.endpoints); i++ {
-		for k := range p.endpoints[i].RemoteChecksums.Keys() {
+		for _, k := range p.endpoints[i].RemoteChecksums.Keys() {
 			checksumFrame := k
 			remoteChecksum, _ := p.endpoints[i].RemoteChecksums.Get(k)
 			localChecksum, ok := p.confirmedChecksums.Get(checksumFrame)
@@ -806,11 +813,12 @@ func (p *Peer) CheckDesync() {
 			p.endpoints[i].RemoteChecksums.Delete(key)
 		}
 	}
-	confirmedFrames := p.confirmedChecksums.Keys()
-	for key := range keysToRemove {
-		for frame := range confirmedFrames {
+
+	for _, key := range keysToRemove {
+		confirmedFrames := p.confirmedChecksums.Keys()
+		for _, frame := range confirmedFrames {
 			if frame <= key {
-				p.confirmedChecksums.Delete(key)
+				p.confirmedChecksums.Delete(frame)
 			}
 		}
 	}
