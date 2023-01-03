@@ -3,7 +3,6 @@ package protocol
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 
@@ -271,13 +270,13 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 			nextInterval = uint(SyncRetryInterval)
 		}
 		if u.lastSendTime > 0 && u.lastSendTime+nextInterval < now {
-			log.Printf("No luck syncing after %d ms... Re-queueing sync packet.\n", nextInterval)
+			util.Log.Printf("No luck syncing after %d ms... Re-queueing sync packet.\n", nextInterval)
 			u.SendSyncRequest()
 		}
 		break
 	case RunningState:
 		if u.state.lastInputPacketRecvTime == 0 || u.state.lastInputPacketRecvTime+uint32(RunningRetryInterval) > uint32(now) {
-			log.Printf("Haven't exchanged packets in a while (last received:%d  last sent:%d).  Resending.\n",
+			util.Log.Printf("Haven't exchanged packets in a while (last received:%d  last sent:%d).  Resending.\n",
 				u.lastRecievedInput.Frame, u.lastSentInput.Frame)
 			err := u.SendPendingOutput()
 			if err != nil {
@@ -302,14 +301,14 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 		}
 
 		if u.lastSendTime > 0 && u.lastSendTime+uint(KeepAliveInterval) < uint(now) {
-			log.Println("Sending keep alive packet")
+			util.Log.Println("Sending keep alive packet")
 			msg := messages.NewUDPMessage(messages.KeepAliveMsg)
 			u.SendMsg(msg)
 		}
 
 		if u.disconnectTimeout > 0 && u.disconnectNotifyStart > 0 &&
 			!u.disconnectNotifySent && (u.lastRecvTime+u.disconnectNotifyStart < now) {
-			log.Printf("Endpoint has stopped receiving packets for %d ms.  Sending notification.\n", u.disconnectNotifyStart)
+			util.Log.Printf("Endpoint has stopped receiving packets for %d ms.  Sending notification.\n", u.disconnectNotifyStart)
 			e := UdpProtocolEvent{
 				eventType: NetworkInterruptedEvent}
 			e.DisconnectTimeout = int(u.disconnectTimeout) - int(u.disconnectNotifyStart)
@@ -319,7 +318,7 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 
 		if u.disconnectTimeout > 0 && (u.lastRecvTime+u.disconnectTimeout < now) {
 			if !u.disconnectEventSent {
-				log.Printf("Endpoint has stopped receiving packets for %d ms.  Disconnecting.\n",
+				util.Log.Printf("Endpoint has stopped receiving packets for %d ms.  Disconnecting.\n",
 					u.disconnectTimeout)
 				u.QueueEvent(&UdpProtocolEvent{
 					eventType: DisconnectedEvent})
@@ -329,7 +328,7 @@ func (u *UdpProtocol) OnLoopPoll(timeFunc polling.FuncTimeType) bool {
 		break
 	case DisconnectedState:
 		if u.shutdownTimeout < now {
-			log.Printf("Shutting down udp connection.\n")
+			util.Log.Printf("Shutting down udp connection.\n")
 			u.connection = nil
 			u.shutdownTimeout = 0
 		}
@@ -421,7 +420,7 @@ func (u *UdpProtocol) GetEvent() (*UdpProtocolEvent, error) {
 }
 
 func (u *UdpProtocol) QueueEvent(evt *UdpProtocolEvent) {
-	log.Printf("Queueing event %s", *evt)
+	util.Log.Printf("Queueing event %s", *evt)
 	err := u.eventQueue.Push(*evt)
 	// if there's no more room left in the queue, make room.
 	if err != nil {
@@ -445,7 +444,7 @@ func (u *UdpProtocol) SendSyncRequest() {
 }
 
 func (u *UdpProtocol) SendMsg(msg messages.UDPMessage) {
-	log.Printf("In UdpProtocol send %s", msg)
+	util.Log.Printf("In UdpProtocol send %s", msg)
 	u.packetsSent++
 	u.lastSendTime = uint(time.Now().UnixMilli())
 	u.bytesSent += msg.PacketSize()
@@ -475,7 +474,7 @@ func (u *UdpProtocol) OnInput(msg messages.UDPMessage, length int) (bool, error)
 	disconnectRequested := inputMessage.DisconectRequested
 	if disconnectRequested {
 		if u.currentState != DisconnectedState && !u.disconnectEventSent {
-			log.Printf("Disconnecting endpoint on remote request.\n")
+			util.Log.Printf("Disconnecting endpoint on remote request.\n")
 			u.QueueEvent(&UdpProtocolEvent{
 				eventType: DisconnectedEvent,
 			})
@@ -522,11 +521,11 @@ func (u *UdpProtocol) OnInput(msg messages.UDPMessage, length int) (bool, error)
 				Input:     u.lastRecievedInput,
 			}
 			u.state.lastInputPacketRecvTime = uint32(time.Now().UnixMilli())
-			log.Printf("Sending frame %d to emu queue %d.\n", u.lastRecievedInput.Frame, u.queue)
+			util.Log.Printf("Sending frame %d to emu queue %d.\n", u.lastRecievedInput.Frame, u.queue)
 			u.QueueEvent(&evt)
 			u.SendInputAck()
 		} else {
-			log.Printf("Skipping past frame:(%d) current is %d.\n", currentFrame, u.lastRecievedInput.Frame)
+			util.Log.Printf("Skipping past frame:(%d) current is %d.\n", currentFrame, u.lastRecievedInput.Frame)
 
 		}
 		offset += int(inputMessage.InputSize)
@@ -544,7 +543,7 @@ func (u *UdpProtocol) OnInput(msg messages.UDPMessage, length int) (bool, error)
 			panic(err)
 		}
 		if int32(input.Frame) < inputMessage.AckFrame {
-			log.Printf("Throwing away pending output frame %d\n", input.Frame)
+			util.Log.Printf("Throwing away pending output frame %d\n", input.Frame)
 			u.lastAckedInput = input
 			err := u.pendingOutput.Pop()
 			if err != nil {
@@ -566,7 +565,7 @@ func (u *UdpProtocol) OnInputAck(msg messages.UDPMessage, len int) (bool, error)
 			panic(err)
 		}
 		if int32(input.Frame) < inputAck.AckFrame {
-			log.Printf("Throwing away pending output frame %d\n", input.Frame)
+			util.Log.Printf("Throwing away pending output frame %d\n", input.Frame)
 			u.lastAckedInput = input
 			err = u.pendingOutput.Pop()
 			if err != nil {
@@ -645,7 +644,7 @@ func (u *UdpProtocol) PumpSendQueue() error {
 		}
 		if u.ooPercent > 0 && u.ooPacket.msg == nil && ((rand.Int() % 100) < u.ooPercent) {
 			delay := rand.Int() % (u.sendLatency*10 + 1000)
-			log.Printf("creating rogue oop (seq: %d  delay: %d)\n",
+			util.Log.Printf("creating rogue oop (seq: %d  delay: %d)\n",
 				entry.msg.Header().SequenceNumber, delay)
 			u.ooPacket.sendTime = int(time.Now().UnixMilli()) + delay
 			u.ooPacket.msg = entry.msg
@@ -663,7 +662,7 @@ func (u *UdpProtocol) PumpSendQueue() error {
 		}
 	}
 	if u.ooPacket.msg != nil && u.ooPacket.sendTime < int(time.Now().UnixMilli()) {
-		log.Printf("sending rogue oop!")
+		util.Log.Printf("sending rogue oop!")
 		u.connection.SendTo(u.ooPacket.msg, u.peerAddress, u.peerPort)
 		u.ooPacket.msg = nil
 	}
@@ -729,7 +728,7 @@ func (u *UdpProtocol) UpdateNetworkStats() {
 	udpOverhead := float64(100.0 * (float64(UDPHeaderSize * u.packetsSent)) / float64(u.bytesSent))
 	u.kbpsSent = int(bps / 1024)
 
-	log.Printf("Network Stats -- Bandwidth: %.2f KBps Packets Sent: %5d (%.2f pps) KB Sent: %.2f UDP Overhead: %.2f %%.\n",
+	util.Log.Printf("Network Stats -- Bandwidth: %.2f KBps Packets Sent: %5d (%.2f pps) KB Sent: %.2f UDP Overhead: %.2f %%.\n",
 		float64(u.kbpsSent),
 		u.packetsSent,
 		float64(u.packetsSent*1000)/float64(now-u.statsStartTime),
@@ -754,13 +753,13 @@ func (u *UdpProtocol) GetPeerConnectStatus(id int, frame *int32) bool {
 func (u *UdpProtocol) OnInvalid(msg messages.UDPMessage, len int) (bool, error) {
 	//  Assert(false) // ? ASSERT(FALSE && "Invalid msg in UdpProtocol");
 	// ah
-	log.Printf("Invalid msg in UdpProtocol ")
+	util.Log.Printf("Invalid msg in UdpProtocol ")
 	return false, errors.New("ggpo UdpProtocol OnInvalid: invalid msg in UdpProtocol")
 }
 
 func (u *UdpProtocol) OnSyncRequest(msg messages.UDPMessage, len int) (bool, error) {
 	if u.remoteMagicNumber != 0 && msg.Header().Magic != u.remoteMagicNumber {
-		log.Printf("Ignoring sync request from unknown endpoint (%d != %d).\n",
+		util.Log.Printf("Ignoring sync request from unknown endpoint (%d != %d).\n",
 			msg.Header().Magic, u.remoteMagicNumber)
 		return false, nil
 	}
@@ -791,20 +790,20 @@ func (u *UdpProtocol) OnMsg(msg messages.UDPMessage, length int) {
 	seq := msg.Header().SequenceNumber
 	if msg.Header().HeaderType != uint8(messages.SyncRequestMsg) && msg.Header().HeaderType != uint8(messages.SyncReplyMsg) {
 		if msg.Header().Magic != u.remoteMagicNumber {
-			log.Printf("recv rejecting %s", msg)
+			util.Log.Printf("recv rejecting %s", msg)
 			return
 		}
 
 		// filer out out-of-order packets
 		skipped := seq - u.nextRecvSeq
 		if skipped > uint16(MaxSeqDistance) {
-			log.Printf("dropping out of order packet (seq: %d, last seq:%d)\n", seq, u.nextRecvSeq)
+			util.Log.Printf("dropping out of order packet (seq: %d, last seq:%d)\n", seq, u.nextRecvSeq)
 			return
 		}
 	}
 
 	u.nextRecvSeq = seq
-	log.Printf("recv %s on queue %d\n", msg, u.queue)
+	util.Log.Printf("recv %s on queue %d\n", msg, u.queue)
 	if int(msg.Header().HeaderType) >= len(table) {
 		u.OnInvalid(msg, length)
 	} else {
@@ -829,12 +828,12 @@ func (u *UdpProtocol) OnMsg(msg messages.UDPMessage, length int) {
 func (u *UdpProtocol) OnSyncReply(msg messages.UDPMessage, length int) (bool, error) {
 	syncReply := msg.(*messages.SyncReplyPacket)
 	if u.currentState != SyncingState {
-		log.Println("Ignoring SyncReply while not synching.")
+		util.Log.Println("Ignoring SyncReply while not synching.")
 		return msg.Header().Magic == u.remoteMagicNumber, nil
 	}
 
 	if syncReply.RandomReply != u.state.random {
-		log.Printf("sync reply %d != %d.  Keep looking...\n",
+		util.Log.Printf("sync reply %d != %d.  Keep looking...\n",
 			syncReply.RandomReply, u.state.random)
 		return false, nil
 	}
@@ -845,10 +844,10 @@ func (u *UdpProtocol) OnSyncReply(msg messages.UDPMessage, length int) (bool, er
 		u.connected = true
 	}
 
-	log.Printf("Checking sync state (%d round trips remaining).\n", u.state.roundTripRemaining)
+	util.Log.Printf("Checking sync state (%d round trips remaining).\n", u.state.roundTripRemaining)
 	u.state.roundTripRemaining--
 	if u.state.roundTripRemaining == 0 {
-		log.Printf("Synchronized!\n")
+		util.Log.Printf("Synchronized!\n")
 		u.QueueEvent(&UdpProtocolEvent{
 			eventType: SynchronziedEvent,
 		})

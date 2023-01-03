@@ -3,7 +3,6 @@ package ggpo
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"time"
 
@@ -115,14 +114,14 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 				totalMinConfirmed = p.PollNPlayers(currentFrame)
 			}
 
-			log.Printf("last confirmed frame in p2p backend is %d.\n", totalMinConfirmed)
+			util.Log.Printf("last confirmed frame in p2p backend is %d.\n", totalMinConfirmed)
 			if totalMinConfirmed >= 0 {
 				if totalMinConfirmed == math.MaxInt {
 					return Error{Code: ErrorCodeGeneralFailure, Name: "ErrorCodeGeneralFailure"}
 				}
 				if p.numSpectators > 0 {
 					for p.nextSpectatorFrame <= totalMinConfirmed {
-						log.Printf("pushing frame %d to spectators.\n", p.nextSpectatorFrame)
+						util.Log.Printf("pushing frame %d to spectators.\n", p.nextSpectatorFrame)
 
 						var input input.GameInput
 						var inputs [][]byte
@@ -138,7 +137,7 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 						p.nextSpectatorFrame++
 					}
 				}
-				log.Printf("setting confirmed frame in sync to %d.\n", totalMinConfirmed)
+				util.Log.Printf("setting confirmed frame in sync to %d.\n", totalMinConfirmed)
 				p.sync.SetLastConfirmedFrame(totalMinConfirmed)
 			}
 
@@ -187,13 +186,13 @@ func (p *Peer) Poll2Players(currentFrame int) int {
 		if !p.localConnectStatus[i].Disconnected {
 			totalMinConfirmed = util.Min(p.localConnectStatus[i].LastFrame, totalMinConfirmed)
 		}
-		log.Printf("  local endp: connected = %t, last_received = %d, total_min_confirmed = %d.\n",
+		util.Log.Printf("  local endp: connected = %t, last_received = %d, total_min_confirmed = %d.\n",
 			!p.localConnectStatus[i].Disconnected, p.localConnectStatus[i].LastFrame, totalMinConfirmed)
 		if !queueConnected && !p.localConnectStatus[i].Disconnected {
-			log.Printf("disconnecting i %d by remote request.\n", i)
+			util.Log.Printf("disconnecting i %d by remote request.\n", i)
 			p.DisconnectPlayerQueue(i, int(totalMinConfirmed))
 		}
-		log.Printf("  total_min_confirmed = %d.\n", totalMinConfirmed)
+		util.Log.Printf("  total_min_confirmed = %d.\n", totalMinConfirmed)
 	}
 	return int(totalMinConfirmed)
 }
@@ -207,7 +206,7 @@ func (p *Peer) PollNPlayers(currentFrame int) int {
 	for queue = 0; queue < p.numPlayers; queue++ {
 		queueConnected := true
 		queueMinConfirmed := int32(math.MaxInt32)
-		log.Printf("considering queue %d.\n", queue)
+		util.Log.Printf("considering queue %d.\n", queue)
 		for i = 0; i < p.numPlayers; i++ {
 			// we're going to do a lot of logic here in consideration of endpoint i.
 			// keep accumulating the minimum confirmed point for all n*n packets and
@@ -217,17 +216,17 @@ func (p *Peer) PollNPlayers(currentFrame int) int {
 
 				queueConnected = queueConnected && connected
 				queueMinConfirmed = util.Min(lastRecieved, queueMinConfirmed)
-				log.Printf("  endpoint %d: connected = %t, last_received = %d, queue_min_confirmed = %d.\n",
+				util.Log.Printf("  endpoint %d: connected = %t, last_received = %d, queue_min_confirmed = %d.\n",
 					i, connected, lastRecieved, queueMinConfirmed)
 			} else {
-				log.Printf("  endpoint %d: ignoring... not running.\n", i)
+				util.Log.Printf("  endpoint %d: ignoring... not running.\n", i)
 			}
 		}
 		// merge in our local status only if we're still connected!
 		if !p.localConnectStatus[queue].Disconnected {
 			queueMinConfirmed = util.Min(p.localConnectStatus[queue].LastFrame, queueMinConfirmed)
 		}
-		log.Printf("  local endp: connected = %t, last_received = %d, queue_min_confirmed = %d.\n",
+		util.Log.Printf("  local endp: connected = %t, last_received = %d, queue_min_confirmed = %d.\n",
 			!p.localConnectStatus[queue].Disconnected, p.localConnectStatus[queue].LastFrame, queueMinConfirmed)
 
 		if queueConnected {
@@ -237,20 +236,20 @@ func (p *Peer) PollNPlayers(currentFrame int) int {
 			// so, we need to re-adjust.  This can happen when we detect our own disconnect at frame n
 			// and later receive a disconnect notification for frame n-1.
 			if !p.localConnectStatus[queue].Disconnected || p.localConnectStatus[queue].LastFrame > queueMinConfirmed {
-				log.Printf("disconnecting queue %d by remote request.\n", queue)
+				util.Log.Printf("disconnecting queue %d by remote request.\n", queue)
 				p.DisconnectPlayerQueue(queue, int(queueMinConfirmed))
 			}
 		}
-		log.Printf("  total_min_confirmed = %d.\n", totalMinConfirmed)
+		util.Log.Printf("  total_min_confirmed = %d.\n", totalMinConfirmed)
 	}
 	return int(totalMinConfirmed)
 }
 
 /*
-	Giving each spectator and remote player their own UDP object (which GGPO didn't do)
-	a copy of the poll, a copy of our localConnectStatus (might want to send a pointer?)
-	Setting the default disconnect timeout and disconnect notify
-	And calling the synchronize method, which sends a sync request to that endpoint.
+Giving each spectator and remote player their own UDP object (which GGPO didn't do)
+a copy of the poll, a copy of our localConnectStatus (might want to send a pointer?)
+Setting the default disconnect timeout and disconnect notify
+And calling the synchronize method, which sends a sync request to that endpoint.
 */
 func (p *Peer) AddRemotePlayer(ip string, port int, queue int) {
 	p.synchronizing = true
@@ -342,7 +341,7 @@ func (p *Peer) AddLocalInput(player PlayerHandle, values []byte, size int) error
 		// gets incorporated into the next packet we send.
 		// - pond3r
 
-		log.Printf("setting local connect status for local queue %d to %d", queue, localInput.Frame)
+		util.Log.Printf("setting local connect status for local queue %d to %d", queue, localInput.Frame)
 		p.localConnectStatus[queue].LastFrame = int32(localInput.Frame)
 
 		// Send the input to all the remote players.
@@ -380,7 +379,7 @@ func (p *Peer) SyncInput(disconnectFlags *int) ([][]byte, error) {
 // Do Poll Not only runs everything in the system that's registered to poll
 // it... well does everything. I'll get ti it when I get to it.
 func (p *Peer) AdvanceFrame() error {
-	log.Printf("End of frame (%d)...\n", p.sync.FrameCount())
+	util.Log.Printf("End of frame (%d)...\n", p.sync.FrameCount())
 	p.sync.AdvanceFrame()
 	err := p.Idle(0)
 	if err != nil {
@@ -436,7 +435,7 @@ func (p *Peer) OnUdpProtocolPeerEvent(evt *protocol.UdpProtocolEvent, queue int)
 
 			p.sync.AddRemoteInput(queue, &evt.Input)
 			// Notify the other endpoints which frame we received from a peer
-			log.Printf("setting remote connect status for queue %d to %d\n", queue,
+			util.Log.Printf("setting remote connect status for queue %d to %d\n", queue,
 				evt.Input.Frame)
 			p.localConnectStatus[queue].LastFrame = int32(evt.Input.Frame)
 		}
@@ -508,13 +507,13 @@ func (p *Peer) OnUdpProtocolEvent(evt *protocol.UdpProtocolEvent, handle PlayerH
 }
 
 /*
- * Called only as the result of a local decision to disconnect.  The remote
- * decisions to disconnect are a result of us parsing the peer_connect_settings
- * blob in every endpoint periodically.
- * - pond3r
-	This is the function that's called when the UdpProtocol endpoint recogniizes
-	a disconnect (that lastRecvTime + disconnectTimeout < now) and sends that event
-	up to the backend.
+  - Called only as the result of a local decision to disconnect.  The remote
+  - decisions to disconnect are a result of us parsing the peer_connect_settings
+  - blob in every endpoint periodically.
+  - - pond3r
+    This is the function that's called when the UdpProtocol endpoint recogniizes
+    a disconnect (that lastRecvTime + disconnectTimeout < now) and sends that event
+    up to the backend.
     Also maps to API function
 */
 func (p *Peer) DisconnectPlayer(player PlayerHandle) error {
@@ -536,7 +535,7 @@ func (p *Peer) DisconnectPlayer(player PlayerHandle) error {
 
 		// 100% sure this assumption won't be applicable for me, but we'll see.
 		// Not that it matters lol
-		log.Printf("Disconnecting local player %d at frame %d by user request.\n",
+		util.Log.Printf("Disconnecting local player %d at frame %d by user request.\n",
 			queue, p.localConnectStatus[queue].LastFrame)
 		// Disconnecting all the other players too
 		for i := 0; i < p.numPlayers; i++ {
@@ -545,7 +544,7 @@ func (p *Peer) DisconnectPlayer(player PlayerHandle) error {
 			}
 		}
 	} else {
-		log.Printf("Disconnecting queue %d at frame %d by user request.\n",
+		util.Log.Printf("Disconnecting queue %d at frame %d by user request.\n",
 			queue, p.localConnectStatus[queue].LastFrame)
 		p.DisconnectPlayerQueue(queue, int(p.localConnectStatus[queue].LastFrame))
 	}
@@ -553,11 +552,11 @@ func (p *Peer) DisconnectPlayer(player PlayerHandle) error {
 }
 
 /*
-	Sets the enpoints' state to disconnected.
-	Also sets localConnectStatus to disconnected which is used all over the p2p backend to
-	verify if an endpoint is connected
-	And adjusts the simulation to get to syncto frames
-	Then sends the Disconnect Event up to te user.
+Sets the enpoints' state to disconnected.
+Also sets localConnectStatus to disconnected which is used all over the p2p backend to
+verify if an endpoint is connected
+And adjusts the simulation to get to syncto frames
+Then sends the Disconnect Event up to te user.
 */
 func (p *Peer) DisconnectPlayerQueue(queue int, syncto int) {
 	var info Event
@@ -565,16 +564,16 @@ func (p *Peer) DisconnectPlayerQueue(queue int, syncto int) {
 
 	p.endpoints[queue].Disconnect()
 
-	log.Printf("Changing queue %d local connect status for last frame from %d to %d on disconnect request (current: %d).\n",
+	util.Log.Printf("Changing queue %d local connect status for last frame from %d to %d on disconnect request (current: %d).\n",
 		queue, p.localConnectStatus[queue].LastFrame, syncto, frameCount)
 
 	p.localConnectStatus[queue].Disconnected = true
 	p.localConnectStatus[queue].LastFrame = int32(syncto)
 
 	if syncto < frameCount {
-		log.Printf("adjusting simulation to account for the fact that %d disconnected @ %d.\n", queue, syncto)
+		util.Log.Printf("adjusting simulation to account for the fact that %d disconnected @ %d.\n", queue, syncto)
 		p.sync.AdjustSimulation(syncto)
-		log.Printf("Finished adjusting simulation.\n")
+		util.Log.Printf("Finished adjusting simulation.\n")
 	}
 
 	info.Code = EventCodeDisconnectedFromPeer
@@ -585,10 +584,10 @@ func (p *Peer) DisconnectPlayerQueue(queue int, syncto int) {
 }
 
 /*
-	Gets network stats for that specific play from their UdpProtocol Endpoint
-	Includes ping, sendQueLen, kbpsSent, remoteFramesBehind and remoteFrameAdvantage
-	All coming from the UdpProtocol Endpoint
-	Maps to top level API function.
+Gets network stats for that specific play from their UdpProtocol Endpoint
+Includes ping, sendQueLen, kbpsSent, remoteFramesBehind and remoteFrameAdvantage
+All coming from the UdpProtocol Endpoint
+Maps to top level API function.
 */
 func (p *Peer) GetNetworkStats(player PlayerHandle) (protocol.NetworkStats, error) {
 	var queue int
@@ -602,12 +601,12 @@ func (p *Peer) GetNetworkStats(player PlayerHandle) (protocol.NetworkStats, erro
 }
 
 /*
-	Sets frame delay for that specific player's input queue in Sync.
-	Frame delay is used in the input queue, when remote inputs are recieved from
-	the UdpProtocol and sent to Sync, sync then adds those inputs to the input queue
-	for that specific player, and sort of artificially corrects the frame that player
-	should be on by increasing it frameDelay amount
-	Maps to top level API function
+Sets frame delay for that specific player's input queue in Sync.
+Frame delay is used in the input queue, when remote inputs are recieved from
+the UdpProtocol and sent to Sync, sync then adds those inputs to the input queue
+for that specific player, and sort of artificially corrects the frame that player
+should be on by increasing it frameDelay amount
+Maps to top level API function
 */
 func (p *Peer) SetFrameDelay(player PlayerHandle, delay int) error {
 	var queue int
@@ -621,13 +620,13 @@ func (p *Peer) SetFrameDelay(player PlayerHandle, delay int) error {
 }
 
 /*
-	Propagates the disconnect timeout to all of the endpoints.
-    lastRecvTime + disconnectTimeout < now means the endpoint has stopped
-	recieving packets and we are now disconnecting, effectively timing out.
-	The Udp endpoint propogates the Disconnect Event up to the backend.
-	Which, in the P2P Backend, Disconnects the Player from the backend,
-	then sends the event upward.
-	Mapped to top level API function
+		Propagates the disconnect timeout to all of the endpoints.
+	    lastRecvTime + disconnectTimeout < now means the endpoint has stopped
+		recieving packets and we are now disconnecting, effectively timing out.
+		The Udp endpoint propogates the Disconnect Event up to the backend.
+		Which, in the P2P Backend, Disconnects the Player from the backend,
+		then sends the event upward.
+		Mapped to top level API function
 */
 func (p *Peer) SetDisconnectTimeout(timeout int) error {
 	p.disconnectTimeout = timeout
@@ -640,11 +639,11 @@ func (p *Peer) SetDisconnectTimeout(timeout int) error {
 }
 
 /*
-	Propagates the disconnect notify start to all of the endpoints
-	lastRecTime + disconnectNotifyStart < now  means the endpoint has
-	stopped recieving packets. The udp endpoint starts sending a NetworkInterrupted event
-	up to the backend, check sends it up to the user via the API's callbacks.
-	Mapped to top level Api function
+Propagates the disconnect notify start to all of the endpoints
+lastRecTime + disconnectNotifyStart < now  means the endpoint has
+stopped recieving packets. The udp endpoint starts sending a NetworkInterrupted event
+up to the backend, check sends it up to the user via the API's callbacks.
+Mapped to top level Api function
 */
 func (p *Peer) SetDisconnectNotifyStart(timeout int) error {
 	p.disconnectNotifyStart = timeout
@@ -657,8 +656,8 @@ func (p *Peer) SetDisconnectNotifyStart(timeout int) error {
 }
 
 /*
-	Used for getting the index for PlayerHandle mapped arrays such as
-	endpoints, localConnectStatus, andinputQueues in Sync
+Used for getting the index for PlayerHandle mapped arrays such as
+endpoints, localConnectStatus, andinputQueues in Sync
 */
 func (p *Peer) PlayerHandleToQueue(player PlayerHandle, queue *int) error {
 	offset := int(player) - 1
@@ -670,7 +669,7 @@ func (p *Peer) PlayerHandleToQueue(player PlayerHandle, queue *int) error {
 }
 
 /*
-	Does the inverse of the above. Turns index index into human readible number
+Does the inverse of the above. Turns index index into human readible number
 */
 func (p *Peer) QueueToPlayerHandle(queue int) PlayerHandle {
 	return PlayerHandle(queue + 1)
@@ -681,9 +680,9 @@ func (p *Peer) QueueToSpectatorHandle(queue int) PlayerHandle {
 }
 
 /*
-	Propogates messages to all endpoints and spectators (?)
-	As of right now it hands the message off to the first endpoint that
-	handles it then returns?
+Propogates messages to all endpoints and spectators (?)
+As of right now it hands the message off to the first endpoint that
+handles it then returns?
 */
 func (p *Peer) HandleMessage(ipAddress string, port int, msg messages.UDPMessage, length int) {
 	for i := 0; i < p.numPlayers; i++ {
@@ -701,8 +700,8 @@ func (p *Peer) HandleMessage(ipAddress string, port int, msg messages.UDPMessage
 }
 
 /*
-	Checks if all endpoints and spectators are initialized and synchronized
-	and sends an event when they are.
+Checks if all endpoints and spectators are initialized and synchronized
+and sends an event when they are.
 */
 func (p *Peer) CheckInitialSync() {
 	var i int

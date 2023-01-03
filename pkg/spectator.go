@@ -1,12 +1,11 @@
 package ggpo
 
 import (
-	"log"
-
 	"github.com/assemblaj/GGPO-Go/internal/input"
 	"github.com/assemblaj/GGPO-Go/internal/messages"
 	"github.com/assemblaj/GGPO-Go/internal/polling"
 	"github.com/assemblaj/GGPO-Go/internal/protocol"
+	"github.com/assemblaj/GGPO-Go/internal/util"
 	"github.com/assemblaj/GGPO-Go/pkg/transport"
 )
 
@@ -67,7 +66,7 @@ func (s *Spectator) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if s.framesBehind > 0 {
 		for s.nextInputToSend < s.currentFrame {
 			s.session.AdvanceFrame(0)
-			log.Printf("In Spectator: skipping frame %d\n", s.nextInputToSend)
+			util.Log.Printf("In Spectator: skipping frame %d\n", s.nextInputToSend)
 			s.nextInputToSend++
 		}
 		s.framesBehind = 0
@@ -115,7 +114,7 @@ func (s *Spectator) SyncInput(disconnectFlags *int) ([][]byte, error) {
 }
 
 func (s *Spectator) AdvanceFrame() error {
-	log.Printf("End of frame (%d)...\n", s.nextInputToSend-1)
+	util.Log.Printf("End of frame (%d)...\n", s.nextInputToSend-1)
 	s.Idle(0)
 	s.PollUdpProtocolEvents()
 

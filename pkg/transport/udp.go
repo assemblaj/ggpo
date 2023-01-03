@@ -1,11 +1,11 @@
 package transport
 
 import (
-	"log"
 	"net"
 	"strconv"
 
 	"github.com/assemblaj/GGPO-Go/internal/messages"
+	"github.com/assemblaj/GGPO-Go/internal/util"
 )
 
 const (
@@ -57,7 +57,7 @@ func NewUdp(messageHandler MessageHandler, localPort int) Udp {
 	portStr := strconv.Itoa(localPort)
 
 	u.localPort = localPort
-	log.Printf("binding udp socket to port %d.\n", localPort)
+	util.Log.Printf("binding udp socket to port %d.\n", localPort)
 	//u.socket = u.CreateSocket(ipAdress, portStr, 0)
 	u.listener, _ = net.ListenPacket("udp", "0.0.0.0:"+portStr)
 	return u
@@ -78,7 +78,7 @@ func (u Udp) SendTo(msg messages.UDPMessage, remoteIp string, remotePort int) {
 	buf := msg.ToBytes()
 	/*
 		if err != nil {
-			log.Fatalf("encode error %s", err)
+			util.Log.Fatalf("encode error %s", err)
 		}*/
 	u.listener.WriteTo(buf, &RemoteEP)
 }
@@ -90,19 +90,19 @@ func (u Udp) Read() {
 		len, addr, err := u.listener.ReadFrom(recvBuf)
 
 		if err != nil {
-			log.Printf("conn.Read error returned: %s\n", err)
+			util.Log.Printf("conn.Read error returned: %s\n", err)
 			break
 		} else if len <= 0 {
-			log.Printf("no data recieved\n")
+			util.Log.Printf("no data recieved\n")
 		} else if len > 0 {
-			log.Printf("recvfrom returned (len:%d  from:%s).\n", len, addr.String())
+			util.Log.Printf("recvfrom returned (len:%d  from:%s).\n", len, addr.String())
 			peer := getPeerAddress(addr)
 
 			//msg, err := DecodeMessage(recvBuf)
 			msg, err := messages.DecodeMessageBinary(recvBuf)
 
 			if err != nil {
-				log.Printf("Error decoding message: %s", err)
+				util.Log.Printf("Error decoding message: %s", err)
 				continue
 			}
 			u.messageHandler.HandleMessage(peer.ip, peer.port, msg, len)

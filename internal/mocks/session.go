@@ -3,8 +3,8 @@ package mocks
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
 
+	"github.com/assemblaj/GGPO-Go/internal/util"
 	ggpo "github.com/assemblaj/GGPO-Go/pkg"
 )
 
@@ -20,7 +20,7 @@ func NewFakeSession() FakeSession {
 	}
 }
 func (s *FakeSession) beginGame(game string) bool {
-	log.Println("Starting Game!")
+	util.Log.Println("Starting Game!")
 	return true
 }
 
@@ -39,9 +39,9 @@ func (s *FakeSession) LogGameState(fileName string, buffer []byte, len int) bool
 	dec := gob.NewDecoder(&buf)
 	err := dec.Decode(&game2)
 	if err != nil {
-		log.Fatal("decode error:", err)
+		util.Log.Fatal("decode error:", err)
 	}
-	log.Printf("%s Game State: %s\n", fileName, &game2)
+	util.Log.Printf("%s Game State: %s\n", fileName, &game2)
 	return true
 }
 
@@ -52,21 +52,21 @@ func (s *FakeSession) freeBuffer(buffer []byte) {
 func (s *FakeSession) OnEvent(info *ggpo.Event) {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
-		log.Println("EventCodeConnectedToPeer")
+		util.Log.Println("EventCodeConnectedToPeer")
 	case ggpo.EventCodeSynchronizingWithPeer:
-		log.Println("EventCodeSynchronizingWithPeer")
+		util.Log.Println("EventCodeSynchronizingWithPeer")
 	case ggpo.EventCodeSynchronizedWithPeer:
-		log.Println("EventCodeSynchronizedWithPeer")
+		util.Log.Println("EventCodeSynchronizedWithPeer")
 	case ggpo.EventCodeRunning:
-		log.Println("EventCodeRunning")
+		util.Log.Println("EventCodeRunning")
 	case ggpo.EventCodeDisconnectedFromPeer:
-		log.Println("EventCodeDisconnectedFromPeer")
+		util.Log.Println("EventCodeDisconnectedFromPeer")
 	case ggpo.EventCodeTimeSync:
-		log.Println("EventCodeTimeSync")
+		util.Log.Println("EventCodeTimeSync")
 	case ggpo.EventCodeConnectionInterrupted:
-		log.Println("EventCodeconnectionInterrupted")
+		util.Log.Println("EventCodeconnectionInterrupted")
 	case ggpo.EventCodeConnectionResumed:
-		log.Println("EventCodeconnectionInterrupted")
+		util.Log.Println("EventCodeconnectionInterrupted")
 	}
 }
 func (s *FakeSession) AdvanceFrame(flags int) {
@@ -92,7 +92,7 @@ func (f *FakeSessionWithBackend) SetBackend(backend ggpo.Backend) {
 }
 
 func (f *FakeSessionWithBackend) beginGame(game string) bool {
-	log.Println("Starting Game!")
+	util.Log.Println("Starting Game!")
 	return true
 }
 
@@ -111,9 +111,9 @@ func (f *FakeSessionWithBackend) LogGameState(fileName string, buffer []byte, le
 	dec := gob.NewDecoder(&buf)
 	err := dec.Decode(&game2)
 	if err != nil {
-		log.Fatal("decode error:", err)
+		util.Log.Fatal("decode error:", err)
 	}
-	log.Printf("%s Game State: %s\n", fileName, &game2)
+	util.Log.Printf("%s Game State: %s\n", fileName, &game2)
 }
 
 func (f *FakeSessionWithBackend) freeBuffer(buffer []byte) {
@@ -123,21 +123,21 @@ func (f *FakeSessionWithBackend) freeBuffer(buffer []byte) {
 func (f *FakeSessionWithBackend) OnEvent(info *ggpo.Event) {
 	switch info.Code {
 	case ggpo.EventCodeConnectedToPeer:
-		log.Println("EventCodeConnectedToPeer")
+		util.Log.Println("EventCodeConnectedToPeer")
 	case ggpo.EventCodeSynchronizingWithPeer:
-		log.Println("EventCodeSynchronizingWithPeer")
+		util.Log.Println("EventCodeSynchronizingWithPeer")
 	case ggpo.EventCodeSynchronizedWithPeer:
-		log.Println("EventCodeSynchronizedWithPeer")
+		util.Log.Println("EventCodeSynchronizedWithPeer")
 	case ggpo.EventCodeRunning:
-		log.Println("EventCodeRunning")
+		util.Log.Println("EventCodeRunning")
 	case ggpo.EventCodeDisconnectedFromPeer:
-		log.Println("EventCodeDisconnectedFromPeer")
+		util.Log.Println("EventCodeDisconnectedFromPeer")
 	case ggpo.EventCodeTimeSync:
-		log.Println("EventCodeTimeSync")
+		util.Log.Println("EventCodeTimeSync")
 	case ggpo.EventCodeConnectionInterrupted:
-		log.Println("EventCodeconnectionInterrupted")
+		util.Log.Println("EventCodeconnectionInterrupted")
 	case ggpo.EventCodeConnectionResumed:
-		log.Println("EventCodeconnectionInterrupted")
+		util.Log.Println("EventCodeconnectionInterrupted")
 	}
 }
 func (f *FakeSessionWithBackend) AdvanceFrame(flags int) {
