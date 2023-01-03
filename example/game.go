@@ -22,6 +22,12 @@ type GameSession struct {
 	saveStates map[int]*Game
 }
 
+type NonGameState struct {
+	loopTimer LoopTimer
+}
+
+var ngs NonGameState = NonGameState{loopTimer: NewLoopTimer(60, 110)}
+
 var backend ggpo.Backend
 var start, next, now int
 
@@ -30,8 +36,9 @@ const FRAME_DELAY int = 2
 var currentPlayer int = 1
 
 type Game struct {
-	Players  []Player
-	syncTest bool
+	Players   []Player
+	syncTest  bool
+	loopTimer LoopTimer
 }
 
 type Player struct {
@@ -62,7 +69,7 @@ func (g *Game) clone() (result *Game) {
 }
 
 func (g *Game) Update() error {
-	now = int(time.Now().UnixMilli())
+	now = int(time.Now().UnixMicro())
 	fmt.Println("Idling ")
 	err := backend.Idle(int(math.Max(0, float64(next-now-1))))
 	if err != nil {
@@ -70,13 +77,13 @@ func (g *Game) Update() error {
 	}
 	fmt.Println("Idling Complete")
 	if now >= next {
-		g.RunFrame()
-		next = now + 1000/60
+		usToWait := g.RunFrame()
+		next = now + usToWait
 	}
 	return nil
 }
 
-func (g *Game) RunFrame() {
+func (g *Game) RunFrame() int {
 	input := g.ReadInputs()
 	buffer := encodeInputs(input)
 
@@ -107,6 +114,7 @@ func (g *Game) RunFrame() {
 	} else {
 		fmt.Printf("Attempt to add local inputs unsuccessful: %s\n", result)
 	}
+	return ngs.loopTimer.usToWaitThisLoop()
 }
 
 func (g *Game) AdvanceFrame(inputs []InputBits, disconnectFlags int) {
@@ -275,6 +283,7 @@ func (g *GameSession) OnEvent(info *ggpo.Event) {
 		log.Println("EventCodeDisconnectedFromPeer")
 	case ggpo.EventCodeTimeSync:
 		log.Printf("EventCodeTimeSync: FramesAhead %f TimeSyncPeriodInFrames: %d\n", info.FramesAhead, info.TimeSyncPeriodInFrames)
+		ngs.loopTimer.OnGGPOTimeSyncEvent(info.FramesAhead)
 	case ggpo.EventCodeConnectionInterrupted:
 		log.Println("EventCodeconnectionInterrupted")
 	case ggpo.EventCodeConnectionResumed:
