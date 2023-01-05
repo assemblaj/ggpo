@@ -31,7 +31,7 @@ func (f *FakeConnection) SendTo(msg messages.UDPMessage, remoteIp string, remote
 	f.LastSentMessage = msg
 }
 
-func (f *FakeConnection) Read() {
+func (f *FakeConnection) Read(messageChan chan transport.MessageChannelItem) {
 
 }
 
@@ -58,7 +58,7 @@ func (f *FakeP2PConnection) SendTo(msg messages.UDPMessage, remoteIp string, rem
 	f.remoteHandler.HandleMessage(f.localIP, f.localPort, msg, msg.PacketSize())
 }
 
-func (f *FakeP2PConnection) Read() {
+func (f *FakeP2PConnection) Read(messageChan chan transport.MessageChannelItem) {
 }
 
 func (f *FakeP2PConnection) Close() {
@@ -90,7 +90,7 @@ func (f *FakeMultiplePeerConnection) SendTo(msg messages.UDPMessage, remoteIp st
 	}
 }
 
-func (f *FakeMultiplePeerConnection) Read() {
+func (f *FakeMultiplePeerConnection) Read(messageChan chan transport.MessageChannelItem) {
 }
 
 func (f *FakeMultiplePeerConnection) Close() {

@@ -249,12 +249,11 @@ func TestUDPProtocolSetLocalFrameNumber(t *testing.T) {
 	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
 
 	endpoint.SetLocalFrameNumber(8)
-	var stats protocol.NetworkStats
-	stats = endpoint.GetNetworkStats()
-	want := -9 //
+	stats := endpoint.GetNetworkStats()
+	want := float32(0.000000)
 	got := stats.Timesync.LocalFramesBehind
 	if want != got {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 
@@ -270,16 +269,16 @@ func TestUDPProtocolOnQualityReply(t *testing.T) {
 	msg := messages.NewUDPMessage(messages.QualityReplyMsg)
 	qualityReplyPacket := msg.(*messages.QualityReplyPacket)
 	qualityReplyPacket.Pong = 0
-	checkInterval := 60
+	var checkInterval int64 = 60
 	endpoint.OnQualityReply(qualityReplyPacket, qualityReplyPacket.PacketSize())
 
 	var stats protocol.NetworkStats
 	stats = endpoint.GetNetworkStats()
-	want := -9 //
+	want := -9.0 //
 	got := stats.Timesync.LocalFramesBehind
-	now := int(time.Now().UnixMilli())
+	now := time.Now().UnixMilli()
 	if now-checkInterval > stats.Network.Ping {
-		t.Errorf("expected '%d' but got '%d'", want, got)
+		t.Errorf("expected '%f' but got '%f'", want, got)
 	}
 }
 

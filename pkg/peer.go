@@ -18,6 +18,7 @@ const (
 	RecommendationInterval       = 240
 	DefaultDisconnectTimeout     = 5000
 	DefaultDisconnectNotifyStart = 750
+	ChecksumDistance             = 16
 )
 
 type Peer struct {
@@ -40,7 +41,12 @@ type Peer struct {
 
 	localConnectStatus []messages.UdpConnectStatus
 
-	localPort int
+	localPort              int
+	pendingChecksums       util.OrderedMap[int, uint32]
+	confirmedChecksums     util.OrderedMap[int, uint32]
+	confirmedChecksumFrame int
+
+	messageChannel chan transport.MessageChannelItem
 }
 
 func NewPeer(cb Session,
@@ -71,6 +77,9 @@ func NewPeer(cb Session,
 	p.sync = NewSync(p.localConnectStatus, &config)
 	p.endpoints = make([]protocol.UdpProtocol, numPlayers)
 	p.spectators = make([]protocol.UdpProtocol, MaxSpectators)
+	p.pendingChecksums = util.NewOrderedMap[int, uint32](16)
+	p.confirmedChecksums = util.NewOrderedMap[int, uint32](16)
+	p.messageChannel = make(chan transport.MessageChannelItem, 200)
 	//messages := make(chan UdpPacket)
 	//p.poll.RegisterLoop(&p.udp, nil )
 	//go p.udp.Read()
@@ -90,12 +99,15 @@ func (p *Peer) Close() error {
 }
 func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if !p.sync.InRollback() {
+		p.HandleMessages()
 		if len(timeFunc) == 0 {
 			p.poll.Pump()
 		} else {
 			p.poll.Pump(timeFunc[0])
 		}
+
 		p.PollUdpProtocolEvents()
+		p.CheckDesync()
 
 		if !p.synchronizing {
 			p.sync.CheckSimulation(timeout)
@@ -104,7 +116,9 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 			// next connection quality report
 			currentFrame := p.sync.FrameCount()
 			for i := 0; i < p.numPlayers; i++ {
-				p.endpoints[i].SetLocalFrameNumber(currentFrame)
+				if p.endpoints[i].IsInitialized() {
+					p.endpoints[i].SetLocalFrameNumber(currentFrame)
+				}
 			}
 
 			var totalMinConfirmed int
@@ -143,18 +157,19 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 
 			// send timesync notifications if now is the proper time
 			if currentFrame > p.nextRecommendedSleep {
-				interval := 0
+				var interval float32 = 0.0
 				for i := 0; i < p.numPlayers; i++ {
 					interval = util.Max(interval, p.endpoints[i].RecommendFrameDelay())
 				}
 
-				if interval > 0 {
-					var info Event
-					info.Code = EventCodeTimeSync
-					info.FramesAhead = interval
-					p.session.OnEvent(&info)
-					p.nextRecommendedSleep = currentFrame + RecommendationInterval
-				}
+				//if interval > 0 {
+				var info Event
+				info.Code = EventCodeTimeSync
+				info.FramesAhead = interval
+				info.TimeSyncPeriodInFrames = RecommendationInterval
+				p.session.OnEvent(&info)
+				p.nextRecommendedSleep = currentFrame + RecommendationInterval
+				//}
 			}
 			// because GGPO had this
 			if timeout > 0 {
@@ -341,6 +356,19 @@ func (p *Peer) AddLocalInput(player PlayerHandle, values []byte, size int) error
 		// gets incorporated into the next packet we send.
 		// - pond3r
 
+		p.confirmedChecksumFrame = localInput.Frame - ChecksumDistance
+
+		localInput.Checksum = 0
+		if p.confirmedChecksumFrame >= 0 {
+			cs, ok := p.pendingChecksums.Get(p.confirmedChecksumFrame)
+			if ok {
+				localInput.Checksum = cs
+			}
+			p.confirmedChecksums.Set(p.confirmedChecksumFrame, localInput.Checksum)
+			p.pendingChecksums.Delete(p.confirmedChecksumFrame)
+			log.Printf("Frame %d: Send checksum for frame %d, val %d\n", localInput.Frame, p.confirmedChecksumFrame, localInput.Checksum)
+		}
+
 		util.Log.Printf("setting local connect status for local queue %d to %d", queue, localInput.Frame)
 		p.localConnectStatus[queue].LastFrame = int32(localInput.Frame)
 
@@ -380,6 +408,19 @@ func (p *Peer) SyncInput(disconnectFlags *int) ([][]byte, error) {
 // it... well does everything. I'll get ti it when I get to it.
 func (p *Peer) AdvanceFrame() error {
 	util.Log.Printf("End of frame (%d)...\n", p.sync.FrameCount())
+	var maxDiff int = 0
+	currentFrame := p.sync.FrameCount()
+	oldChecksum, ok := p.pendingChecksums.Get(currentFrame)
+	if ok {
+		max := p.pendingChecksums.Greatest().Key
+		diff := max - currentFrame
+		maxDiff = util.Max(maxDiff, diff)
+		log.Printf("Replace local checksum for frame %d: %d with %d, newest frame is %d, max diff %d\n", currentFrame, oldChecksum, checksum, max, maxDiff)
+	} else {
+		log.Printf("Added local checksum for frame %d: %d\n", currentFrame, checksum)
+	}
+	p.pendingChecksums.Set(currentFrame, checksum)
+
 	p.sync.AdvanceFrame()
 	err := p.Idle(0)
 	if err != nil {
@@ -392,6 +433,7 @@ func (p *Peer) AdvanceFrame() error {
 // Handles all the events  for all spactors and players. Done OnPoll
 func (p *Peer) PollUdpProtocolEvents() {
 	for i := 0; i < p.numPlayers; i++ {
+		p.endpoints[i].StartPollLoop()
 		for {
 			evt, err := p.endpoints[i].GetEvent()
 			if err != nil {
@@ -403,6 +445,7 @@ func (p *Peer) PollUdpProtocolEvents() {
 				}
 			}
 		}
+		p.endpoints[i].EndPollLoop()
 	}
 	for i := 0; i < p.numSpectators; i++ {
 		for {
@@ -438,6 +481,17 @@ func (p *Peer) OnUdpProtocolPeerEvent(evt *protocol.UdpProtocolEvent, queue int)
 			util.Log.Printf("setting remote connect status for queue %d to %d\n", queue,
 				evt.Input.Frame)
 			p.localConnectStatus[queue].LastFrame = int32(evt.Input.Frame)
+
+			remoteChecksum := evt.Input.Checksum
+			checksumFrame := newRemoteFrame - ChecksumDistance
+			if checksumFrame >= p.endpoints[queue].RemoteFrameDelay()-1 {
+				p.endpoints[queue].SetIncomingRemoteChecksum(checksumFrame, remoteChecksum)
+			}
+
+			if checksumFrame%120 == 0 {
+				log.Printf("Received checksum for frame %d, remote checksum is %d\n", checksumFrame, remoteChecksum)
+			}
+
 		}
 	case protocol.DisconnectedEvent:
 		err := p.DisconnectPlayer(handle)
@@ -615,7 +669,14 @@ func (p *Peer) SetFrameDelay(player PlayerHandle, delay int) error {
 	if result != nil {
 		return result
 	}
+
 	p.sync.SetFrameDelay(queue, delay)
+	for i := 0; i < p.numPlayers; i++ {
+		if p.endpoints[i].IsInitialized() {
+			p.endpoints[i].SetFrameDelay(delay)
+		}
+	}
+
 	return nil
 }
 
@@ -699,6 +760,13 @@ func (p *Peer) HandleMessage(ipAddress string, port int, msg messages.UDPMessage
 	}
 }
 
+func (p *Peer) HandleMessages() {
+	for i := 0; i < len(p.messageChannel); i++ {
+		mi := <-p.messageChannel
+		p.HandleMessage(mi.Peer.Ip, mi.Peer.Port, mi.Message, mi.Length)
+	}
+}
+
 /*
 Checks if all endpoints and spectators are initialized and synchronized
 and sends an event when they are.
@@ -729,6 +797,46 @@ func (p *Peer) CheckInitialSync() {
 	}
 }
 
+func (p *Peer) CheckDesync() {
+	keysToRemove := make([]int, 0, 16)
+	for i := 0; i < len(p.endpoints); i++ {
+		for _, k := range p.endpoints[i].RemoteChecksums.Keys() {
+			checksumFrame := k
+			remoteChecksum, _ := p.endpoints[i].RemoteChecksums.Get(k)
+			localChecksum, ok := p.confirmedChecksums.Get(checksumFrame)
+			if ok {
+				keysToRemove = append(keysToRemove, int(localChecksum))
+				if remoteChecksum != localChecksum {
+					var info Event
+					info.Code = EventCodeDesync
+					info.NumFrameOfDesync = checksumFrame
+					info.LocalChecksum = int(localChecksum)
+					info.RemoteChecksum = int(remoteChecksum)
+					p.session.OnEvent(&info)
+					log.Printf("DESYNC Checksum frame %d, local: %d, remote %d, size of checksum maps: %d,%d\n",
+						checksumFrame, localChecksum, remoteChecksum, p.confirmedChecksums.Len(), p.endpoints[i].RemoteChecksums.Len())
+				}
+
+				if checksumFrame%100 == 0 {
+					log.Printf("Checksum frame %d, local: %d, remote %d, size of checksum maps: %d,%d\n", checksumFrame, localChecksum, remoteChecksum, p.confirmedChecksums.Len(), p.endpoints[i].RemoteChecksums.Len())
+				}
+			}
+		}
+		for key := range keysToRemove {
+			p.endpoints[i].RemoteChecksums.Delete(key)
+		}
+	}
+
+	for _, key := range keysToRemove {
+		confirmedFrames := p.confirmedChecksums.Keys()
+		for _, frame := range confirmedFrames {
+			if frame <= key {
+				p.confirmedChecksums.Delete(frame)
+			}
+		}
+	}
+}
+
 func (p *Peer) InitializeConnection(t ...transport.Connection) error {
 	if len(t) == 0 {
 		p.connection = transport.NewUdp(p, p.localPort)
@@ -739,10 +847,5 @@ func (p *Peer) InitializeConnection(t ...transport.Connection) error {
 }
 
 func (p *Peer) Start() {
-	//messages := make(chan UdpPacket)
-	//go p.udp.ReadMsg(messages)
-	//go p.OnMsg(messages)
-	//p.udp.messageHandler = p
-	fmt.Printf("In Peer start udp: %v\n", p.connection)
-	go p.connection.Read()
+	go p.connection.Read(p.messageChannel)
 }

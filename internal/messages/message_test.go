@@ -177,6 +177,7 @@ func TestEncodeInput(t *testing.T) {
 	want.InputSize = 20
 	want.StartFrame = 50
 	want.NumBits = 643
+	want.Checksum = 98790
 	want.DisconectRequested = false
 	want.PeerConnectStatus = make([]messages.UdpConnectStatus, 2)
 	want.PeerConnectStatus[0] = messages.UdpConnectStatus{
@@ -201,6 +202,9 @@ func TestEncodeInput(t *testing.T) {
 	}
 	if got.StartFrame != want.StartFrame {
 		t.Errorf("expected Start Frame '%d' but got '%d'", want.StartFrame, got.StartFrame)
+	}
+	if got.Checksum != want.Checksum {
+		t.Errorf("expected Checksum '%d' but got '%d'", want.Checksum, got.Checksum)
 	}
 	if got.NumBits != want.NumBits {
 		t.Errorf("expected Num Bits '%d' but got '%d'", want.NumBits, got.NumBits)
@@ -269,6 +273,7 @@ func TestExtractInputFromBytes(t *testing.T) {
 	want := messages.InputPacket{
 		StartFrame: 0,
 		AckFrame:   12,
+		Checksum:   5002,
 	}
 	inputBytes, err := messages.EncodeMessage(&want)
 	if err != nil {
@@ -281,7 +286,7 @@ func TestExtractInputFromBytes(t *testing.T) {
 	}
 
 	got := packet.(*messages.InputPacket)
-	if want.StartFrame != got.StartFrame || want.AckFrame != got.AckFrame {
+	if want.StartFrame != got.StartFrame || want.AckFrame != got.AckFrame || want.Checksum != got.Checksum {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
 	}
 
@@ -292,14 +297,16 @@ func TestNewUDPMessage(t *testing.T) {
 	want := messages.InputPacket{
 		AckFrame:   0,
 		StartFrame: 5,
+		Checksum:   16,
 	}
 
 	packet := messages.NewUDPMessage(messages.InputMsg)
 	got := packet.(*messages.InputPacket)
 	got.AckFrame = 0
 	got.StartFrame = 5
+	got.Checksum = 16
 
-	if want.StartFrame != got.StartFrame || want.AckFrame != got.AckFrame {
+	if want.StartFrame != got.StartFrame || want.AckFrame != got.AckFrame || want.Checksum != got.Checksum {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
 	}
 

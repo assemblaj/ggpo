@@ -28,6 +28,7 @@ type Spectator struct {
 	framesBehind    int
 	localPort       int
 	currentFrame    int
+	messageChannel  chan transport.MessageChannelItem
 }
 
 func NewSpectator(cb Session, localPort int, numPlayers int, inputSize int, hostIp string, hostPort int) Spectator {
@@ -51,11 +52,13 @@ func NewSpectator(cb Session, localPort int, numPlayers int, inputSize int, host
 	s.localPort = localPort
 	var poll polling.Poll = polling.NewPoll()
 	s.poll = &poll
+	s.messageChannel = make(chan transport.MessageChannelItem, 200)
 	//go s.udp.Read()
 	return s
 }
 
 func (s *Spectator) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
+	s.HandleMessages()
 	if len(timeFunc) == 0 {
 		s.poll.Pump()
 	} else {
@@ -225,9 +228,15 @@ func (s *Spectator) InitializeConnection(c ...transport.Connection) error {
 	return nil
 }
 
+func (s *Spectator) HandleMessages() {
+	for i := 0; i < len(s.messageChannel); i++ {
+		mi := <-s.messageChannel
+		s.HandleMessage(mi.Peer.Ip, mi.Peer.Port, mi.Message, mi.Length)
+	}
+}
+
 func (s *Spectator) Start() {
-	//s.udp.messageHandler = s
-	go s.connection.Read()
+	go s.connection.Read(s.messageChannel)
 
 	s.host = protocol.NewUdpProtocol(s.connection, 0, s.hostIp, s.hostPort, nil)
 	s.poll.RegisterLoop(&s.host, nil)

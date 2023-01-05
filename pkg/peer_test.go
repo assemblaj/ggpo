@@ -130,7 +130,7 @@ func TestP2PBackendIncrementFrame(t *testing.T) {
 	if err != nil {
 		t.Errorf("There was an error when adding player 2.")
 	}
-	err = p2p.AdvanceFrame()
+	err = p2p.AdvanceFrame(ggpo.DefaultChecksum)
 	if err != nil {
 		t.Errorf("There was an error when incrementing the frame.")
 	}
@@ -319,7 +319,7 @@ func TestP2PBackendAddLocalInputMultiple(t *testing.T) {
 	inputBytes := []byte{1, 2, 3, 4}
 	for i := 0; i < cycles; i++ {
 		p2p2.Idle(0)
-		p2p2.AdvanceFrame()
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 		p2p2.AddLocalInput(p2handle2, inputBytes, len(inputBytes))
 	}
 	var discconectFlags int
@@ -421,14 +421,14 @@ func TestP2PBackendFullSession(t *testing.T) {
 		if err != nil {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		}
-		p2p2.AdvanceFrame()
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 
 		p2p.Idle(0)
 		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
 		if err != nil {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		}
-		p2p.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 	var disconnectFlags int
 	vals, err := p2p.SyncInput(&disconnectFlags)
@@ -665,8 +665,8 @@ func TestP2PBackendMoockInputExchangeCharacterization(t *testing.T) {
 		var disconnectFlags int
 		p2p2.SyncInput(&disconnectFlags)
 		p2p.SyncInput(&disconnectFlags)
-		p2p.AdvanceFrame()
-		p2p2.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 
 }
@@ -716,8 +716,8 @@ func TestP2PBackendMoockInputExchange(t *testing.T) {
 		p2p2.Idle(0, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.AdvanceFrame()
-		p2p2.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 	var disconnectFlags int
 	vals, _ := p2p2.SyncInput(&disconnectFlags)
@@ -778,8 +778,8 @@ func TestP2PBackendMoockInputExchangeWithTimeout(t *testing.T) {
 		p2p2.Idle(doPollTimeOuts, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.AdvanceFrame()
-		p2p2.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 	var disconnectFlags int
 	vals, _ := p2p2.SyncInput(&disconnectFlags)
@@ -840,8 +840,8 @@ func TestP2PBackendMoockInputExchangePol2Players(t *testing.T) {
 		p2p2.Idle(doPollTimeOuts, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.AdvanceFrame()
-		p2p2.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 	want := 7
 	got := p2p2.Poll2Players(8)
@@ -913,8 +913,8 @@ func TestP2PBackendMoockInputDelay(t *testing.T) {
 		p2p2.Idle(doPollTimeOuts, advance)
 		p2p.AddLocalInput(p1Handle, input1, 4)
 		p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.AdvanceFrame()
-		p2p2.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 	got := p2p.Poll2Players(iterations)
 	want := iterations + 1
@@ -984,8 +984,8 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization(t *testing.T) {
 		p2p2.Idle(doPollTimeOuts, timeout)
 		//p2p.AddLocalInput(p1Handle, input1, 4)
 		//p2p2.AddLocalInput(p2handle2, input2, 4)
-		//p2p.AdvanceFrame()
-		//p2p2.AdvanceFrame()
+		//p2p.AdvanceFrame(ggpo.DefaultChecksum)
+		//p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 
 }
@@ -1047,8 +1047,8 @@ func TestP2PBackendMoockDisconnectTimeoutCharacterization2(t *testing.T) {
 		p2p2.Idle(doPollTimeOuts, timeout)
 		//p2p.AddLocalInput(p1Handle, input1, 4)
 		//p2p2.AddLocalInput(p2handle2, input2, 4)
-		p2p.AdvanceFrame()
-		p2p2.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 }
 func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
@@ -1116,7 +1116,7 @@ func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
 			if err == nil {
 				//_, err = p2p.SyncInput(&ignore)
 				if err == nil {
-					p2p.AdvanceFrame()
+					p2p.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p1next = p1now + 1000/60
@@ -1129,7 +1129,7 @@ func TestP2PBackendMoockDisconnectTimeout(t *testing.T) {
 			if err == nil {
 				//_, err = p2p2.SyncInput(&ignore)
 				if err == nil {
-					p2p2.AdvanceFrame()
+					p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p2next = p2now + 1000/60
@@ -1307,7 +1307,7 @@ func TestP2PBackendNPlayersShareInput(t *testing.T) {
 		if err == nil {
 			//	_, err = p2p.SyncInput(&ignore)
 			if err == nil {
-				p2p.AdvanceFrame()
+				p2p.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 		p2p2.Idle(0, advance)
@@ -1315,7 +1315,7 @@ func TestP2PBackendNPlayersShareInput(t *testing.T) {
 		if err == nil {
 			//	_, err = p2p2.SyncInput(&ignore)
 			if err == nil {
-				p2p2.AdvanceFrame()
+				p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 		p2p3.Idle(0, advance)
@@ -1323,7 +1323,7 @@ func TestP2PBackendNPlayersShareInput(t *testing.T) {
 		if err == nil {
 			//	_, err = p2p3.SyncInput(&ignore)
 			if err == nil {
-				p2p3.AdvanceFrame()
+				p2p3.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 	}
@@ -1566,7 +1566,7 @@ func TestP2PBackend4PlayerShareInput(t *testing.T) {
 			if err == nil {
 				//_, err = p2p.SyncInput(&ignore)
 				if err == nil {
-					p2p.AdvanceFrame()
+					p2p.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p1next = p1now + 1000/60
@@ -1579,7 +1579,7 @@ func TestP2PBackend4PlayerShareInput(t *testing.T) {
 			if err == nil {
 				//_, err = p2p2.SyncInput(&ignore)
 				if err == nil {
-					p2p2.AdvanceFrame()
+					p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p2next = p2now + 1000/60
@@ -1592,7 +1592,7 @@ func TestP2PBackend4PlayerShareInput(t *testing.T) {
 			if err == nil {
 				//_, err = p2p3.SyncInput(&ignore)
 				if err == nil {
-					p2p3.AdvanceFrame()
+					p2p3.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p3next = p3now + 1000/60
@@ -1605,7 +1605,7 @@ func TestP2PBackend4PlayerShareInput(t *testing.T) {
 			if err == nil {
 				//_, err = p2p4.SyncInput(&ignore)
 				if err == nil {
-					p2p4.AdvanceFrame()
+					p2p4.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p4next = p4now + 1000/60
@@ -1766,7 +1766,7 @@ func TestP2PBackendMoockInputExchangeSameState(t *testing.T) {
 			fmt.Printf("Inputs Peer 1 sees: %v\n", vals)
 			if result1 == nil {
 				session.Game.UpdateByInputs(vals)
-				p2p.AdvanceFrame()
+				p2p.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 
@@ -1776,7 +1776,7 @@ func TestP2PBackendMoockInputExchangeSameState(t *testing.T) {
 			fmt.Printf("Inputs Peer 2 sees: %v\n", vals2)
 			if result2 == nil {
 				session2.Game.UpdateByInputs(vals2)
-				p2p2.AdvanceFrame()
+				p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 	}

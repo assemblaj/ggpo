@@ -122,7 +122,7 @@ func (s *SyncTest) SyncInput(discconectFlags *int) ([][]byte, error) {
 	return values, nil
 }
 
-func (s *SyncTest) AdvanceFrame() error {
+func (s *SyncTest) AdvanceFrame(checksum uint32) error {
 	s.sync.AdvanceFrame()
 	s.currentInput.Erase()
 

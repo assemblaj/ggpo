@@ -139,17 +139,17 @@ func TestNewSpectatorBackendInput(t *testing.T) {
 		if err != nil {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		}
-		p2p2.AdvanceFrame()
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 
 		p2p.Idle(0)
 		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
 		if err != nil {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		}
-		p2p.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
 
 		stb.Idle(0)
-		stb.AdvanceFrame()
+		stb.AdvanceFrame(ggpo.DefaultChecksum)
 	}
 	var ignore int
 	vals, err := stb.SyncInput(&ignore)
@@ -238,7 +238,7 @@ func TestNewSpectatorBackendBehind(t *testing.T) {
 			t.Errorf(" Error when adding local input to p2, %s", err)
 		}
 		p2p2.SyncInput(&ignore)
-		p2p2.AdvanceFrame()
+		p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 
 		p2p.Idle(0)
 		err = p2p.AddLocalInput(p1Handle, inputBytes, len(inputBytes))
@@ -246,12 +246,12 @@ func TestNewSpectatorBackendBehind(t *testing.T) {
 			t.Errorf("Error when adding local input to p1, %s", err)
 		}
 		p2p.SyncInput(&ignore)
-		p2p.AdvanceFrame()
+		p2p.AdvanceFrame(ggpo.DefaultChecksum)
 
 		if i == 0 {
 			stb.Idle(0)
 			stb.SyncInput(&ignore)
-			stb.AdvanceFrame()
+			stb.AdvanceFrame(ggpo.DefaultChecksum)
 		}
 	}
 	stb.Idle(0)
@@ -325,7 +325,7 @@ func TestNewSpectatorBackendCharacterization(t *testing.T) {
 		} else {
 			_, err = p2p2.SyncInput(&ignore)
 			if err == nil {
-				p2p2.AdvanceFrame()
+				p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 
@@ -336,14 +336,14 @@ func TestNewSpectatorBackendCharacterization(t *testing.T) {
 		} else {
 			_, err = p2p.SyncInput(&ignore)
 			if err == nil {
-				p2p.AdvanceFrame()
+				p2p.AdvanceFrame(ggpo.DefaultChecksum)
 			}
 		}
 
 		stb.Idle(0, advance)
 		_, err = stb.SyncInput(&ignore)
 		if err == nil {
-			stb.AdvanceFrame()
+			stb.AdvanceFrame(ggpo.DefaultChecksum)
 		}
 	}
 }
@@ -488,7 +488,7 @@ func TestNewSpectatorBackendDisconnect(t *testing.T) {
 			if err == nil {
 				//_, err = p2p.SyncInput(&ignore)
 				if err == nil {
-					p2p.AdvanceFrame()
+					p2p.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p1next = p1now + 1000/60
@@ -501,7 +501,7 @@ func TestNewSpectatorBackendDisconnect(t *testing.T) {
 			if err == nil {
 				//_, err = p2p2.SyncInput(&ignore)
 				if err == nil {
-					p2p2.AdvanceFrame()
+					p2p2.AdvanceFrame(ggpo.DefaultChecksum)
 				}
 			}
 			p2next = p2now + 1000/60

@@ -112,10 +112,9 @@ func main() {
 	}
 
 	flag.Parse()
-
-	start = int(time.Now().UnixMilli())
-	now = start
+	start = time.Now().UnixMilli()
 	next = start
+	now = start
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}
