@@ -1,7 +1,7 @@
 package ggpo
 
 import (
-	"log"
+	"github.com/assemblaj/GGPO-Go/internal/util"
 	"os"
 
 	"github.com/assemblaj/GGPO-Go/internal/buffer"
@@ -127,7 +127,7 @@ func (s *SyncTest) AdvanceFrame(checksum uint32) error {
 	s.sync.AdvanceFrame()
 	s.currentInput.Erase()
 
-	log.Printf("End of frame(%d)...\n", s.sync.FrameCount())
+	util.Log.Printf("End of frame(%d)...\n", s.sync.FrameCount())
 
 	if s.rollingBack {
 		return nil
@@ -171,11 +171,11 @@ func (s *SyncTest) AdvanceFrame(checksum uint32) error {
 				panic(err)
 			}
 			if info.frame != s.sync.FrameCount() {
-				log.Printf("Frame number %d does not match saved frame number %d", info.frame, frame)
+				util.Log.Printf("Frame number %d does not match saved frame number %d", info.frame, frame)
 				if s.strict {
 					panic("RaiseSyncError")
 				} else {
-					log.Println("RaiseSyncError: Continuing as normal.")
+					util.Log.Println("RaiseSyncError: Continuing as normal.")
 					//s.revert()
 					//break
 				}
@@ -183,11 +183,11 @@ func (s *SyncTest) AdvanceFrame(checksum uint32) error {
 			checksum := s.sync.GetLastSavedFrame().checksum
 			if info.checksum != checksum {
 				s.LogGameStates(info)
-				log.Printf("Checksum for frame %d does not match saved (%d != %d)", frame, checksum, info.checksum)
+				util.Log.Printf("Checksum for frame %d does not match saved (%d != %d)", frame, checksum, info.checksum)
 				if s.strict {
 					panic("RaiseSyncError")
 				} else {
-					log.Println("RaiseSyncError: Continuing as normal..")
+					util.Log.Println("RaiseSyncError: Continuing as normal..")
 					//s.revert()
 					//break
 				}
@@ -198,7 +198,7 @@ func (s *SyncTest) AdvanceFrame(checksum uint32) error {
 					LastVerified: lastVerifiedStateID,
 				})
 			}
-			log.Printf("Checksum %08d for frame %d matches.\n", checksum, info.frame)
+			util.Log.Printf("Checksum %08d for frame %d matches.\n", checksum, info.frame)
 		}
 		s.lastVerified = frame
 		s.rollingBack = false

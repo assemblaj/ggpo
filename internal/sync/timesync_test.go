@@ -9,7 +9,7 @@ import (
 )
 
 /*
-	These are all charectization tests for the new rift synchronization now.
+These are all charectization tests for the new rift synchronization now.
 */
 var Delta float64 = 0.000001
 

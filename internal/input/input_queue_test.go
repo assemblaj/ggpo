@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	Charecterization Tests
+Charecterization Tests
 */
 func TestFirstLastConfirmedFrame(t *testing.T) {
 	queue := input.NewInputQueue(0, 50)

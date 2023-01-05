@@ -2,7 +2,6 @@ package input
 
 import (
 	"errors"
-	"log"
 
 	"github.com/assemblaj/GGPO-Go/internal/util"
 )
@@ -57,7 +56,7 @@ func NewInputQueue(id int, inputSize int) InputQueue {
 }
 
 func (i *InputQueue) LastConfirmedFrame() int {
-	log.Printf("returning last confirmed frame %d.\n", i.lastUserAddedFrame)
+	util.Log.Printf("returning last confirmed frame %d.\n", i.lastUserAddedFrame)
 	return i.lastAddedFrame
 }
 
@@ -73,14 +72,14 @@ func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
 	if i.lastFrameRequested != NullFrame {
 		frame = util.Min(frame, i.lastFrameRequested)
 	}
-	log.Printf("discarding confirmed frames up to %d (last_added:%d length:%d [head:%d tail:%d]).\n",
+	util.Log.Printf("discarding confirmed frames up to %d (last_added:%d length:%d [head:%d tail:%d]).\n",
 		frame, i.lastAddedFrame, i.length, i.head, i.tail)
 	if frame >= i.lastAddedFrame {
 		i.tail = i.head
 	} else {
 		offset := frame - i.inputs[i.tail].Frame + 1
 
-		log.Printf("difference of %d frames.\n", offset)
+		util.Log.Printf("difference of %d frames.\n", offset)
 		if offset < 0 {
 			return errors.New("ggpo: InputQueue discardConfirmedFrames: offet < 0")
 		}
@@ -89,7 +88,7 @@ func (i *InputQueue) DiscardConfirmedFrames(frame int) error {
 		i.length -= offset
 	}
 
-	log.Printf("after discarding, new tail is %d (frame:%d).\n", i.tail, i.inputs[i.tail].Frame)
+	util.Log.Printf("after discarding, new tail is %d (frame:%d).\n", i.tail, i.inputs[i.tail].Frame)
 	if i.length < 0 {
 		return errors.New("ggpo: InputQueue discardConfirmedFrames: i.length < 0 ")
 	}
@@ -101,7 +100,7 @@ func (i *InputQueue) ResetPrediction(frame int) error {
 	if !(i.firstIncorrectFrame == NullFrame || frame <= i.firstIncorrectFrame) {
 		return errors.New("ggpo: InputQueue ResetPrediction: i.firstIncorrentFrame != NullFrame && frame > i.firstIncorrectFrame")
 	}
-	log.Printf("resetting all prediction errors back to frame %d.\n", frame)
+	util.Log.Printf("resetting all prediction errors back to frame %d.\n", frame)
 
 	i.prediction.Frame = NullFrame
 	i.firstIncorrectFrame = NullFrame
@@ -123,7 +122,7 @@ func (i *InputQueue) GetConfirmedInput(requestedFrame int, input *GameInput) (bo
 }
 
 func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error) {
-	log.Printf("requesting input frame %d.\n", requestedFrame)
+	util.Log.Printf("requesting input frame %d.\n", requestedFrame)
 	if i.firstIncorrectFrame != NullFrame {
 		return false, errors.New("ggpo: InputQueue GetInput : i.firstIncorrectFrame != NullFrame")
 	}
@@ -142,18 +141,18 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error
 				return false, errors.New("ggpo: InputQueue GetInput : i.inputs[offset].Frame != requestedFrame")
 			}
 			*input = i.inputs[offset]
-			log.Printf("returning confirmed frame number %d.\n", input.Frame)
+			util.Log.Printf("returning confirmed frame number %d.\n", input.Frame)
 			return true, nil
 		}
 
 		if requestedFrame == 0 {
-			log.Printf("basing new prediction frame from nothing, you're client wants frame 0.\n")
+			util.Log.Printf("basing new prediction frame from nothing, you're client wants frame 0.\n")
 			i.prediction.Erase()
 		} else if i.lastAddedFrame == NullFrame {
-			log.Printf("basing new prediction frame from nothing, since we have no frames yet.\n")
+			util.Log.Printf("basing new prediction frame from nothing, since we have no frames yet.\n")
 			i.prediction.Erase()
 		} else {
-			log.Printf("basing new prediction frame from previously added frame (queue entry:%d, frame:%d).\n",
+			util.Log.Printf("basing new prediction frame from previously added frame (queue entry:%d, frame:%d).\n",
 				previousFrame(i.head), i.inputs[previousFrame(i.head)].Frame)
 			i.prediction = i.inputs[previousFrame(i.head)]
 		}
@@ -165,7 +164,7 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error
 	}
 	*input = i.prediction
 	input.Frame = requestedFrame
-	log.Printf("returning prediction frame number %d (%d).\n", input.Frame, i.prediction.Frame)
+	util.Log.Printf("returning prediction frame number %d (%d).\n", input.Frame, i.prediction.Frame)
 
 	return false, nil
 }
@@ -173,7 +172,7 @@ func (i *InputQueue) GetInput(requestedFrame int, input *GameInput) (bool, error
 func (i *InputQueue) AddInput(input *GameInput) error {
 	var newFrame int
 	var err error
-	log.Printf("adding input frame number %d to queue.\n", input.Frame)
+	util.Log.Printf("adding input frame number %d to queue.\n", input.Frame)
 
 	if !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1) {
 		return errors.New("ggpo : InputQueue AddInput : !(i.lastUserAddedFrame == NullFrame || input.Frame == i.lastUserAddedFrame+1)")
@@ -194,7 +193,7 @@ func (i *InputQueue) AddInput(input *GameInput) error {
 }
 
 func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) error {
-	log.Printf("adding delayed input frame number %d to queue.\n", frameNumber)
+	util.Log.Printf("adding delayed input frame number %d to queue.\n", frameNumber)
 
 	// Assert(input.Size == i.prediction.Size) No
 	if !(i.lastAddedFrame == NullFrame || frameNumber == i.lastAddedFrame+1) {
@@ -222,12 +221,12 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) e
 			panic(err)
 		}
 		if i.firstIncorrectFrame == NullFrame && !equal {
-			log.Printf("frame %d does not match prediction.  marking error.\n", frameNumber)
+			util.Log.Printf("frame %d does not match prediction.  marking error.\n", frameNumber)
 			i.firstIncorrectFrame = frameNumber
 		}
 
 		if i.prediction.Frame == i.lastFrameRequested && i.firstIncorrectFrame == NullFrame {
-			log.Printf("prediction is correct!  dumping out of prediction mode.\n")
+			util.Log.Printf("prediction is correct!  dumping out of prediction mode.\n")
 			i.prediction.Frame = NullFrame
 		} else {
 			i.prediction.Frame++
@@ -241,7 +240,7 @@ func (i *InputQueue) AddDelayedInputToQueue(input *GameInput, frameNumber int) e
 }
 
 func (i *InputQueue) AdvanceQueueHead(frame int) (int, error) {
-	log.Printf("advancing queue head to frame %d.\n", frame)
+	util.Log.Printf("advancing queue head to frame %d.\n", frame)
 
 	var expectedFrame int
 	if i.firstFrame {
@@ -252,13 +251,13 @@ func (i *InputQueue) AdvanceQueueHead(frame int) (int, error) {
 
 	frame += i.frameDelay
 	if expectedFrame > frame {
-		log.Printf("Dropping input frame %d (expected next frame to be %d).\n",
+		util.Log.Printf("Dropping input frame %d (expected next frame to be %d).\n",
 			frame, expectedFrame)
 		return NullFrame, nil
 	}
 
 	for expectedFrame < frame {
-		log.Printf("Adding padding frame %d to account for change in frame delay.\n",
+		util.Log.Printf("Adding padding frame %d to account for change in frame delay.\n",
 			expectedFrame)
 		lastFrame := i.inputs[previousFrame(i.head)]
 		err := i.AddDelayedInputToQueue(&lastFrame, expectedFrame)

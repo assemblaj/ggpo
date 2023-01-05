@@ -1,8 +1,6 @@
 package sync
 
 import (
-	"log"
-
 	"github.com/assemblaj/GGPO-Go/internal/input"
 	"github.com/assemblaj/GGPO-Go/internal/util"
 )
@@ -109,8 +107,8 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) float32 {
 	// sleep for.
 	sleepFrames := ((radvantage - advantage) / 2.0)
 
-	//log.Printf("iteration %d:  sleep frames is %d\n", count, sleepFrames)
-	log.Printf("In TimeSync: sleep frames is %f\n", sleepFrames)
+	//util.Log.Printf("iteration %d:  sleep frames is %d\n", count, sleepFrames)
+	util.Log.Printf("In TimeSync: sleep frames is %f\n", sleepFrames)
 
 	// Some things just aren't worth correcting for.  Make sure
 	// the difference is relevant before proceeding.
@@ -129,7 +127,7 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) float32 {
 	// 			panic(err)
 	// 		}
 	// 		if !equal {
-	// 			log.Printf("iteration %d:  rejecting due to input stuff at position %d...!!!\n", count, i)
+	// 			util.Log.Printf("iteration %d:  rejecting due to input stuff at position %d...!!!\n", count, i)
 	// 			return 0
 	// 		}
 	// 	}
