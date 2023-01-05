@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"log"
+
 	"github.com/assemblaj/GGPO-Go/internal/input"
 	"github.com/assemblaj/GGPO-Go/internal/util"
 )
@@ -108,7 +110,7 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) float32 {
 	sleepFrames := ((radvantage - advantage) / 2.0)
 
 	//log.Printf("iteration %d:  sleep frames is %d\n", count, sleepFrames)
-	util.Log.Printf("In TimeSync: sleep frames is %f\n", sleepFrames)
+	log.Printf("In TimeSync: sleep frames is %f\n", sleepFrames)
 
 	// Some things just aren't worth correcting for.  Make sure
 	// the difference is relevant before proceeding.
@@ -120,19 +122,18 @@ func (t *TimeSync) ReccomendFrameWaitDuration(requireIdleInput bool) float32 {
 	// a sleep.  This tries to make the emulator sleep while the
 	// user's input isn't sweeping in arcs (e.g. fireball motions in
 	// Street Fighter), which could cause the player to miss moves.
-	if requireIdleInput {
-		for i = 1; i < len(t.lastInputs); i++ {
-			equal, err := t.lastInputs[i].Equal(t.lastInputs[0], true)
-			if err != nil {
-				panic(err)
-			}
-			if !equal {
-				util.Log.Printf("iteration %d:  rejecting due to input stuff at position %d...!!!\n", count, i)
-				return 0
-			}
-		}
-	}
-
+	// if requireIdleInput {
+	// 	for i = 1; i < len(t.lastInputs); i++ {
+	// 		equal, err := t.lastInputs[i].Equal(t.lastInputs[0], true)
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		if !equal {
+	// 			log.Printf("iteration %d:  rejecting due to input stuff at position %d...!!!\n", count, i)
+	// 			return 0
+	// 		}
+	// 	}
+	// }
 
 	// Success!!! Recommend the number of frames to sleep and adjust
 	if sleepFrames > 0 {

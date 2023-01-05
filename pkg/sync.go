@@ -2,10 +2,10 @@ package ggpo
 
 import (
 	"errors"
+	"log"
 
 	"github.com/assemblaj/GGPO-Go/internal/input"
 	"github.com/assemblaj/GGPO-Go/internal/messages"
-	"github.com/assemblaj/GGPO-Go/internal/util"
 )
 
 type Sync struct {
@@ -97,7 +97,7 @@ func (s *Sync) SetLastConfirmedFrame(frame int) {
 func (s *Sync) AddLocalInput(queue int, input *input.GameInput) bool {
 	framesBehind := s.frameCount - s.lastConfirmedFrame
 	if s.frameCount >= s.maxPredictionFrames && framesBehind >= s.maxPredictionFrames {
-		util.Log.Printf("Rejecting input from emulator: reached prediction barrier.\n")
+		log.Printf("Rejecting input from emulator: reached prediction barrier.\n")
 		return false
 	}
 
@@ -105,7 +105,7 @@ func (s *Sync) AddLocalInput(queue int, input *input.GameInput) bool {
 		s.SaveCurrentFrame()
 	}
 
-	util.Log.Printf("Sending undelayed local frame %d to queue %d.\n", s.frameCount, queue)
+	log.Printf("Sending undelayed local frame %d to queue %d.\n", s.frameCount, queue)
 	input.Frame = s.frameCount
 	err := s.inputQueues[queue].AddInput(input)
 	if err != nil {
@@ -193,7 +193,7 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	frameCount := s.frameCount
 	count := s.frameCount - seekTo
 
-	util.Log.Printf("Catching up\n")
+	log.Printf("Catching up\n")
 	s.rollingBack = true
 
 	// flush our input queue and load the last frame
@@ -218,13 +218,13 @@ func (s *Sync) AdjustSimulation(seekTo int) error {
 	}
 	s.rollingBack = false
 
-	util.Log.Printf("---\n")
+	log.Printf("---\n")
 	return nil
 }
 
 func (s *Sync) LoadFrame(frame int) error {
 	if frame == s.frameCount {
-		util.Log.Printf("Skipping NOP.\n")
+		log.Printf("Skipping NOP.\n")
 		return nil
 	}
 	// Move the head pointer back and load it up
@@ -235,7 +235,7 @@ func (s *Sync) LoadFrame(frame int) error {
 	}
 	state := s.savedState.frames[s.savedState.head]
 
-	util.Log.Printf("=== Loading frame info %d (checksum: %08x).\n",
+	log.Printf("=== Loading frame info %d (checksum: %08x).\n",
 		state.frame, state.checksum)
 	//s.callbacks.LoadGameState(state.buf, state.cbuf)
 	s.session.LoadGameState(s.savedState.head)
@@ -258,7 +258,7 @@ func (s *Sync) SaveCurrentFrame() {
 	state.checksum = checksum
 
 	s.savedState.frames[s.savedState.head] = state
-	util.Log.Printf("=== Saved frame info %d (checksum: %08x).\n", state.frame, state.checksum)
+	log.Printf("=== Saved frame info %d (checksum: %08x).\n", state.frame, state.checksum)
 	s.savedState.head = (s.savedState.head + 1) % len(s.savedState.frames)
 }
 
@@ -301,7 +301,7 @@ func (s *Sync) CheckSimulationConsistency(seekTo *int) bool {
 	firstInorrect := input.NullFrame
 	for i := 0; i < s.config.numPlayers; i++ {
 		incorrect := s.inputQueues[i].FirstIncorrectFrame()
-		util.Log.Printf("considering incorrect frame %d reported by queue %d.\n", incorrect, i)
+		log.Printf("considering incorrect frame %d reported by queue %d.\n", incorrect, i)
 
 		if incorrect != input.NullFrame && (firstInorrect == input.NullFrame || incorrect < firstInorrect) {
 			firstInorrect = incorrect
@@ -309,7 +309,7 @@ func (s *Sync) CheckSimulationConsistency(seekTo *int) bool {
 	}
 
 	if firstInorrect == input.NullFrame {
-		util.Log.Printf("prediction ok.  proceeding.\n")
+		log.Printf("prediction ok.  proceeding.\n")
 		return true
 	}
 	*seekTo = firstInorrect
