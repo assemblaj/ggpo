@@ -11,7 +11,7 @@ import (
 	//	"net/http"
 	//	_ "net/http/pprof"
 
-	ggpo "github.com/assemblaj/GGPO-Go/pkg"
+	"github.com/assemblaj/ggpo"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 

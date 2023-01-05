@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/gob"
 
-	"github.com/assemblaj/GGPO-Go/internal/util"
-	ggpo "github.com/assemblaj/GGPO-Go/pkg"
+	"github.com/assemblaj/ggpo"
+	"github.com/assemblaj/ggpo/internal/util"
 )
 
 type FakeSession struct {

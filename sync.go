@@ -3,10 +3,10 @@ package ggpo
 import (
 	"errors"
 
-	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/ggpo/internal/util"
 
-	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/messages"
+	"github.com/assemblaj/ggpo/internal/input"
+	"github.com/assemblaj/ggpo/internal/messages"
 )
 
 type Sync struct {

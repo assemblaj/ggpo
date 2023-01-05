@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/assemblaj/GGPO-Go/internal/mocks"
-	"github.com/assemblaj/GGPO-Go/internal/protocol"
-	"github.com/assemblaj/GGPO-Go/pkg/transport"
+	"github.com/assemblaj/ggpo/internal/mocks"
+	"github.com/assemblaj/ggpo/internal/protocol"
+	"github.com/assemblaj/ggpo/transport"
 
-	ggpo "github.com/assemblaj/GGPO-Go/pkg"
+	"github.com/assemblaj/ggpo"
 )
 
 func TestNewSpectatorBackendSession(t *testing.T) {

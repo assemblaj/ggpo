@@ -1,6 +1,6 @@
 package transport
 
-import "github.com/assemblaj/GGPO-Go/internal/messages"
+import "github.com/assemblaj/ggpo/internal/messages"
 
 type MessageHandler interface {
 	HandleMessage(ipAddress string, port int, msg messages.UDPMessage, len int)

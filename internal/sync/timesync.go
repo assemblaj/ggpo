@@ -1,8 +1,8 @@
 package sync
 
 import (
-	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/ggpo/internal/input"
+	"github.com/assemblaj/ggpo/internal/util"
 )
 
 const (

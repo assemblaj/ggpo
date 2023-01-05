@@ -3,7 +3,7 @@ package input_test
 import (
 	"testing"
 
-	"github.com/assemblaj/GGPO-Go/internal/input"
+	"github.com/assemblaj/ggpo/internal/input"
 )
 
 /*

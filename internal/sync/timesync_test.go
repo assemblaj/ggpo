@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/sync"
+	"github.com/assemblaj/ggpo/internal/input"
+	"github.com/assemblaj/ggpo/internal/sync"
 )
 
 /*

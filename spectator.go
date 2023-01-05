@@ -1,12 +1,12 @@
 package ggpo
 
 import (
-	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/messages"
-	"github.com/assemblaj/GGPO-Go/internal/polling"
-	"github.com/assemblaj/GGPO-Go/internal/protocol"
-	"github.com/assemblaj/GGPO-Go/internal/util"
-	"github.com/assemblaj/GGPO-Go/pkg/transport"
+	"github.com/assemblaj/ggpo/internal/input"
+	"github.com/assemblaj/ggpo/internal/messages"
+	"github.com/assemblaj/ggpo/internal/polling"
+	"github.com/assemblaj/ggpo/internal/protocol"
+	"github.com/assemblaj/ggpo/internal/util"
+	"github.com/assemblaj/ggpo/transport"
 )
 
 const SpectatorFrameBufferSize int = 32

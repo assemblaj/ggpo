@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/ggpo/internal/util"
 )
 
 const (

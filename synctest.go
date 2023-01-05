@@ -1,14 +1,14 @@
 package ggpo
 
 import (
-	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/ggpo/internal/util"
 	"os"
 
-	"github.com/assemblaj/GGPO-Go/internal/buffer"
-	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/polling"
-	"github.com/assemblaj/GGPO-Go/internal/protocol"
-	"github.com/assemblaj/GGPO-Go/pkg/transport"
+	"github.com/assemblaj/ggpo/internal/buffer"
+	"github.com/assemblaj/ggpo/internal/input"
+	"github.com/assemblaj/ggpo/internal/polling"
+	"github.com/assemblaj/ggpo/internal/protocol"
+	"github.com/assemblaj/ggpo/transport"
 )
 
 type SyncTest struct {
