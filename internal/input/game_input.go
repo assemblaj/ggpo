@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
-
-	"github.com/assemblaj/GGPO-Go/internal/util"
 )
 
 const (
@@ -73,7 +72,7 @@ func (g *GameInput) Clone() *GameInput {
 }
 
 func (g *GameInput) Log(prefix string, showFrame bool) {
-	util.Log.Printf("%s%s", prefix, g)
+	log.Printf("%s%s", prefix, g)
 }
 
 func (g GameInput) String() string {
@@ -88,13 +87,13 @@ func (g GameInput) String() string {
 
 func (g *GameInput) Equal(other *GameInput, bitsonly bool) (bool, error) {
 	if !bitsonly && g.Frame != other.Frame {
-		util.Log.Printf("frames don't match: %d, %d\n", g.Frame, other.Frame)
+		log.Printf("frames don't match: %d, %d\n", g.Frame, other.Frame)
 	}
 	if g.Size != other.Size {
-		util.Log.Printf("sizes don't match: %d, %d\n", g.Size, other.Size)
+		log.Printf("sizes don't match: %d, %d\n", g.Size, other.Size)
 	}
 	if !bytes.Equal(g.Bits, other.Bits) {
-		util.Log.Printf("bits don't match\n")
+		log.Printf("bits don't match\n")
 	}
 	if !(g.Size > 0 && other.Size > 0) {
 		return false, errors.New("ggpo: GameInput Equal : !(g.Size > 0 && other.Size > 0)")
