@@ -13,7 +13,7 @@ func DefaultTime() int64 {
 }
 
 type Poll struct {
-	startTime   int
+	startTime   int64
 	handleCount int
 	loopSinks   buffer.StaticBuffer[PollSinkCb]
 }
@@ -53,7 +53,7 @@ func (p *Poll) RegisterLoop(sink PollSink, cookie []byte) {
 func (p *Poll) Pump(timeFunc ...FuncTimeType) bool {
 	finished := false
 	if p.startTime == 0 {
-		p.startTime = int(time.Now().UnixMilli())
+		p.startTime = time.Now().UnixMilli()
 	}
 	for i := 0; i < p.loopSinks.Size(); i++ {
 		cb, err := p.loopSinks.Get(i)

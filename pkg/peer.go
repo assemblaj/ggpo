@@ -45,6 +45,8 @@ type Peer struct {
 	pendingChecksums       util.OrderedMap[int, uint32]
 	confirmedChecksums     util.OrderedMap[int, uint32]
 	confirmedChecksumFrame int
+
+	messageChannel chan transport.MessageChannelItem
 }
 
 func NewPeer(cb Session,
@@ -77,6 +79,7 @@ func NewPeer(cb Session,
 	p.spectators = make([]protocol.UdpProtocol, MaxSpectators)
 	p.pendingChecksums = util.NewOrderedMap[int, uint32](16)
 	p.confirmedChecksums = util.NewOrderedMap[int, uint32](16)
+	p.messageChannel = make(chan transport.MessageChannelItem, 200)
 	//messages := make(chan UdpPacket)
 	//p.poll.RegisterLoop(&p.udp, nil )
 	//go p.udp.Read()
@@ -96,11 +99,13 @@ func (p *Peer) Close() error {
 }
 func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 	if !p.sync.InRollback() {
+		p.HandleMessages()
 		if len(timeFunc) == 0 {
 			p.poll.Pump()
 		} else {
 			p.poll.Pump(timeFunc[0])
 		}
+
 		p.PollUdpProtocolEvents()
 		p.CheckDesync()
 
@@ -111,7 +116,9 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 			// next connection quality report
 			currentFrame := p.sync.FrameCount()
 			for i := 0; i < p.numPlayers; i++ {
-				p.endpoints[i].SetLocalFrameNumber(currentFrame)
+				if p.endpoints[i].IsInitialized() {
+					p.endpoints[i].SetLocalFrameNumber(currentFrame)
+				}
 			}
 
 			var totalMinConfirmed int
@@ -754,6 +761,13 @@ func (p *Peer) HandleMessage(ipAddress string, port int, msg messages.UDPMessage
 	}
 }
 
+func (p *Peer) HandleMessages() {
+	for i := 0; i < len(p.messageChannel); i++ {
+		mi := <-p.messageChannel
+		p.HandleMessage(mi.Peer.Ip, mi.Peer.Port, mi.Message, mi.Length)
+	}
+}
+
 /*
 	Checks if all endpoints and spectators are initialized and synchronized
 	and sends an event when they are.
@@ -834,9 +848,5 @@ func (p *Peer) InitializeConnection(t ...transport.Connection) error {
 }
 
 func (p *Peer) Start() {
-	//messages := make(chan UdpPacket)
-	//go p.udp.ReadMsg(messages)
-	//go p.OnMsg(messages)
-	//p.udp.messageHandler = p
-	go p.connection.Read()
+	go p.connection.Read(p.messageChannel)
 }

@@ -194,7 +194,7 @@ func (s *SyncReplyPacket) FromBytes(buffer []byte) error {
 type QualityReportPacket struct {
 	MessageHeader  UDPHeader
 	FrameAdvantage int8
-	Ping           uint32
+	Ping           uint64
 }
 
 func (q *QualityReportPacket) Type() UDPMessageType { return QualityReportMsg }
@@ -216,7 +216,7 @@ func (q *QualityReportPacket) ToBytes() []byte {
 	buf := make([]byte, q.PacketSize())
 	copy(buf, q.MessageHeader.ToBytes())
 	buf[5] = uint8(q.FrameAdvantage)
-	binary.BigEndian.PutUint32(buf[6:10], q.Ping)
+	binary.BigEndian.PutUint64(buf[6:14], q.Ping)
 	return buf
 }
 
@@ -226,13 +226,13 @@ func (q *QualityReportPacket) FromBytes(buffer []byte) error {
 	}
 	q.MessageHeader.FromBytes(buffer)
 	q.FrameAdvantage = int8(buffer[5])
-	q.Ping = binary.BigEndian.Uint32(buffer[6:10])
+	q.Ping = binary.BigEndian.Uint64(buffer[6:14])
 	return nil
 }
 
 type QualityReplyPacket struct {
 	MessageHeader UDPHeader
-	Pong          uint32
+	Pong          uint64
 }
 
 func (q *QualityReplyPacket) Type() UDPMessageType { return QualityReplyMsg }
@@ -252,7 +252,7 @@ func (q *QualityReplyPacket) String() string { return "quality reply.\n" }
 func (q *QualityReplyPacket) ToBytes() []byte {
 	buf := make([]byte, q.PacketSize())
 	copy(buf, q.MessageHeader.ToBytes())
-	binary.BigEndian.PutUint32(buf[5:9], q.Pong)
+	binary.BigEndian.PutUint64(buf[5:13], q.Pong)
 	return buf
 }
 
@@ -261,7 +261,7 @@ func (q *QualityReplyPacket) FromBytes(buffer []byte) error {
 		return errors.New("invalid packet")
 	}
 	q.MessageHeader.FromBytes(buffer)
-	q.Pong = binary.BigEndian.Uint32(buffer[5:9])
+	q.Pong = binary.BigEndian.Uint64(buffer[5:13])
 	return nil
 }
 
