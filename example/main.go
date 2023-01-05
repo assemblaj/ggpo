@@ -9,7 +9,7 @@ import (
 	"time"
 
 	//	"net/http"
-	//	_ "net/http/pprof"
+	// _ "net/http/pprof"
 
 	"github.com/assemblaj/ggpo"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -36,10 +36,10 @@ func getPeerAddress(address string) peerAddress {
 }
 
 func main() {
-	/*
-		go func() {
-			log.Println(http.ListenAndServe("localhost:6060", nil))
-		}()*/
+
+	// go func() {
+	// 	log.Println(http.ListenAndServe("localhost:6060", nil))
+	// }()
 
 	argsWithoutProg := os.Args[1:]
 	if len(argsWithoutProg) < 4 {
@@ -56,24 +56,24 @@ func main() {
 	if err != nil {
 		panic("Please enter integer numPlayers")
 	}
-	/*
-		logFileName := ""
-		if len(argsWithoutProg) > 4 {
-			logFileName = "Player" + argsWithoutProg[4] + ".log"
-		} else {
-			logFileName = "Spectator.log"
-		}
 
-		f, err := os.OpenFile(logFileName, os.O_CREATE|os.O_RDWR, 0666)
-		if err != nil {
-			panic(err)
-		}
+	// logFileName := ""
+	// if len(argsWithoutProg) > 4 {
+	// 	logFileName = "Player" + argsWithoutProg[4] + ".log"
+	// } else {
+	// 	logFileName = "Spectator.log"
+	// }
 
-		// don't forget to close it
-		defer f.Close()
+	// f, err := os.OpenFile(logFileName, os.O_CREATE|os.O_RDWR, 0666)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-		ggpo.EnableLogger()
-		ggpo.SetLoggerOutput(f)*/
+	// // don't forget to close it
+	// defer f.Close()
+	// logger := log.New(f, "Logger:", log.Ldate|log.Ltime|log.Lshortfile)
+	// ggpo.EnableLogs()
+	// ggpo.SetLogger(logger)
 
 	var game *Game
 	if argsWithoutProg[2] == "spectate" {
