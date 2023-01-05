@@ -805,7 +805,7 @@ func (p *Peer) CheckDesync() {
 			remoteChecksum, _ := p.endpoints[i].RemoteChecksums.Get(k)
 			localChecksum, ok := p.confirmedChecksums.Get(checksumFrame)
 			if ok {
-				keysToRemove = append(keysToRemove, int(localChecksum))
+				keysToRemove = append(keysToRemove, k)
 				if remoteChecksum != localChecksum {
 					var info Event
 					info.Code = EventCodeDesync
@@ -822,7 +822,7 @@ func (p *Peer) CheckDesync() {
 				}
 			}
 		}
-		for key := range keysToRemove {
+		for _, key := range keysToRemove {
 			p.endpoints[i].RemoteChecksums.Delete(key)
 		}
 	}
