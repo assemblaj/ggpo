@@ -12,9 +12,7 @@ import (
 )
 
 /*
-
-	Characterization Tests Basically
-
+Characterization Tests Basically
 */
 func TestNewSync(t *testing.T) {
 	session := mocks.NewFakeSession()

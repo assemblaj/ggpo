@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	Remember to
+Remember to
 */
 type Backend interface {
 	Idle(timeout int, timeFunc ...polling.FuncTimeType) error
