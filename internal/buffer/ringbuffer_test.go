@@ -3,7 +3,7 @@ package buffer_test
 import (
 	"testing"
 
-	"github.com/assemblaj/GGPO-Go/internal/buffer"
+	"github.com/assemblaj/ggpo/internal/buffer"
 )
 
 func TestRingBufferSizeZero(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/ggpo/internal/util"
 )
 
 // SetLogger sets the log.Logger used when printing log messages. Use this

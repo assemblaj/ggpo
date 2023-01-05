@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/messages"
-	"github.com/assemblaj/GGPO-Go/internal/mocks"
-	"github.com/assemblaj/GGPO-Go/internal/polling"
-	"github.com/assemblaj/GGPO-Go/internal/protocol"
+	"github.com/assemblaj/ggpo/internal/input"
+	"github.com/assemblaj/ggpo/internal/messages"
+	"github.com/assemblaj/ggpo/internal/mocks"
+	"github.com/assemblaj/ggpo/internal/polling"
+	"github.com/assemblaj/ggpo/internal/protocol"
 )
 
 func TestMakeUDPProtocol(t *testing.T) {

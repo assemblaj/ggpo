@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/assemblaj/GGPO-Go/internal/input"
-	"github.com/assemblaj/GGPO-Go/internal/messages"
-	"github.com/assemblaj/GGPO-Go/internal/mocks"
+	"github.com/assemblaj/ggpo/internal/input"
+	"github.com/assemblaj/ggpo/internal/messages"
+	"github.com/assemblaj/ggpo/internal/mocks"
 
-	ggpo "github.com/assemblaj/GGPO-Go/pkg"
+	"github.com/assemblaj/ggpo"
 )
 
 /*

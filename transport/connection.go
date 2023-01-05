@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"github.com/assemblaj/GGPO-Go/internal/messages"
+	"github.com/assemblaj/ggpo/internal/messages"
 )
 
 type Connection interface {

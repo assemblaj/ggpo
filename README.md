@@ -1,4 +1,4 @@
-# [![GGPO-Go LOGO](./ggpo_go_logo.png)](https://github.com/assemblaj/GGPO-Go)
+# [![GGPO-Go LOGO](./ggpo_go_logo.png)](https://github.com/assemblaj/ggpo)
 # GGPO-Go - GGPO Port Into Go
 GGPO-Go is a port of the GGPO rollback netcode library into Go. Currently unfinished. 
 

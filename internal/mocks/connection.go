@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/assemblaj/GGPO-Go/internal/messages"
-	"github.com/assemblaj/GGPO-Go/pkg/transport"
+	"github.com/assemblaj/ggpo/internal/messages"
+	"github.com/assemblaj/ggpo/transport"
 )
 
 type FakeConnection struct {

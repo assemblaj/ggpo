@@ -4,8 +4,8 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/assemblaj/GGPO-Go/internal/messages"
-	"github.com/assemblaj/GGPO-Go/internal/util"
+	"github.com/assemblaj/ggpo/internal/messages"
+	"github.com/assemblaj/ggpo/internal/util"
 )
 
 const (

@@ -1,4 +1,4 @@
-module github.com/assemblaj/GGPO-Go
+module github.com/assemblaj/ggpo
 
 go 1.18
 
