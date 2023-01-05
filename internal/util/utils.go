@@ -2,6 +2,8 @@ package util
 
 import (
 	"golang.org/x/exp/constraints"
+	"io"
+	"log"
 )
 
 func Min[T constraints.Ordered](a, b T) T {
@@ -16,4 +18,10 @@ func Max[T constraints.Ordered](a, b T) T {
 		return a
 	}
 	return b
+}
+
+var Log = DiscardLogger()
+
+func DiscardLogger() *log.Logger {
+	return log.New(io.Discard, "", 0)
 }
