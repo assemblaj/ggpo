@@ -19,7 +19,7 @@ func SetLogger(l *log.Logger) {
 // more precise control over the logging output and format. Log messages are
 // not printed by default.
 func EnableLogs() {
-	SetLogger(log.New(os.Stdout, "GGPO", log.Ldate|log.Ltime))
+	SetLogger(log.New(os.Stdout, "GGPO ", log.Ldate|log.Ltime|log.Lmsgprefix))
 }
 
 // DisableLogs disables printing log messages.
