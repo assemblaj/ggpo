@@ -1,9 +1,11 @@
 package util
 
 import (
-	"golang.org/x/exp/constraints"
 	"io"
 	"log"
+	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
 // Log is the util.Log.Logger used when printing log messages.
@@ -26,4 +28,12 @@ func Max[T constraints.Ordered](a, b T) T {
 		return a
 	}
 	return b
+}
+
+func MaxAbsFloat32(a, b float32) float32 {
+	if math.Abs(float64(a)) > math.Abs(float64(b)) {
+		return a
+	} else {
+		return b
+	}
 }

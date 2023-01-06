@@ -158,7 +158,9 @@ func (p *Peer) Idle(timeout int, timeFunc ...polling.FuncTimeType) error {
 			if currentFrame > p.nextRecommendedSleep {
 				var interval float32 = 0.0
 				for i := 0; i < p.numPlayers; i++ {
-					interval = util.Max(interval, p.endpoints[i].RecommendFrameDelay())
+					if p.endpoints[i].IsInitialized() {
+						interval = util.MaxAbsFloat32(interval, p.endpoints[i].RecommendFrameDelay())
+					}
 				}
 
 				//if interval > 0 {
