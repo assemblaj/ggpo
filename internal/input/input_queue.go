@@ -33,12 +33,14 @@ func NewInputQueue(id int, inputSize int) InputQueue {
 	var err error
 	inputs := make([]GameInput, InputQueueLength)
 	for i, _ := range inputs {
-		inputs[i], err = NewGameInput(-1, nil, inputSize)
+		defaultInput := make([]byte, inputSize)
+		inputs[i], err = NewGameInput(-1, defaultInput, inputSize)
 		if err != nil {
 			panic(err)
 		}
 	}
-	prediction, err := NewGameInput(NullFrame, nil, inputSize)
+	defaultInput := make([]byte, inputSize)
+	prediction, err := NewGameInput(NullFrame, defaultInput, inputSize)
 	if err != nil {
 		panic(err)
 	}

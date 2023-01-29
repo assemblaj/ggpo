@@ -89,10 +89,14 @@ func NewPeer(cb Session,
 
 func (p *Peer) Close() error {
 	for _, e := range p.endpoints {
-		e.Close()
+		if e.IsInitialized() {
+			e.Close()
+		}
 	}
 	for _, s := range p.spectators {
-		s.Close()
+		if s.IsInitialized() {
+			s.Close()
+		}
 	}
 	return nil
 }

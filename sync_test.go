@@ -203,8 +203,9 @@ func TestSyncSynchronizeInputsNoInput(t *testing.T) {
 		t.Errorf("expected '%#v' but got '%#v'", want, got)
 	}
 
-	if len(inputs[0]) != 0 || len(inputs[1]) != 0 {
-		t.Errorf("expected input lengths to be zero.")
+	defaultInputs := make([]byte, 4)
+	if !bytes.Equal(inputs[0], defaultInputs) || !bytes.Equal(inputs[1], defaultInputs) {
+		t.Errorf("expected input to be default inputs.")
 	}
 
 	want = 0
