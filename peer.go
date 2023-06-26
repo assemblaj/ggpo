@@ -78,7 +78,7 @@ func NewPeer(cb Session,
 	p.spectators = make([]protocol.UdpProtocol, MaxSpectators)
 	p.pendingChecksums = util.NewOrderedMap[int, uint32](16)
 	p.confirmedChecksums = util.NewOrderedMap[int, uint32](16)
-	p.messageChannel = make(chan transport.MessageChannelItem, 200)
+	p.messageChannel = make(chan transport.MessageChannelItem, 256)
 	//messages := make(chan UdpPacket)
 	//p.poll.RegisterLoop(&p.udp, nil )
 	//go p.udp.Read()
@@ -767,9 +767,19 @@ func (p *Peer) HandleMessage(ipAddress string, port int, msg messages.UDPMessage
 }
 
 func (p *Peer) HandleMessages() {
-	for i := 0; i < len(p.messageChannel); i++ {
-		mi := <-p.messageChannel
-		p.HandleMessage(mi.Peer.Ip, mi.Peer.Port, mi.Message, mi.Length)
+	for {
+		select {
+		case mi, ok := <-p.messageChannel:
+			if ok {
+				p.HandleMessage(mi.Peer.Ip, mi.Peer.Port, mi.Message, mi.Length)
+			} else {
+				// The channel was closed, exit the function
+				return
+			}
+		default:
+			// There was no message to read, exit the function
+			return
+		}
 	}
 }
 

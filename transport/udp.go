@@ -21,6 +21,7 @@ type Udp struct {
 	listener       net.PacketConn
 	localPort      int
 	ipAddress      string
+	sendChan       chan sendRequest
 }
 
 type UdpStats struct {
@@ -46,8 +47,28 @@ func (u Udp) Close() {
 	}
 }
 
+type sendRequest struct {
+	msg        messages.UDPMessage
+	remoteIp   string
+	remotePort int
+}
+
 func NewUdp(messageHandler MessageHandler, localPort int) Udp {
 	u := Udp{}
+
+	u.sendChan = make(chan sendRequest, 256) // Create a buffered channel
+
+	go func() { // Start a goroutine to handle sending of messages
+		for req := range u.sendChan {
+			RemoteEP := net.UDPAddr{IP: net.ParseIP(req.remoteIp), Port: req.remotePort}
+			buf := req.msg.ToBytes()
+			_, err := u.listener.WriteTo(buf, &RemoteEP)
+			if err != nil {
+				util.Log.Printf("WriteTo error: %s", err)
+			}
+		}
+	}()
+
 	u.messageHandler = messageHandler
 	portStr := strconv.Itoa(localPort)
 
@@ -65,9 +86,10 @@ func (u Udp) SendTo(msg messages.UDPMessage, remoteIp string, remotePort int) {
 		return
 	}
 
-	RemoteEP := net.UDPAddr{IP: net.ParseIP(remoteIp), Port: remotePort}
-	buf := msg.ToBytes()
-	u.listener.WriteTo(buf, &RemoteEP)
+	// RemoteEP := net.UDPAddr{IP: net.ParseIP(remoteIp), Port: remotePort}
+	// buf := msg.ToBytes()
+	// u.listener.WriteTo(buf, &RemoteEP)
+	u.sendChan <- sendRequest{msg: msg, remoteIp: remoteIp, remotePort: remotePort} // Add the request to the channel
 }
 
 func (u Udp) Read(messageChan chan MessageChannelItem) {
