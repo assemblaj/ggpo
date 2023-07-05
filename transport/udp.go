@@ -74,7 +74,7 @@ func NewUdp(messageHandler MessageHandler, localPort int) Udp {
 
 	u.localPort = localPort
 	util.Log.Printf("binding udp socket to port %d.\n", localPort)
-	u.listener, _ = net.ListenPacket("udp", "0.0.0.0:"+portStr)
+	u.listener, _ = net.ListenPacket("udp", ":"+portStr)
 	return u
 }
 
