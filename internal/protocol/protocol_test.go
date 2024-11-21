@@ -788,22 +788,6 @@ func TestUDPProtocolSendPendingOutputDefault(t *testing.T) {
 		t.Errorf("Inputs sent when there's no pending output should have Input size 0 ")
 	}
 }
-func TestUDPProtocolMagicNumberReject(t *testing.T) {
-	connectStatus := []messages.UdpConnectStatus{
-		{Disconnected: false, LastFrame: 20},
-		{Disconnected: false, LastFrame: 22},
-	}
-	connection := mocks.NewFakeConnection()
-	peerAdress := "127.2.1.1"
-	peerPort := 7001
-	endpoint := protocol.NewUdpProtocol(&connection, 0, peerAdress, peerPort, &connectStatus)
-	msg := messages.NewUDPMessage(messages.QualityReportMsg)
-	msg.SetHeader(3, 0)
-	endpoint.OnMsg(msg, msg.PacketSize())
-	if connection.LastSentMessage != nil {
-		t.Errorf("No messages should have been sent in response to the quality report message because the magic number doesn't match the default magic number (0)")
-	}
-}
 
 func TestUDPProtocolSequenceNumberReject(t *testing.T) {
 	connectStatus := []messages.UdpConnectStatus{

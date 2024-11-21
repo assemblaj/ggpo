@@ -793,11 +793,6 @@ func (u *UdpProtocol) OnInvalid(msg messages.UDPMessage, len int) (bool, error) 
 }
 
 func (u *UdpProtocol) OnSyncRequest(msg messages.UDPMessage, len int) (bool, error) {
-	if u.remoteMagicNumber != 0 && msg.Header().Magic != u.remoteMagicNumber {
-		util.Log.Printf("Ignoring sync request from unknown endpoint (%d != %d).\n",
-			msg.Header().Magic, u.remoteMagicNumber)
-		return false, nil
-	}
 	request := msg.(*messages.SyncRequestPacket)
 	reply := messages.NewUDPMessage(messages.SyncReplyMsg)
 	syncReply := reply.(*messages.SyncReplyPacket)
